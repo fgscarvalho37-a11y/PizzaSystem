@@ -21,6 +21,18 @@ const links = [
     href: "/admin/historico",
   },
   {
+    label: "Relatórios",
+    href: "/admin/relatorios",
+  },
+  {
+    label: "Caixa",
+    href: "/admin/caixa",
+  },
+  {
+    label: "Cupons",
+    href: "/admin/cupons",
+  },
+  {
     label: "Entregas",
     href: "/admin/entregas",
   },
@@ -54,9 +66,7 @@ export default function AdminHeader({
   return (
     <header className="border-b bg-white">
       <div className="mx-auto max-w-7xl px-6 py-5">
-
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-
           <div>
             <Link
               href="/admin"
@@ -71,7 +81,6 @@ export default function AdminHeader({
           </div>
 
           <nav className="flex flex-wrap gap-2">
-
             {links.map((link) => {
               const active =
                 pathname === link.href;
@@ -97,11 +106,8 @@ export default function AdminHeader({
             >
               Ver site
             </Link>
-
           </nav>
-
         </div>
-
       </div>
     </header>
   );

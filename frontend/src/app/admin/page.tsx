@@ -32,6 +32,27 @@ const adminCards: AdminCard[] = [
     icon: "🧾",
   },
   {
+    title: "Relatórios",
+    description:
+      "Acompanhe faturamento, pedidos aprovados, ticket médio e formas de pagamento.",
+    route: "/admin/relatorios",
+    icon: "📊",
+  },
+  {
+    title: "Caixa",
+    description:
+      "Consulte o resumo financeiro diário, faturamento, taxas e formas de pagamento.",
+    route: "/admin/caixa",
+    icon: "💰",
+  },
+  {
+    title: "Cupons",
+    description:
+      "Crie promoções, configure descontos, validade, limites e acompanhe a utilização.",
+    route: "/admin/cupons",
+    icon: "🎟️",
+  },
+  {
     title: "Áreas de entrega",
     description:
       "Gerencie bairros atendidos, taxas de entrega e disponibilidade no checkout.",
@@ -91,8 +112,8 @@ export default function AdminPage() {
             </h1>
 
             <p className="mt-2 max-w-3xl text-gray-600">
-              Central de gerenciamento da operação, pedidos, cardápio,
-              entregas e configurações da pizzaria.
+              Central de gerenciamento da operação, pedidos, relatórios,
+              caixa, promoções, cardápio, entregas e configurações da pizzaria.
             </p>
           </div>
 
@@ -112,7 +133,7 @@ export default function AdminPage() {
             ÁREAS
             ========================= */}
 
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
 
           {adminCards.map((card) => (
             <button
@@ -158,61 +179,33 @@ export default function AdminPage() {
           <div>
 
             <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-              Próximas funcionalidades
+              Próxima funcionalidade
             </p>
 
             <h2 className="mt-1 text-xl font-bold text-gray-900">
-              Expansão do painel
+              Segurança do painel
             </h2>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-500">
-              As áreas operacionais principais já estão organizadas.
-              As próximas funcionalidades serão focadas em gestão financeira
-              e comercial.
+              Operação, relatórios, caixa e sistema de promoções já fazem
+              parte da estrutura administrativa. A próxima etapa será
+              proteger o acesso às ferramentas de gerenciamento.
             </p>
 
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-5">
 
             <div className="rounded-xl bg-gray-50 p-4">
+
               <p className="font-semibold text-gray-700">
-                Relatórios
+                Login administrativo
               </p>
 
               <p className="mt-1 text-sm text-gray-500">
-                Vendas, faturamento e ticket médio.
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-700">
-                Caixa
+                Autenticação e proteção das rotas do painel administrativo.
               </p>
 
-              <p className="mt-1 text-sm text-gray-500">
-                Fechamento e resumo financeiro.
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-700">
-                Cupons
-              </p>
-
-              <p className="mt-1 text-sm text-gray-500">
-                Descontos e campanhas promocionais.
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-700">
-                Segurança
-              </p>
-
-              <p className="mt-1 text-sm text-gray-500">
-                Login e proteção do painel administrativo.
-              </p>
             </div>
 
           </div>

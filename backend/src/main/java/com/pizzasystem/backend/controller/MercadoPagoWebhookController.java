@@ -7,6 +7,7 @@ import com.pizzasystem.backend.entity.Order;
 import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentStatus;
 import com.pizzasystem.backend.repository.OrderRepository;
+import com.pizzasystem.backend.service.CouponService;
 import com.pizzasystem.backend.service.MercadoPagoService;
 import com.pizzasystem.backend.service.MercadoPagoWebhookSignatureService;
 
@@ -20,17 +21,29 @@ public class MercadoPagoWebhookController {
     private final OrderRepository orderRepository;
     private final MercadoPagoService mercadoPagoService;
     private final MercadoPagoWebhookSignatureService signatureService;
+    private final CouponService couponService;
     private final ObjectMapper objectMapper;
 
     public MercadoPagoWebhookController(
             OrderRepository orderRepository,
             MercadoPagoService mercadoPagoService,
-            MercadoPagoWebhookSignatureService signatureService
+            MercadoPagoWebhookSignatureService signatureService,
+            CouponService couponService
     ) {
-        this.orderRepository = orderRepository;
-        this.mercadoPagoService = mercadoPagoService;
-        this.signatureService = signatureService;
-        this.objectMapper = new ObjectMapper();
+        this.orderRepository =
+                orderRepository;
+
+        this.mercadoPagoService =
+                mercadoPagoService;
+
+        this.signatureService =
+                signatureService;
+
+        this.couponService =
+                couponService;
+
+        this.objectMapper =
+                new ObjectMapper();
     }
 
     @PostMapping("/webhook")
@@ -58,13 +71,19 @@ public class MercadoPagoWebhookController {
             String mercadoPagoOrderId =
                     queryDataId;
 
+            // =========================
+            // TENTAR PEGAR ID DO BODY
+            // =========================
+
             if ((mercadoPagoOrderId == null
                     || mercadoPagoOrderId.isBlank())
                     && body != null
                     && !body.isBlank()) {
 
                 JsonNode notification =
-                        objectMapper.readTree(body);
+                        objectMapper.readTree(
+                                body
+                        );
 
                 mercadoPagoOrderId =
                         notification
@@ -72,6 +91,10 @@ public class MercadoPagoWebhookController {
                                 .path("id")
                                 .asText();
             }
+
+            // =========================
+            // VALIDAR ID
+            // =========================
 
             if (mercadoPagoOrderId == null
                     || mercadoPagoOrderId.isBlank()) {
@@ -84,6 +107,10 @@ public class MercadoPagoWebhookController {
                         .badRequest()
                         .build();
             }
+
+            // =========================
+            // VALIDAR ASSINATURA
+            // =========================
 
             boolean validSignature =
                     signatureService.isValid(
@@ -108,6 +135,10 @@ public class MercadoPagoWebhookController {
                             + mercadoPagoOrderId
             );
 
+            // =========================
+            // LOCALIZAR PEDIDO
+            // =========================
+
             Order order =
                     orderRepository
                             .findByPaymentExternalId(
@@ -122,8 +153,14 @@ public class MercadoPagoWebhookController {
                                 + mercadoPagoOrderId
                 );
 
-                return ResponseEntity.ok().build();
+                return ResponseEntity
+                        .ok()
+                        .build();
             }
+
+            // =========================
+            // CONSULTAR MERCADO PAGO
+            // =========================
 
             String mercadoPagoResponse =
                     mercadoPagoService.getOrder(
@@ -140,9 +177,11 @@ public class MercadoPagoWebhookController {
                             .path("status")
                             .asText();
 
-            String paymentStatus = "";
+            String paymentStatus =
+                    "";
 
-            String paymentStatusDetail = "";
+            String paymentStatusDetail =
+                    "";
 
             JsonNode payments =
                     mercadoPagoOrder
@@ -165,20 +204,36 @@ public class MercadoPagoWebhookController {
                                 .asText();
             }
 
+            System.out.println(
+                    "Mercado Pago Order: "
+                            + orderStatus
+            );
+
+            System.out.println(
+                    "Mercado Pago Payment: "
+                            + paymentStatus
+                            + " / "
+                            + paymentStatusDetail
+            );
+
+            // =========================
+            // VERIFICAR APROVAÇÃO
+            // =========================
+
             boolean approved =
                     "processed".equalsIgnoreCase(
                             paymentStatus
                     )
-                    || "approved".equalsIgnoreCase(
+                            || "approved".equalsIgnoreCase(
                             paymentStatus
                     )
-                    || (
-                        "processed".equalsIgnoreCase(
-                                orderStatus
-                        )
-                        && "accredited".equalsIgnoreCase(
-                                paymentStatusDetail
-                        )
+                            || (
+                            "processed".equalsIgnoreCase(
+                                    orderStatus
+                            )
+                                    && "accredited".equalsIgnoreCase(
+                                    paymentStatusDetail
+                            )
                     );
 
             if (approved) {
@@ -191,16 +246,42 @@ public class MercadoPagoWebhookController {
                         OrderStatus.RECEIVED
                 );
 
-                orderRepository.save(order);
+                order =
+                        orderRepository.save(
+                                order
+                        );
+
+                // =========================
+                // REGISTRAR USO DO CUPOM
+                // =========================
+
+                couponService.registerUsageForOrder(
+                        order
+                );
 
                 System.out.println(
                         "Pedido #"
                                 + order.getId()
                                 + " PAGO -> RECEIVED"
                 );
+
+                if (order.getCouponCode() != null
+                        && !order.getCouponCode().isBlank()) {
+
+                    System.out.println(
+                            "Cupom do pedido #"
+                                    + order.getId()
+                                    + ": "
+                                    + order.getCouponCode()
+                                    + " | uso registrado: "
+                                    + order.isCouponUsageRegistered()
+                    );
+                }
             }
 
-            return ResponseEntity.ok().build();
+            return ResponseEntity
+                    .ok()
+                    .build();
 
         } catch (Exception e) {
 

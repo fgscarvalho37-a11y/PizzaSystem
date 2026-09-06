@@ -1,6 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import { useRouter } from "next/navigation";
 
 type Product = {
@@ -34,42 +40,98 @@ type PaymentMethod =
   | "CREDIT_CARD"
   | "DEBIT_CARD";
 
+type CouponValidationResponse = {
+  valid: boolean;
+  couponId: number;
+  code: string;
+  discountType: "PERCENTAGE" | "FIXED_AMOUNT";
+  discountValue: number;
+  discount: number;
+  originalValue: number;
+  finalValue: number;
+};
+
 export default function CheckoutPage() {
   const router = useRouter();
 
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] =
+    useState<CartItem[]>([]);
+
   const [deliveryAreas, setDeliveryAreas] =
     useState<DeliveryArea[]>([]);
+
   const [storeStatus, setStoreStatus] =
     useState<StoreStatus | null>(null);
 
-  const [loaded, setLoaded] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [loaded, setLoaded] =
+    useState(false);
 
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [street, setStreet] = useState("");
-  const [number, setNumber] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
-  const [complement, setComplement] = useState("");
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const [customerName, setCustomerName] =
+    useState("");
+
+  const [customerPhone, setCustomerPhone] =
+    useState("");
+
+  const [street, setStreet] =
+    useState("");
+
+  const [number, setNumber] =
+    useState("");
+
+  const [neighborhood, setNeighborhood] =
+    useState("");
+
+  const [complement, setComplement] =
+    useState("");
 
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod | "">("");
 
-  useEffect(() => {
-    const savedCart = localStorage.getItem(
-      "pizzasystem-cart"
+  // =========================
+  // CUPOM
+  // =========================
+
+  const [couponInput, setCouponInput] =
+    useState("");
+
+  const [appliedCoupon, setAppliedCoupon] =
+    useState<CouponValidationResponse | null>(
+      null
     );
+
+  const [couponLoading, setCouponLoading] =
+    useState(false);
+
+  const [couponMessage, setCouponMessage] =
+    useState("");
+
+  const [couponError, setCouponError] =
+    useState("");
+
+  // =========================
+  // CARRINHO
+  // =========================
+
+  useEffect(() => {
+    const savedCart =
+      localStorage.getItem(
+        "pizzasystem-cart"
+      );
 
     if (savedCart) {
       try {
         const parsed: CartItem[] =
           JSON.parse(savedCart);
 
-        const normalized = parsed.map((item) => ({
-          ...item,
-          observation: item.observation || "",
-        }));
+        const normalized =
+          parsed.map((item) => ({
+            ...item,
+            observation:
+              item.observation || "",
+          }));
 
         setCart(normalized);
       } catch (error) {
@@ -83,18 +145,25 @@ export default function CheckoutPage() {
     setLoaded(true);
   }, []);
 
+  // =========================
+  // DADOS DA LOJA
+  // =========================
+
   useEffect(() => {
     async function loadData() {
       try {
-        const [areasResponse, statusResponse] =
-          await Promise.all([
-            fetch(
-              "http://localhost:8080/api/delivery-areas/active"
-            ),
-            fetch(
-              "http://localhost:8080/api/store/status"
-            ),
-          ]);
+        const [
+          areasResponse,
+          statusResponse,
+        ] = await Promise.all([
+          fetch(
+            "http://localhost:8080/api/delivery-areas/active"
+          ),
+
+          fetch(
+            "http://localhost:8080/api/store/status"
+          ),
+        ]);
 
         if (!areasResponse.ok) {
           throw new Error(
@@ -114,8 +183,13 @@ export default function CheckoutPage() {
         const statusData: StoreStatus =
           await statusResponse.json();
 
-        setDeliveryAreas(areasData);
-        setStoreStatus(statusData);
+        setDeliveryAreas(
+          areasData
+        );
+
+        setStoreStatus(
+          statusData
+        );
       } catch (error) {
         console.error(error);
       }
@@ -123,74 +197,288 @@ export default function CheckoutPage() {
 
     loadData();
 
-    const interval = setInterval(() => {
-      fetch(
-        "http://localhost:8080/api/store/status"
-      )
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(
-              "Erro ao atualizar status"
-            );
-          }
+    const interval =
+      setInterval(() => {
+        fetch(
+          "http://localhost:8080/api/store/status"
+        )
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(
+                "Erro ao atualizar status"
+              );
+            }
 
-          return response.json();
-        })
-        .then((data: StoreStatus) => {
-          setStoreStatus(data);
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-    }, 10000);
+            return response.json();
+          })
+          .then(
+            (
+              data: StoreStatus
+            ) => {
+              setStoreStatus(
+                data
+              );
+            }
+          )
+          .catch((error) => {
+            console.error(error);
+          });
+      }, 10000);
 
-    return () => clearInterval(interval);
+    return () =>
+      clearInterval(interval);
   }, []);
+
+  // =========================
+  // OBSERVAÇÃO
+  // =========================
 
   function updateObservation(
     productId: number,
     observation: string
   ) {
     setCart((currentCart) => {
-      const updatedCart = currentCart.map(
-        (item) =>
-          item.product.id === productId
-            ? {
-                ...item,
-                observation,
-              }
-            : item
-      );
+      const updatedCart =
+        currentCart.map(
+          (item) =>
+            item.product.id ===
+            productId
+              ? {
+                  ...item,
+                  observation,
+                }
+              : item
+        );
 
       localStorage.setItem(
         "pizzasystem-cart",
-        JSON.stringify(updatedCart)
+        JSON.stringify(
+          updatedCart
+        )
       );
 
       return updatedCart;
     });
   }
 
-  const subtotal = useMemo(() => {
-    return cart.reduce(
-      (total, item) =>
-        total +
-        Number(item.product.price) *
-          item.quantity,
-      0
+  // =========================
+  // VALORES
+  // =========================
+
+  const subtotal =
+    useMemo(() => {
+      return cart.reduce(
+        (total, item) =>
+          total +
+          Number(
+            item.product.price
+          ) *
+            item.quantity,
+        0
+      );
+    }, [cart]);
+
+  const selectedArea =
+    deliveryAreas.find(
+      (area) =>
+        area.neighborhood ===
+        neighborhood
     );
-  }, [cart]);
 
-  const selectedArea = deliveryAreas.find(
-    (area) =>
-      area.neighborhood === neighborhood
-  );
+  const deliveryFee =
+    selectedArea
+      ? Number(
+          selectedArea.fee
+        )
+      : 0;
 
-  const deliveryFee = selectedArea
-    ? Number(selectedArea.fee)
-    : 0;
+  const totalBeforeDiscount =
+    subtotal + deliveryFee;
 
-  const total = subtotal + deliveryFee;
+  const discountAmount =
+    appliedCoupon
+      ? Number(
+          appliedCoupon.discount
+        )
+      : 0;
+
+  const total =
+    Math.max(
+      0,
+      totalBeforeDiscount -
+        discountAmount
+    );
+
+  // =========================
+  // INVALIDAR CUPOM
+  // SE O VALOR MUDAR
+  // =========================
+
+  useEffect(() => {
+    if (!appliedCoupon) {
+      return;
+    }
+
+    if (
+      Number(
+        appliedCoupon.originalValue
+      ) !==
+      Number(
+        totalBeforeDiscount
+      )
+    ) {
+      setAppliedCoupon(null);
+
+      setCouponMessage("");
+
+      setCouponError(
+        "O valor do pedido mudou. Aplique o cupom novamente."
+      );
+    }
+  }, [
+    totalBeforeDiscount,
+    appliedCoupon,
+  ]);
+
+  // =========================
+  // APLICAR CUPOM
+  // =========================
+
+  async function handleApplyCoupon() {
+    const code =
+      couponInput
+        .trim()
+        .toUpperCase();
+
+    setCouponMessage("");
+    setCouponError("");
+
+    if (!code) {
+      setCouponError(
+        "Digite um código de cupom."
+      );
+
+      return;
+    }
+
+    if (
+      totalBeforeDiscount <= 0
+    ) {
+      setCouponError(
+        "Não há valor para aplicar o cupom."
+      );
+
+      return;
+    }
+
+    try {
+      setCouponLoading(true);
+
+      const response =
+        await fetch(
+          `http://localhost:8080/api/coupons/validate?code=${encodeURIComponent(
+            code
+          )}&orderValue=${encodeURIComponent(
+            totalBeforeDiscount.toFixed(
+              2
+            )
+          )}`
+        );
+
+      if (!response.ok) {
+        let message =
+          "Cupom inválido ou indisponível.";
+
+        try {
+          const data =
+            await response.json();
+
+          if (
+            typeof data?.message ===
+              "string" &&
+            data.message
+          ) {
+            message =
+              data.message;
+          }
+        } catch {
+          // mantém mensagem padrão
+        }
+
+        setAppliedCoupon(
+          null
+        );
+
+        setCouponError(
+          message
+        );
+
+        return;
+      }
+
+      const data: CouponValidationResponse =
+        await response.json();
+
+      if (!data.valid) {
+        setAppliedCoupon(
+          null
+        );
+
+        setCouponError(
+          "Este cupom não é válido."
+        );
+
+        return;
+      }
+
+      setCouponInput(
+        data.code
+      );
+
+      setAppliedCoupon(
+        data
+      );
+
+      setCouponMessage(
+        `Cupom ${data.code} aplicado com sucesso.`
+      );
+    } catch (error) {
+      console.error(
+        "Erro ao validar cupom:",
+        error
+      );
+
+      setAppliedCoupon(
+        null
+      );
+
+      setCouponError(
+        "Não foi possível validar o cupom."
+      );
+    } finally {
+      setCouponLoading(
+        false
+      );
+    }
+  }
+
+  // =========================
+  // REMOVER CUPOM
+  // =========================
+
+  function handleRemoveCoupon() {
+    setAppliedCoupon(null);
+
+    setCouponInput("");
+
+    setCouponMessage("");
+
+    setCouponError("");
+  }
+
+  // =========================
+  // FINALIZAR PEDIDO
+  // =========================
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
@@ -202,16 +490,23 @@ export default function CheckoutPage() {
         storeStatus?.message ||
           "A pizzaria não está recebendo pedidos agora."
       );
+
       return;
     }
 
     if (cart.length === 0) {
-      alert("Carrinho vazio.");
+      alert(
+        "Carrinho vazio."
+      );
+
       return;
     }
 
     if (!neighborhood) {
-      alert("Selecione o bairro.");
+      alert(
+        "Selecione o bairro."
+      );
+
       return;
     }
 
@@ -219,15 +514,33 @@ export default function CheckoutPage() {
       alert(
         "Selecione a forma de pagamento."
       );
+
+      return;
+    }
+
+    if (
+      couponInput.trim() &&
+      !appliedCoupon
+    ) {
+      alert(
+        "Você digitou um cupom. Clique em Aplicar antes de finalizar o pedido."
+      );
+
       return;
     }
 
     // Proteção extra:
-    // débito está temporariamente desativado.
-    if (paymentMethod === "DEBIT_CARD") {
+    // débito temporariamente
+    // indisponível.
+
+    if (
+      paymentMethod ===
+      "DEBIT_CARD"
+    ) {
       alert(
         "O pagamento com cartão de débito está temporariamente indisponível."
       );
+
       return;
     }
 
@@ -243,26 +556,42 @@ export default function CheckoutPage() {
         complement,
         paymentMethod,
 
-        items: cart.map((item) => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-          observation: item.observation,
-        })),
+        couponCode:
+          appliedCoupon
+            ? appliedCoupon.code
+            : null,
+
+        items: cart.map(
+          (item) => ({
+            productId:
+              item.product.id,
+
+            quantity:
+              item.quantity,
+
+            observation:
+              item.observation,
+          })
+        ),
       };
 
-      const orderResponse = await fetch(
-        "http://localhost:8080/api/orders",
-        {
-          method: "POST",
+      const orderResponse =
+        await fetch(
+          "http://localhost:8080/api/orders",
+          {
+            method: "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
 
-          body: JSON.stringify(payload),
-        }
-      );
+            body:
+              JSON.stringify(
+                payload
+              ),
+          }
+        );
 
       if (!orderResponse.ok) {
         const text =
@@ -273,8 +602,27 @@ export default function CheckoutPage() {
           text
         );
 
+        let message =
+          "Não foi possível criar o pedido.";
+
+        try {
+          const data =
+            JSON.parse(text);
+
+          if (
+            typeof data?.message ===
+              "string" &&
+            data.message
+          ) {
+            message =
+              data.message;
+          }
+        } catch {
+          // mantém mensagem padrão
+        }
+
         throw new Error(
-          "Erro ao criar pedido"
+          message
         );
       }
 
@@ -285,15 +633,21 @@ export default function CheckoutPage() {
       // PIX
       // =========================
 
-      if (paymentMethod === "PIX") {
-        const pixResponse = await fetch(
-          `http://localhost:8080/api/payments/${order.id}/pix`,
-          {
-            method: "POST",
-          }
-        );
+      if (
+        paymentMethod ===
+        "PIX"
+      ) {
+        const pixResponse =
+          await fetch(
+            `http://localhost:8080/api/payments/${order.id}/pix`,
+            {
+              method: "POST",
+            }
+          );
 
-        if (!pixResponse.ok) {
+        if (
+          !pixResponse.ok
+        ) {
           const text =
             await pixResponse.text();
 
@@ -303,7 +657,7 @@ export default function CheckoutPage() {
           );
 
           throw new Error(
-            "Pedido criado, mas não foi possível gerar o Pix"
+            "Pedido criado, mas não foi possível gerar o Pix."
           );
         }
 
@@ -323,7 +677,8 @@ export default function CheckoutPage() {
       // =========================
 
       if (
-        paymentMethod === "CREDIT_CARD"
+        paymentMethod ===
+        "CREDIT_CARD"
       ) {
         localStorage.removeItem(
           "pizzasystem-cart"
@@ -346,23 +701,38 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error(error);
 
-      alert(
-        "Não foi possível finalizar o pedido."
-      );
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível finalizar o pedido.";
+
+      alert(message);
     } finally {
       setSubmitting(false);
     }
   }
 
+  // =========================
+  // CARREGANDO
+  // =========================
+
   if (!loaded) {
     return (
       <main className="min-h-screen bg-gray-100 p-6">
-        <p>Carregando...</p>
+        <p>
+          Carregando...
+        </p>
       </main>
     );
   }
 
-  if (cart.length === 0) {
+  // =========================
+  // CARRINHO VAZIO
+  // =========================
+
+  if (
+    cart.length === 0
+  ) {
     return (
       <main className="min-h-screen bg-gray-100 p-6">
         <div className="mx-auto max-w-2xl rounded-xl bg-white p-6 shadow">
@@ -372,7 +742,9 @@ export default function CheckoutPage() {
 
           <button
             onClick={() =>
-              router.push("/cardapio")
+              router.push(
+                "/cardapio"
+              )
             }
             className="mt-5 rounded-lg bg-black px-5 py-3 font-semibold text-white"
           >
@@ -383,14 +755,19 @@ export default function CheckoutPage() {
     );
   }
 
+  // =========================
+  // CHECKOUT
+  // =========================
+
   return (
     <main className="min-h-screen bg-gray-100 p-6">
       <div className="mx-auto max-w-5xl">
-
         <button
           type="button"
           onClick={() =>
-            router.push("/cardapio")
+            router.push(
+              "/cardapio"
+            )
           }
           className="mb-5 font-semibold"
         >
@@ -415,9 +792,10 @@ export default function CheckoutPage() {
         )}
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_380px]">
-
           <form
-            onSubmit={handleSubmit}
+            onSubmit={
+              handleSubmit
+            }
             className="rounded-xl bg-white p-6 shadow-sm"
           >
             <h2 className="text-xl font-bold">
@@ -425,7 +803,6 @@ export default function CheckoutPage() {
             </h2>
 
             <div className="mt-5 space-y-4">
-
               <div>
                 <label className="mb-1 block font-semibold">
                   Nome
@@ -433,10 +810,15 @@ export default function CheckoutPage() {
 
                 <input
                   required
-                  value={customerName}
-                  onChange={(e) =>
+                  value={
+                    customerName
+                  }
+                  onChange={(
+                    e
+                  ) =>
                     setCustomerName(
-                      e.target.value
+                      e.target
+                        .value
                     )
                   }
                   className="w-full rounded-lg border p-3"
@@ -451,10 +833,15 @@ export default function CheckoutPage() {
 
                 <input
                   required
-                  value={customerPhone}
-                  onChange={(e) =>
+                  value={
+                    customerPhone
+                  }
+                  onChange={(
+                    e
+                  ) =>
                     setCustomerPhone(
-                      e.target.value
+                      e.target
+                        .value
                     )
                   }
                   className="w-full rounded-lg border p-3"
@@ -473,10 +860,15 @@ export default function CheckoutPage() {
 
                 <input
                   required
-                  value={street}
-                  onChange={(e) =>
+                  value={
+                    street
+                  }
+                  onChange={(
+                    e
+                  ) =>
                     setStreet(
-                      e.target.value
+                      e.target
+                        .value
                     )
                   }
                   className="w-full rounded-lg border p-3"
@@ -485,7 +877,6 @@ export default function CheckoutPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-
                 <div>
                   <label className="mb-1 block font-semibold">
                     Número
@@ -493,10 +884,15 @@ export default function CheckoutPage() {
 
                   <input
                     required
-                    value={number}
-                    onChange={(e) =>
+                    value={
+                      number
+                    }
+                    onChange={(
+                      e
+                    ) =>
                       setNumber(
-                        e.target.value
+                        e.target
+                          .value
                       )
                     }
                     className="w-full rounded-lg border p-3"
@@ -511,10 +907,15 @@ export default function CheckoutPage() {
 
                   <select
                     required
-                    value={neighborhood}
-                    onChange={(e) =>
+                    value={
+                      neighborhood
+                    }
+                    onChange={(
+                      e
+                    ) =>
                       setNeighborhood(
-                        e.target.value
+                        e.target
+                          .value
                       )
                     }
                     className="w-full rounded-lg border bg-white p-3"
@@ -526,14 +927,23 @@ export default function CheckoutPage() {
                     {deliveryAreas.map(
                       (area) => (
                         <option
-                          key={area.id}
+                          key={
+                            area.id
+                          }
                           value={
                             area.neighborhood
                           }
                         >
-                          {area.neighborhood} - R${" "}
-                          {Number(area.fee)
-                            .toFixed(2)
+                          {
+                            area.neighborhood
+                          }{" "}
+                          - R${" "}
+                          {Number(
+                            area.fee
+                          )
+                            .toFixed(
+                              2
+                            )
                             .replace(
                               ".",
                               ","
@@ -551,10 +961,15 @@ export default function CheckoutPage() {
                 </label>
 
                 <input
-                  value={complement}
-                  onChange={(e) =>
+                  value={
+                    complement
+                  }
+                  onChange={(
+                    e
+                  ) =>
                     setComplement(
-                      e.target.value
+                      e.target
+                        .value
                     )
                   }
                   className="w-full rounded-lg border p-3"
@@ -567,18 +982,17 @@ export default function CheckoutPage() {
                   ========================= */}
 
               <div className="pt-4">
-
                 <h2 className="text-xl font-bold">
                   Forma de pagamento
                 </h2>
 
                 <div className="mt-4 space-y-3">
-
                   {/* PIX */}
 
                   <label
                     className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 ${
-                      paymentMethod === "PIX"
+                      paymentMethod ===
+                      "PIX"
                         ? "border-black bg-gray-50"
                         : ""
                     }`}
@@ -587,7 +1001,8 @@ export default function CheckoutPage() {
                       type="radio"
                       name="paymentMethod"
                       checked={
-                        paymentMethod === "PIX"
+                        paymentMethod ===
+                        "PIX"
                       }
                       onChange={() =>
                         setPaymentMethod(
@@ -607,7 +1022,7 @@ export default function CheckoutPage() {
                     </div>
                   </label>
 
-                  {/* CARTÃO DE CRÉDITO */}
+                  {/* CARTÃO */}
 
                   <label
                     className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 ${
@@ -642,35 +1057,22 @@ export default function CheckoutPage() {
                     </div>
                   </label>
 
-                  {/* CARTÃO DE DÉBITO - DESATIVADO */}
+                  {/* DÉBITO */}
 
-                  <div
-                    className="
-                      flex
-                      cursor-not-allowed
-                      items-center
-                      gap-3
-                      rounded-xl
-                      border
-                      border-gray-200
-                      bg-gray-50
-                      p-4
-                      opacity-60
-                    "
-                  >
+                  <div className="flex cursor-not-allowed items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 opacity-60">
                     <input
                       type="radio"
                       name="paymentMethodDisabled"
                       disabled
-                      checked={false}
+                      checked={
+                        false
+                      }
                       readOnly
                       className="cursor-not-allowed"
                     />
 
                     <div className="flex-1">
-
                       <div className="flex items-center justify-between gap-3">
-
                         <p className="font-semibold text-gray-500">
                           Cartão de débito
                         </p>
@@ -678,16 +1080,13 @@ export default function CheckoutPage() {
                         <span className="rounded-full bg-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600">
                           Indisponível
                         </span>
-
                       </div>
 
                       <p className="mt-1 text-sm text-gray-400">
                         Temporariamente indisponível
                       </p>
-
                     </div>
                   </div>
-
                 </div>
               </div>
 
@@ -702,14 +1101,15 @@ export default function CheckoutPage() {
                 className="mt-4 w-full rounded-lg bg-black p-3 font-semibold text-white disabled:cursor-not-allowed disabled:bg-gray-400"
               >
                 {submitting
-                  ? paymentMethod === "PIX"
+                  ? paymentMethod ===
+                    "PIX"
                     ? "Gerando Pix..."
                     : "Processando..."
-                  : paymentMethod === "PIX"
+                  : paymentMethod ===
+                      "PIX"
                     ? "Gerar Pix e continuar"
                     : "Continuar para pagamento"}
               </button>
-
             </div>
           </form>
 
@@ -718,98 +1118,210 @@ export default function CheckoutPage() {
               ========================= */}
 
           <aside className="h-fit rounded-xl bg-white p-6 shadow-sm">
-
             <h2 className="text-xl font-bold">
               Resumo do pedido
             </h2>
 
             <div className="mt-5 space-y-5">
+              {cart.map(
+                (item) => (
+                  <div
+                    key={
+                      item.product
+                        .id
+                    }
+                    className="border-b pb-5"
+                  >
+                    <div className="flex justify-between gap-4">
+                      <div>
+                        <p className="font-semibold">
+                          {
+                            item.quantity
+                          }
+                          x{" "}
+                          {
+                            item.product
+                              .name
+                          }
+                        </p>
 
-              {cart.map((item) => (
+                        <p className="text-sm text-gray-500">
+                          R${" "}
+                          {Number(
+                            item
+                              .product
+                              .price
+                          )
+                            .toFixed(
+                              2
+                            )
+                            .replace(
+                              ".",
+                              ","
+                            )}{" "}
+                          cada
+                        </p>
+                      </div>
 
-                <div
-                  key={item.product.id}
-                  className="border-b pb-5"
-                >
-
-                  <div className="flex justify-between gap-4">
-
-                    <div>
-                      <p className="font-semibold">
-                        {item.quantity}x{" "}
-                        {item.product.name}
-                      </p>
-
-                      <p className="text-sm text-gray-500">
+                      <span className="font-semibold">
                         R${" "}
-                        {Number(
-                          item.product.price
+                        {(
+                          Number(
+                            item
+                              .product
+                              .price
+                          ) *
+                          item.quantity
                         )
-                          .toFixed(2)
+                          .toFixed(
+                            2
+                          )
                           .replace(
                             ".",
                             ","
-                          )}{" "}
-                        cada
-                      </p>
+                          )}
+                      </span>
                     </div>
 
-                    <span className="font-semibold">
-                      R${" "}
-                      {(
-                        Number(
-                          item.product.price
-                        ) *
-                        item.quantity
-                      )
-                        .toFixed(2)
-                        .replace(
-                          ".",
-                          ","
-                        )}
-                    </span>
+                    {item.observation && (
+                      <p className="mt-2 text-sm font-medium text-red-600">
+                        Obs:{" "}
+                        {
+                          item.observation
+                        }
+                      </p>
+                    )}
 
+                    <div className="mt-4">
+                      <label className="mb-1 block text-sm font-semibold">
+                        Observação deste item
+                      </label>
+
+                      <textarea
+                        value={
+                          item.observation
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          updateObservation(
+                            item
+                              .product
+                              .id,
+                            e.target
+                              .value
+                          )
+                        }
+                        placeholder="Ex: sem cebola"
+                        rows={2}
+                        className="w-full resize-none rounded-lg border p-3 text-sm"
+                      />
+                    </div>
                   </div>
-
-                  {item.observation && (
-                    <p className="mt-2 text-sm font-medium text-red-600">
-                      Obs:{" "}
-                      {item.observation}
-                    </p>
-                  )}
-
-                  <div className="mt-4">
-
-                    <label className="mb-1 block text-sm font-semibold">
-                      Observação deste item
-                    </label>
-
-                    <textarea
-                      value={
-                        item.observation
-                      }
-                      onChange={(e) =>
-                        updateObservation(
-                          item.product.id,
-                          e.target.value
-                        )
-                      }
-                      placeholder="Ex: sem cebola"
-                      rows={2}
-                      className="w-full resize-none rounded-lg border p-3 text-sm"
-                    />
-
-                  </div>
-
-                </div>
-              ))}
-
+                )
+              )}
             </div>
 
-            <div className="mt-5 space-y-2">
+            {/* =========================
+                CUPOM
+                ========================= */}
 
+            <div className="mt-6 border-b pb-6">
+              <label className="mb-2 block font-bold">
+                Cupom de desconto
+              </label>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={
+                    couponInput
+                  }
+                  disabled={
+                    couponLoading
+                  }
+                  onChange={(
+                    e
+                  ) => {
+                    setCouponInput(
+                      e.target.value.toUpperCase()
+                    );
+
+                    if (
+                      appliedCoupon
+                    ) {
+                      setAppliedCoupon(
+                        null
+                      );
+
+                      setCouponMessage(
+                        ""
+                      );
+                    }
+
+                    setCouponError(
+                      ""
+                    );
+                  }}
+                  placeholder="Ex: PIZZA10"
+                  className="min-w-0 flex-1 rounded-lg border p-3 uppercase"
+                />
+
+                {!appliedCoupon ? (
+                  <button
+                    type="button"
+                    onClick={
+                      handleApplyCoupon
+                    }
+                    disabled={
+                      couponLoading
+                    }
+                    className="rounded-lg bg-black px-4 font-semibold text-white disabled:bg-gray-400"
+                  >
+                    {couponLoading
+                      ? "..."
+                      : "Aplicar"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={
+                      handleRemoveCoupon
+                    }
+                    className="rounded-lg border border-red-300 px-4 font-semibold text-red-600"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+
+              {couponMessage && (
+                <p className="mt-2 text-sm font-semibold text-green-600">
+                  ✓{" "}
+                  {
+                    couponMessage
+                  }
+                </p>
+              )}
+
+              {couponError && (
+                <p className="mt-2 text-sm font-semibold text-red-600">
+                  {
+                    couponError
+                  }
+                </p>
+              )}
+            </div>
+
+            {/* =========================
+                TOTAIS
+                ========================= */}
+
+            <div className="mt-5 space-y-2">
               <div className="flex justify-between">
-                <span>Subtotal</span>
+                <span>
+                  Subtotal
+                </span>
 
                 <span>
                   R${" "}
@@ -823,12 +1335,16 @@ export default function CheckoutPage() {
               </div>
 
               <div className="flex justify-between">
-                <span>Entrega</span>
+                <span>
+                  Entrega
+                </span>
 
                 <span>
                   {neighborhood
                     ? `R$ ${deliveryFee
-                        .toFixed(2)
+                        .toFixed(
+                          2
+                        )
                         .replace(
                           ".",
                           ","
@@ -837,9 +1353,34 @@ export default function CheckoutPage() {
                 </span>
               </div>
 
-              <div className="flex justify-between border-t pt-3 text-xl font-bold">
+              {appliedCoupon && (
+                <div className="flex justify-between font-semibold text-green-600">
+                  <span>
+                    Desconto (
+                    {
+                      appliedCoupon.code
+                    }
+                    )
+                  </span>
 
-                <span>Total</span>
+                  <span>
+                    - R${" "}
+                    {discountAmount
+                      .toFixed(
+                        2
+                      )
+                      .replace(
+                        ".",
+                        ","
+                      )}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-between border-t pt-3 text-xl font-bold">
+                <span>
+                  Total
+                </span>
 
                 <span>
                   R${" "}
@@ -850,13 +1391,19 @@ export default function CheckoutPage() {
                       ","
                     )}
                 </span>
-
               </div>
 
+              {appliedCoupon && (
+                <p className="pt-1 text-xs text-gray-500">
+                  O desconto será
+                  recalculado e
+                  validado novamente
+                  pelo servidor ao
+                  criar o pedido.
+                </p>
+              )}
             </div>
-
           </aside>
-
         </div>
       </div>
     </main>

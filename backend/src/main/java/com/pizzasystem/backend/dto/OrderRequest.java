@@ -20,6 +20,8 @@ public class OrderRequest {
 
     private PaymentMethod paymentMethod;
 
+    private String couponCode;
+
     private List<OrderItemRequest> items;
 
     public String getCustomerName() {
@@ -29,7 +31,8 @@ public class OrderRequest {
     public void setCustomerName(
             String customerName
     ) {
-        this.customerName = customerName;
+        this.customerName =
+                customerName;
     }
 
     public String getCustomerPhone() {
@@ -39,7 +42,8 @@ public class OrderRequest {
     public void setCustomerPhone(
             String customerPhone
     ) {
-        this.customerPhone = customerPhone;
+        this.customerPhone =
+                customerPhone;
     }
 
     public String getStreet() {
@@ -49,7 +53,8 @@ public class OrderRequest {
     public void setStreet(
             String street
     ) {
-        this.street = street;
+        this.street =
+                street;
     }
 
     public String getNumber() {
@@ -59,7 +64,8 @@ public class OrderRequest {
     public void setNumber(
             String number
     ) {
-        this.number = number;
+        this.number =
+                number;
     }
 
     public String getNeighborhood() {
@@ -69,7 +75,8 @@ public class OrderRequest {
     public void setNeighborhood(
             String neighborhood
     ) {
-        this.neighborhood = neighborhood;
+        this.neighborhood =
+                neighborhood;
     }
 
     public String getComplement() {
@@ -79,7 +86,8 @@ public class OrderRequest {
     public void setComplement(
             String complement
     ) {
-        this.complement = complement;
+        this.complement =
+                complement;
     }
 
     public PaymentMethod getPaymentMethod() {
@@ -89,7 +97,19 @@ public class OrderRequest {
     public void setPaymentMethod(
             PaymentMethod paymentMethod
     ) {
-        this.paymentMethod = paymentMethod;
+        this.paymentMethod =
+                paymentMethod;
+    }
+
+    public String getCouponCode() {
+        return couponCode;
+    }
+
+    public void setCouponCode(
+            String couponCode
+    ) {
+        this.couponCode =
+                couponCode;
     }
 
     public List<OrderItemRequest> getItems() {
@@ -99,6 +119,7 @@ public class OrderRequest {
     public void setItems(
             List<OrderItemRequest> items
     ) {
-        this.items = items;
+        this.items =
+                items;
     }
 }

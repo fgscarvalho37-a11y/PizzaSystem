@@ -9,6 +9,7 @@ import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentMethod;
 import com.pizzasystem.backend.entity.PaymentStatus;
 import com.pizzasystem.backend.repository.OrderRepository;
+import com.pizzasystem.backend.service.CouponService;
 import com.pizzasystem.backend.service.MercadoPagoService;
 import com.pizzasystem.backend.service.MercadoPagoService.MercadoPagoResult;
 
@@ -27,15 +28,25 @@ public class PaymentController {
 
     private final OrderRepository orderRepository;
     private final MercadoPagoService mercadoPagoService;
+    private final CouponService couponService;
     private final ObjectMapper objectMapper;
 
     public PaymentController(
             OrderRepository orderRepository,
-            MercadoPagoService mercadoPagoService
+            MercadoPagoService mercadoPagoService,
+            CouponService couponService
     ) {
-        this.orderRepository = orderRepository;
-        this.mercadoPagoService = mercadoPagoService;
-        this.objectMapper = new ObjectMapper();
+        this.orderRepository =
+                orderRepository;
+
+        this.mercadoPagoService =
+                mercadoPagoService;
+
+        this.couponService =
+                couponService;
+
+        this.objectMapper =
+                new ObjectMapper();
     }
 
     // =========================
@@ -53,7 +64,9 @@ public class PaymentController {
         Order order =
                 getOrderOrThrow(orderId);
 
-        if (order.getPaymentMethod() != PaymentMethod.PIX) {
+        if (order.getPaymentMethod()
+                != PaymentMethod.PIX) {
+
             return errorResponse(
                     HttpStatus.BAD_REQUEST,
                     "Este pedido não foi criado com Pix."
@@ -109,7 +122,9 @@ public class PaymentController {
                 externalId
         );
 
-        orderRepository.save(order);
+        orderRepository.save(
+                order
+        );
 
         return jsonResponse(
                 result.getBody()
@@ -197,7 +212,8 @@ public class PaymentController {
                         == PaymentStatus.APPROVED;
 
         /*
-         * Se já foi aprovado, não permite pagar de novo.
+         * Se já foi aprovado, não permite
+         * pagar novamente.
          */
         if (approved) {
 
@@ -209,10 +225,11 @@ public class PaymentController {
 
         /*
          * Se existe uma transação e ela NÃO foi
-         * recusada, bloqueamos para evitar pagamento
-         * duplicado.
+         * recusada, bloqueamos para evitar
+         * pagamento duplicado.
          *
-         * Se foi REJECTED, permitimos nova tentativa.
+         * Se foi REJECTED, permitimos nova
+         * tentativa.
          */
         if (hasExternalPayment && !rejected) {
 
@@ -268,8 +285,7 @@ public class PaymentController {
         );
 
         /*
-         * IMPORTANTE:
-         * se a tentativa anterior foi recusada,
+         * Se a tentativa anterior foi recusada,
          * a nova transação poderá substituir
          * paymentExternalId normalmente.
          */
@@ -315,13 +331,6 @@ public class PaymentController {
             if (externalId != null
                     && !externalId.isBlank()) {
 
-                /*
-                 * Guardamos a transação recusada
-                 * para histórico/rastreabilidade.
-                 *
-                 * Na próxima tentativa ela poderá
-                 * ser substituída.
-                 */
                 order.setPaymentExternalId(
                         externalId
                 );
@@ -335,7 +344,9 @@ public class PaymentController {
                     OrderStatus.PENDING_PAYMENT
             );
 
-            orderRepository.save(order);
+            orderRepository.save(
+                    order
+            );
 
             Map<String, Object> response =
                     new HashMap<>();
@@ -395,11 +406,6 @@ public class PaymentController {
         if (externalId != null
                 && !externalId.isBlank()) {
 
-            /*
-             * Se havia uma tentativa recusada,
-             * agora substitui pelo ID da nova
-             * transação.
-             */
             order.setPaymentExternalId(
                     externalId
             );
@@ -410,7 +416,22 @@ public class PaymentController {
                 json
         );
 
-        orderRepository.save(order);
+        order =
+                orderRepository.save(
+                        order
+                );
+
+        // =========================
+        // REGISTRAR USO DO CUPOM
+        // =========================
+
+        if (order.getPaymentStatus()
+                == PaymentStatus.APPROVED) {
+
+            couponService.registerUsageForOrder(
+                    order
+            );
+        }
 
         return jsonResponse(
                 result.getBody()
@@ -546,16 +567,16 @@ public class PaymentController {
                 "processed".equalsIgnoreCase(
                         paymentStatus
                 )
-                || "approved".equalsIgnoreCase(
+                        || "approved".equalsIgnoreCase(
                         paymentStatus
                 )
-                || (
-                    "processed".equalsIgnoreCase(
-                            orderStatus
-                    )
-                    && "accredited".equalsIgnoreCase(
-                            statusDetail
-                    )
+                        || (
+                        "processed".equalsIgnoreCase(
+                                orderStatus
+                        )
+                                && "accredited".equalsIgnoreCase(
+                                statusDetail
+                        )
                 );
 
         if (approved) {

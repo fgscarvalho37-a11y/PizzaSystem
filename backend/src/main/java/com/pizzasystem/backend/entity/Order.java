@@ -31,6 +31,20 @@ public class Order {
 
     private BigDecimal total;
 
+    private String couponCode;
+
+    @Column(
+            nullable = false,
+            precision = 12,
+            scale = 2
+    )
+    private BigDecimal discountAmount =
+            BigDecimal.ZERO;
+
+    @Column(nullable = false)
+    private boolean couponUsageRegistered =
+            false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status =
@@ -64,7 +78,8 @@ public class Order {
     public void setCustomerName(
             String customerName
     ) {
-        this.customerName = customerName;
+        this.customerName =
+                customerName;
     }
 
     public String getCustomerPhone() {
@@ -74,7 +89,8 @@ public class Order {
     public void setCustomerPhone(
             String customerPhone
     ) {
-        this.customerPhone = customerPhone;
+        this.customerPhone =
+                customerPhone;
     }
 
     public String getStreet() {
@@ -84,7 +100,8 @@ public class Order {
     public void setStreet(
             String street
     ) {
-        this.street = street;
+        this.street =
+                street;
     }
 
     public String getNumber() {
@@ -94,7 +111,8 @@ public class Order {
     public void setNumber(
             String number
     ) {
-        this.number = number;
+        this.number =
+                number;
     }
 
     public String getNeighborhood() {
@@ -104,7 +122,8 @@ public class Order {
     public void setNeighborhood(
             String neighborhood
     ) {
-        this.neighborhood = neighborhood;
+        this.neighborhood =
+                neighborhood;
     }
 
     public String getComplement() {
@@ -114,7 +133,8 @@ public class Order {
     public void setComplement(
             String complement
     ) {
-        this.complement = complement;
+        this.complement =
+                complement;
     }
 
     public BigDecimal getDeliveryFee() {
@@ -124,7 +144,8 @@ public class Order {
     public void setDeliveryFee(
             BigDecimal deliveryFee
     ) {
-        this.deliveryFee = deliveryFee;
+        this.deliveryFee =
+                deliveryFee;
     }
 
     public BigDecimal getTotal() {
@@ -134,7 +155,41 @@ public class Order {
     public void setTotal(
             BigDecimal total
     ) {
-        this.total = total;
+        this.total =
+                total;
+    }
+
+    public String getCouponCode() {
+        return couponCode;
+    }
+
+    public void setCouponCode(
+            String couponCode
+    ) {
+        this.couponCode =
+                couponCode;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(
+            BigDecimal discountAmount
+    ) {
+        this.discountAmount =
+                discountAmount;
+    }
+
+    public boolean isCouponUsageRegistered() {
+        return couponUsageRegistered;
+    }
+
+    public void setCouponUsageRegistered(
+            boolean couponUsageRegistered
+    ) {
+        this.couponUsageRegistered =
+                couponUsageRegistered;
     }
 
     public OrderStatus getStatus() {
@@ -144,7 +199,8 @@ public class Order {
     public void setStatus(
             OrderStatus status
     ) {
-        this.status = status;
+        this.status =
+                status;
     }
 
     public PaymentStatus getPaymentStatus() {
@@ -154,7 +210,8 @@ public class Order {
     public void setPaymentStatus(
             PaymentStatus paymentStatus
     ) {
-        this.paymentStatus = paymentStatus;
+        this.paymentStatus =
+                paymentStatus;
     }
 
     public PaymentMethod getPaymentMethod() {
@@ -164,7 +221,8 @@ public class Order {
     public void setPaymentMethod(
             PaymentMethod paymentMethod
     ) {
-        this.paymentMethod = paymentMethod;
+        this.paymentMethod =
+                paymentMethod;
     }
 
     public String getPaymentExternalId() {
