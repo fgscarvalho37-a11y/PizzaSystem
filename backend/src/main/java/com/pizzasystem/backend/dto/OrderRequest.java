@@ -1,19 +1,24 @@
 package com.pizzasystem.backend.dto;
 
-import java.math.BigDecimal;
+import com.pizzasystem.backend.entity.PaymentMethod;
+
 import java.util.List;
 
 public class OrderRequest {
 
     private String customerName;
+
     private String customerPhone;
 
     private String street;
+
     private String number;
+
     private String neighborhood;
+
     private String complement;
 
-    private BigDecimal deliveryFee;
+    private PaymentMethod paymentMethod;
 
     private List<OrderItemRequest> items;
 
@@ -21,7 +26,9 @@ public class OrderRequest {
         return customerName;
     }
 
-    public void setCustomerName(String customerName) {
+    public void setCustomerName(
+            String customerName
+    ) {
         this.customerName = customerName;
     }
 
@@ -29,7 +36,9 @@ public class OrderRequest {
         return customerPhone;
     }
 
-    public void setCustomerPhone(String customerPhone) {
+    public void setCustomerPhone(
+            String customerPhone
+    ) {
         this.customerPhone = customerPhone;
     }
 
@@ -37,7 +46,9 @@ public class OrderRequest {
         return street;
     }
 
-    public void setStreet(String street) {
+    public void setStreet(
+            String street
+    ) {
         this.street = street;
     }
 
@@ -45,7 +56,9 @@ public class OrderRequest {
         return number;
     }
 
-    public void setNumber(String number) {
+    public void setNumber(
+            String number
+    ) {
         this.number = number;
     }
 
@@ -53,7 +66,9 @@ public class OrderRequest {
         return neighborhood;
     }
 
-    public void setNeighborhood(String neighborhood) {
+    public void setNeighborhood(
+            String neighborhood
+    ) {
         this.neighborhood = neighborhood;
     }
 
@@ -61,23 +76,29 @@ public class OrderRequest {
         return complement;
     }
 
-    public void setComplement(String complement) {
+    public void setComplement(
+            String complement
+    ) {
         this.complement = complement;
     }
 
-    public BigDecimal getDeliveryFee() {
-        return deliveryFee;
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
     }
 
-    public void setDeliveryFee(BigDecimal deliveryFee) {
-        this.deliveryFee = deliveryFee;
+    public void setPaymentMethod(
+            PaymentMethod paymentMethod
+    ) {
+        this.paymentMethod = paymentMethod;
     }
 
     public List<OrderItemRequest> getItems() {
         return items;
     }
 
-    public void setItems(List<OrderItemRequest> items) {
+    public void setItems(
+            List<OrderItemRequest> items
+    ) {
         this.items = items;
     }
 }

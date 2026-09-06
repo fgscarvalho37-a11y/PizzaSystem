@@ -1,0 +1,680 @@
+package com.pizzasystem.backend.controller;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.pizzasystem.backend.dto.CardPaymentRequest;
+import com.pizzasystem.backend.entity.Order;
+import com.pizzasystem.backend.entity.OrderStatus;
+import com.pizzasystem.backend.entity.PaymentMethod;
+import com.pizzasystem.backend.entity.PaymentStatus;
+import com.pizzasystem.backend.repository.OrderRepository;
+import com.pizzasystem.backend.service.MercadoPagoService;
+import com.pizzasystem.backend.service.MercadoPagoService.MercadoPagoResult;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@CrossOrigin(origins = "http://localhost:3000")
+@RestController
+@RequestMapping("/api/payments")
+public class PaymentController {
+
+    private final OrderRepository orderRepository;
+    private final MercadoPagoService mercadoPagoService;
+    private final ObjectMapper objectMapper;
+
+    public PaymentController(
+            OrderRepository orderRepository,
+            MercadoPagoService mercadoPagoService
+    ) {
+        this.orderRepository = orderRepository;
+        this.mercadoPagoService = mercadoPagoService;
+        this.objectMapper = new ObjectMapper();
+    }
+
+    // =========================
+    // PIX - CRIAR
+    // =========================
+
+    @PostMapping(
+            value = "/{orderId}/pix",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<?> createPix(
+            @PathVariable Long orderId
+    ) throws Exception {
+
+        Order order =
+                getOrderOrThrow(orderId);
+
+        if (order.getPaymentMethod() != PaymentMethod.PIX) {
+            return errorResponse(
+                    HttpStatus.BAD_REQUEST,
+                    "Este pedido não foi criado com Pix."
+            );
+        }
+
+        if (order.getPaymentExternalId() != null
+                && !order.getPaymentExternalId().isBlank()) {
+
+            String existingOrder =
+                    mercadoPagoService.getOrder(
+                            order.getPaymentExternalId()
+                    );
+
+            return jsonResponse(
+                    existingOrder
+            );
+        }
+
+        MercadoPagoResult result =
+                mercadoPagoService.createPixOrder(
+                        order.getId(),
+                        order.getTotal()
+                );
+
+        if (result.getStatusCode() >= 400) {
+
+            return errorResponse(
+                    HttpStatus.BAD_GATEWAY,
+                    "Não foi possível gerar o Pix. Tente novamente."
+            );
+        }
+
+        JsonNode json =
+                objectMapper.readTree(
+                        result.getBody()
+                );
+
+        String externalId =
+                json.path("id")
+                        .asText();
+
+        if (externalId == null
+                || externalId.isBlank()) {
+
+            return errorResponse(
+                    HttpStatus.BAD_GATEWAY,
+                    "Mercado Pago não retornou o ID do pagamento."
+            );
+        }
+
+        order.setPaymentExternalId(
+                externalId
+        );
+
+        orderRepository.save(order);
+
+        return jsonResponse(
+                result.getBody()
+        );
+    }
+
+    // =========================
+    // PIX - CONSULTAR
+    // =========================
+
+    @GetMapping(
+            value = "/{orderId}/pix",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<?> getPix(
+            @PathVariable Long orderId
+    ) {
+
+        Order order =
+                getOrderOrThrow(orderId);
+
+        if (order.getPaymentExternalId() == null
+                || order.getPaymentExternalId().isBlank()) {
+
+            return errorResponse(
+                    HttpStatus.BAD_REQUEST,
+                    "Este pedido ainda não possui Pix gerado."
+            );
+        }
+
+        return jsonResponse(
+                mercadoPagoService.getOrder(
+                        order.getPaymentExternalId()
+                )
+        );
+    }
+
+    // =========================
+    // CARTÃO
+    // =========================
+
+    @PostMapping(
+            value = "/{orderId}/card",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<?> createCardPayment(
+            @PathVariable Long orderId,
+            @RequestBody CardPaymentRequest request
+    ) throws Exception {
+
+        Order order =
+                getOrderOrThrow(orderId);
+
+        boolean debit =
+                order.getPaymentMethod()
+                        == PaymentMethod.DEBIT_CARD;
+
+        boolean credit =
+                order.getPaymentMethod()
+                        == PaymentMethod.CREDIT_CARD;
+
+        if (!credit && !debit) {
+
+            return errorResponse(
+                    HttpStatus.BAD_REQUEST,
+                    "Este pedido não foi criado com cartão."
+            );
+        }
+
+        // =========================
+        // CONTROLE DE NOVA TENTATIVA
+        // =========================
+
+        boolean hasExternalPayment =
+                order.getPaymentExternalId() != null
+                        && !order.getPaymentExternalId().isBlank();
+
+        boolean rejected =
+                order.getPaymentStatus()
+                        == PaymentStatus.REJECTED;
+
+        boolean approved =
+                order.getPaymentStatus()
+                        == PaymentStatus.APPROVED;
+
+        /*
+         * Se já foi aprovado, não permite pagar de novo.
+         */
+        if (approved) {
+
+            return errorResponse(
+                    HttpStatus.CONFLICT,
+                    "Este pedido já foi pago."
+            );
+        }
+
+        /*
+         * Se existe uma transação e ela NÃO foi
+         * recusada, bloqueamos para evitar pagamento
+         * duplicado.
+         *
+         * Se foi REJECTED, permitimos nova tentativa.
+         */
+        if (hasExternalPayment && !rejected) {
+
+            return errorResponse(
+                    HttpStatus.CONFLICT,
+                    "Este pedido já possui uma transação de pagamento em andamento."
+            );
+        }
+
+        ResponseEntity<?> validationError =
+                validateCardRequest(
+                        request
+                );
+
+        if (validationError != null) {
+            return validationError;
+        }
+
+        Integer installments =
+                request.getInstallments();
+
+        if (installments == null
+                || installments <= 0) {
+
+            installments = 1;
+        }
+
+        String paymentMethodId =
+                request.getPaymentMethodId();
+
+        if (debit
+                && "elo".equalsIgnoreCase(
+                        paymentMethodId
+                )) {
+
+            paymentMethodId =
+                    "debelo";
+        }
+
+        System.out.println(
+                "Pedido: "
+                        + order.getId()
+        );
+
+        System.out.println(
+                "Forma do pedido: "
+                        + order.getPaymentMethod()
+        );
+
+        System.out.println(
+                "Payment Method: "
+                        + paymentMethodId
+        );
+
+        /*
+         * IMPORTANTE:
+         * se a tentativa anterior foi recusada,
+         * a nova transação poderá substituir
+         * paymentExternalId normalmente.
+         */
+
+        MercadoPagoResult result =
+                mercadoPagoService.createCardOrder(
+                        order.getId(),
+                        order.getTotal(),
+                        request.getToken(),
+                        paymentMethodId,
+                        debit,
+                        installments,
+                        request.getEmail(),
+                        request.getIdentificationType(),
+                        request.getIdentificationNumber()
+                );
+
+        JsonNode json =
+                objectMapper.readTree(
+                        result.getBody()
+                );
+
+        // =========================
+        // PAGAMENTO RECUSADO
+        // =========================
+
+        if (result.getStatusCode() == 402) {
+
+            JsonNode data =
+                    json.path("data");
+
+            String externalId =
+                    data.path("id")
+                            .asText();
+
+            String statusDetail =
+                    data.path("transactions")
+                            .path("payments")
+                            .path(0)
+                            .path("status_detail")
+                            .asText();
+
+            if (externalId != null
+                    && !externalId.isBlank()) {
+
+                /*
+                 * Guardamos a transação recusada
+                 * para histórico/rastreabilidade.
+                 *
+                 * Na próxima tentativa ela poderá
+                 * ser substituída.
+                 */
+                order.setPaymentExternalId(
+                        externalId
+                );
+            }
+
+            order.setPaymentStatus(
+                    PaymentStatus.REJECTED
+            );
+
+            order.setStatus(
+                    OrderStatus.PENDING_PAYMENT
+            );
+
+            orderRepository.save(order);
+
+            Map<String, Object> response =
+                    new HashMap<>();
+
+            response.put(
+                    "success",
+                    false
+            );
+
+            response.put(
+                    "status",
+                    "REJECTED"
+            );
+
+            response.put(
+                    "reason",
+                    statusDetail
+            );
+
+            response.put(
+                    "message",
+                    translateCardRejection(
+                            statusDetail
+                    )
+            );
+
+            return ResponseEntity
+                    .status(
+                            HttpStatus.PAYMENT_REQUIRED
+                    )
+                    .contentType(
+                            MediaType.APPLICATION_JSON
+                    )
+                    .body(response);
+        }
+
+        // =========================
+        // OUTROS ERROS MERCADO PAGO
+        // =========================
+
+        if (result.getStatusCode() >= 400) {
+
+            return errorResponse(
+                    HttpStatus.BAD_GATEWAY,
+                    "Não foi possível processar o pagamento. Tente novamente."
+            );
+        }
+
+        // =========================
+        // PAGAMENTO PROCESSADO
+        // =========================
+
+        String externalId =
+                json.path("id")
+                        .asText();
+
+        if (externalId != null
+                && !externalId.isBlank()) {
+
+            /*
+             * Se havia uma tentativa recusada,
+             * agora substitui pelo ID da nova
+             * transação.
+             */
+            order.setPaymentExternalId(
+                    externalId
+            );
+        }
+
+        updateOrderPaymentStatus(
+                order,
+                json
+        );
+
+        orderRepository.save(order);
+
+        return jsonResponse(
+                result.getBody()
+        );
+    }
+
+    // =========================
+    // CONSULTAR PAGAMENTO
+    // =========================
+
+    @GetMapping(
+            value = "/{orderId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<?> getPayment(
+            @PathVariable Long orderId
+    ) {
+
+        Order order =
+                getOrderOrThrow(orderId);
+
+        if (order.getPaymentExternalId() == null
+                || order.getPaymentExternalId().isBlank()) {
+
+            return errorResponse(
+                    HttpStatus.BAD_REQUEST,
+                    "Pedido ainda não possui pagamento."
+            );
+        }
+
+        return jsonResponse(
+                mercadoPagoService.getOrder(
+                        order.getPaymentExternalId()
+                )
+        );
+    }
+
+    // =========================
+    // AUXILIARES
+    // =========================
+
+    private Order getOrderOrThrow(
+            Long orderId
+    ) {
+
+        return orderRepository
+                .findById(orderId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Pedido não encontrado"
+                        )
+                );
+    }
+
+    private ResponseEntity<?> validateCardRequest(
+            CardPaymentRequest request
+    ) {
+
+        if (request.getToken() == null
+                || request.getToken().isBlank()) {
+
+            return errorResponse(
+                    HttpStatus.BAD_REQUEST,
+                    "Token do cartão não informado."
+            );
+        }
+
+        if (request.getPaymentMethodId() == null
+                || request.getPaymentMethodId().isBlank()) {
+
+            return errorResponse(
+                    HttpStatus.BAD_REQUEST,
+                    "Meio de pagamento não informado."
+            );
+        }
+
+        if (request.getEmail() == null
+                || request.getEmail().isBlank()) {
+
+            return errorResponse(
+                    HttpStatus.BAD_REQUEST,
+                    "E-mail do pagador não informado."
+            );
+        }
+
+        return null;
+    }
+
+    private void updateOrderPaymentStatus(
+            Order order,
+            JsonNode json
+    ) {
+
+        String orderStatus =
+                json.path("status")
+                        .asText();
+
+        JsonNode payments =
+                json.path("transactions")
+                        .path("payments");
+
+        String paymentStatus = "";
+        String statusDetail = "";
+
+        if (payments.isArray()
+                && !payments.isEmpty()) {
+
+            JsonNode payment =
+                    payments.get(0);
+
+            paymentStatus =
+                    payment.path("status")
+                            .asText();
+
+            statusDetail =
+                    payment.path("status_detail")
+                            .asText();
+        }
+
+        System.out.println(
+                "Mercado Pago Order: "
+                        + orderStatus
+        );
+
+        System.out.println(
+                "Mercado Pago Payment: "
+                        + paymentStatus
+                        + " / "
+                        + statusDetail
+        );
+
+        boolean approved =
+                "processed".equalsIgnoreCase(
+                        paymentStatus
+                )
+                || "approved".equalsIgnoreCase(
+                        paymentStatus
+                )
+                || (
+                    "processed".equalsIgnoreCase(
+                            orderStatus
+                    )
+                    && "accredited".equalsIgnoreCase(
+                            statusDetail
+                    )
+                );
+
+        if (approved) {
+
+            order.setPaymentStatus(
+                    PaymentStatus.APPROVED
+            );
+
+            order.setStatus(
+                    OrderStatus.RECEIVED
+            );
+
+            return;
+        }
+
+        if ("failed".equalsIgnoreCase(
+                paymentStatus
+        )
+                || "rejected".equalsIgnoreCase(
+                paymentStatus
+        )) {
+
+            order.setPaymentStatus(
+                    PaymentStatus.REJECTED
+            );
+
+            order.setStatus(
+                    OrderStatus.PENDING_PAYMENT
+            );
+
+            return;
+        }
+
+        order.setPaymentStatus(
+                PaymentStatus.PENDING
+        );
+
+        order.setStatus(
+                OrderStatus.PENDING_PAYMENT
+        );
+    }
+
+    private String translateCardRejection(
+            String statusDetail
+    ) {
+
+        if (statusDetail == null
+                || statusDetail.isBlank()) {
+
+            return "Pagamento recusado. Tente novamente ou utilize outro cartão.";
+        }
+
+        return switch (
+                statusDetail.toLowerCase()
+        ) {
+
+            case "rejected_by_issuer" ->
+                    "Pagamento recusado pelo banco emissor. Tente outro cartão ou entre em contato com seu banco.";
+
+            case "insufficient_amount",
+                 "cc_rejected_insufficient_amount" ->
+                    "Pagamento recusado por saldo ou limite insuficiente.";
+
+            case "invalid_card",
+                 "cc_rejected_bad_filled_card_number" ->
+                    "Confira o número do cartão e tente novamente.";
+
+            case "invalid_expiration_date",
+                 "cc_rejected_bad_filled_date" ->
+                    "Confira a validade do cartão e tente novamente.";
+
+            case "invalid_security_code",
+                 "cc_rejected_bad_filled_security_code" ->
+                    "Confira o código de segurança do cartão.";
+
+            case "high_risk",
+                 "cc_rejected_high_risk" ->
+                    "O pagamento foi recusado por segurança. Tente outro cartão.";
+
+            default ->
+                    "Pagamento recusado. Tente novamente ou utilize outro cartão.";
+        };
+    }
+
+    private ResponseEntity<String> jsonResponse(
+            String body
+    ) {
+
+        return ResponseEntity
+                .ok()
+                .contentType(
+                        MediaType.APPLICATION_JSON
+                )
+                .body(body);
+    }
+
+    private ResponseEntity<Map<String, Object>> errorResponse(
+            HttpStatus status,
+            String message
+    ) {
+
+        Map<String, Object> response =
+                new HashMap<>();
+
+        response.put(
+                "success",
+                false
+        );
+
+        response.put(
+                "message",
+                message
+        );
+
+        return ResponseEntity
+                .status(status)
+                .contentType(
+                        MediaType.APPLICATION_JSON
+                )
+                .body(response);
+    }
+}

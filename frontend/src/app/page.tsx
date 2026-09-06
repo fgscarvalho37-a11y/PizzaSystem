@@ -119,144 +119,193 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">
-          Painel da Pizzaria
-        </h1>
+    <main className="min-h-screen bg-gray-100">
+      <header className="border-b bg-white">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">
+              PizzaSystem Admin
+            </h1>
 
-        <Link
-          href="/historico"
-          className="rounded-lg bg-black px-4 py-2 text-white hover:bg-gray-800"
-        >
-          Histórico
-        </Link>
-      </div>
+            <p className="text-sm text-gray-500">
+              Gerenciamento da pizzaria
+            </p>
+          </div>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {activeStatuses.map((status) => {
-          const filteredOrders = orders.filter(
-            (order) => order.status === status
-          );
-
-          return (
-            <section
-              key={status}
-              className="rounded-xl bg-gray-200 p-4"
+          <nav className="flex flex-wrap gap-2">
+            <Link
+              href="/"
+              className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white"
             >
-              <h2 className="mb-4 text-xl font-bold">
-                {statusLabels[status]}
-              </h2>
+              Pedidos
+            </Link>
 
-              <div className="space-y-4">
-                {filteredOrders.length === 0 && (
-                  <p className="text-sm text-gray-500">
-                    Nenhum pedido
-                  </p>
-                )}
+            <Link
+              href="/historico"
+              className="rounded-lg border bg-white px-4 py-2 text-sm font-semibold hover:bg-gray-100"
+            >
+              Histórico
+            </Link>
 
-                {filteredOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="rounded-xl bg-white p-4 shadow"
-                  >
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold">
-                        Pedido #{order.id}
-                      </h3>
+            <Link
+              href="/admin/entregas"
+              className="rounded-lg border bg-white px-4 py-2 text-sm font-semibold hover:bg-gray-100"
+            >
+              Entregas
+            </Link>
 
-                      <span className="font-semibold">
-                        R$ {Number(order.total).toFixed(2)}
-                      </span>
-                    </div>
+            <Link
+              href="/admin/cardapio"
+              className="rounded-lg border bg-white px-4 py-2 text-sm font-semibold hover:bg-gray-100"
+            >
+              Cardápio
+            </Link>
+          </nav>
+        </div>
+      </header>
 
-                    <div className="mt-3">
-                      <p className="font-medium">
-                        {order.customerName}
-                      </p>
+      <div className="mx-auto max-w-7xl p-6">
+        <h2 className="mb-8 text-3xl font-bold">
+          Pedidos em andamento
+        </h2>
 
-                      <p className="text-sm text-gray-600">
-                        {order.customerPhone}
-                      </p>
-                    </div>
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {activeStatuses.map((status) => {
+            const filteredOrders = orders.filter(
+              (order) => order.status === status
+            );
 
-                    <div className="mt-4 border-t pt-3">
-                      <p className="mb-2 text-sm font-bold">
-                        Itens
-                      </p>
+            return (
+              <section
+                key={status}
+                className="rounded-xl bg-gray-200 p-4"
+              >
+                <h3 className="mb-4 text-xl font-bold">
+                  {statusLabels[status]}
+                </h3>
 
-                      <div className="space-y-3">
-                        {orderItems[order.id]?.map((item) => (
-                          <div
-                            key={item.id}
-                            className="rounded-lg bg-gray-50 p-3"
-                          >
-                            <p className="font-medium">
-                              {item.quantity}x {item.product.name}
-                            </p>
+                <div className="space-y-4">
+                  {filteredOrders.length === 0 && (
+                    <p className="text-sm text-gray-500">
+                      Nenhum pedido
+                    </p>
+                  )}
 
-                            <p className="text-sm text-gray-600">
-                              R$ {Number(item.unitPrice).toFixed(2)} cada
-                            </p>
+                  {filteredOrders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="rounded-xl bg-white p-4 shadow"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-bold">
+                          Pedido #{order.id}
+                        </h4>
 
-                            {item.observation && (
-                              <p className="mt-1 text-sm font-medium text-red-600">
-                                Obs: {item.observation}
-                              </p>
-                            )}
-                          </div>
-                        ))}
+                        <span className="font-semibold">
+                          R$ {Number(order.total)
+                            .toFixed(2)
+                            .replace(".", ",")}
+                        </span>
                       </div>
-                    </div>
 
-                    <div className="mt-4 border-t pt-3">
-                      <p className="text-sm text-gray-600">
-                        {order.street}, {order.number}
-                      </p>
-
-                      <p className="text-sm text-gray-600">
-                        {order.neighborhood}
-                      </p>
-
-                      {order.complement && (
-                        <p className="text-sm text-gray-600">
-                          {order.complement}
+                      <div className="mt-3">
+                        <p className="font-medium">
+                          {order.customerName}
                         </p>
+
+                        <p className="text-sm text-gray-600">
+                          {order.customerPhone}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 border-t pt-3">
+                        <p className="mb-2 text-sm font-bold">
+                          Itens
+                        </p>
+
+                        <div className="space-y-3">
+                          {orderItems[order.id]?.map((item) => (
+                            <div
+                              key={item.id}
+                              className="rounded-lg bg-gray-50 p-3"
+                            >
+                              <p className="font-medium">
+                                {item.quantity}x{" "}
+                                {item.product.name}
+                              </p>
+
+                              <p className="text-sm text-gray-600">
+                                R$ {Number(item.unitPrice)
+                                  .toFixed(2)
+                                  .replace(".", ",")}{" "}
+                                cada
+                              </p>
+
+                              {item.observation && (
+                                <p className="mt-1 text-sm font-medium text-red-600">
+                                  Obs: {item.observation}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 border-t pt-3">
+                        <p className="text-sm text-gray-600">
+                          {order.street}, {order.number}
+                        </p>
+
+                        <p className="text-sm text-gray-600">
+                          {order.neighborhood}
+                        </p>
+
+                        {order.complement && (
+                          <p className="text-sm text-gray-600">
+                            {order.complement}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="mt-4 border-t pt-3">
+                        <div className="flex justify-between text-sm">
+                          <span>Taxa de entrega</span>
+
+                          <span>
+                            R$ {Number(order.deliveryFee ?? 0)
+                              .toFixed(2)
+                              .replace(".", ",")}
+                          </span>
+                        </div>
+
+                        <div className="mt-2 flex justify-between font-bold">
+                          <span>Total</span>
+
+                          <span>
+                            R$ {Number(order.total)
+                              .toFixed(2)
+                              .replace(".", ",")}
+                          </span>
+                        </div>
+                      </div>
+
+                      {nextStatus[order.status] && (
+                        <button
+                          onClick={() =>
+                            advanceStatus(order)
+                          }
+                          className="mt-4 w-full rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+                        >
+                          Avançar pedido
+                        </button>
                       )}
                     </div>
-
-                    <div className="mt-4 border-t pt-3">
-                      <div className="flex justify-between text-sm">
-                        <span>Taxa de entrega</span>
-
-                        <span>
-                          R$ {Number(order.deliveryFee ?? 0).toFixed(2)}
-                        </span>
-                      </div>
-
-                      <div className="mt-2 flex justify-between font-bold">
-                        <span>Total</span>
-
-                        <span>
-                          R$ {Number(order.total).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {nextStatus[order.status] && (
-                      <button
-                        onClick={() => advanceStatus(order)}
-                        className="mt-4 w-full rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-                      >
-                        Avançar pedido
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          );
-        })}
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
       </div>
     </main>
   );

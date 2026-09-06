@@ -1,6 +1,7 @@
 package com.pizzasystem.backend.entity;
 
 public enum OrderStatus {
+    PENDING_PAYMENT,
     RECEIVED,
     PREPARING,
     READY,

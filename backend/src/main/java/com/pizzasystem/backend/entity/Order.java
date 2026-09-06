@@ -33,10 +33,22 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderStatus status = OrderStatus.RECEIVED;
+    private OrderStatus status =
+            OrderStatus.PENDING_PAYMENT;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentStatus paymentStatus =
+            PaymentStatus.PENDING;
+
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
+
+    private String paymentExternalId;
 
     @Column(nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt =
+            LocalDateTime.now();
 
     public Order() {
     }
@@ -49,7 +61,9 @@ public class Order {
         return customerName;
     }
 
-    public void setCustomerName(String customerName) {
+    public void setCustomerName(
+            String customerName
+    ) {
         this.customerName = customerName;
     }
 
@@ -57,7 +71,9 @@ public class Order {
         return customerPhone;
     }
 
-    public void setCustomerPhone(String customerPhone) {
+    public void setCustomerPhone(
+            String customerPhone
+    ) {
         this.customerPhone = customerPhone;
     }
 
@@ -65,7 +81,9 @@ public class Order {
         return street;
     }
 
-    public void setStreet(String street) {
+    public void setStreet(
+            String street
+    ) {
         this.street = street;
     }
 
@@ -73,7 +91,9 @@ public class Order {
         return number;
     }
 
-    public void setNumber(String number) {
+    public void setNumber(
+            String number
+    ) {
         this.number = number;
     }
 
@@ -81,7 +101,9 @@ public class Order {
         return neighborhood;
     }
 
-    public void setNeighborhood(String neighborhood) {
+    public void setNeighborhood(
+            String neighborhood
+    ) {
         this.neighborhood = neighborhood;
     }
 
@@ -89,7 +111,9 @@ public class Order {
         return complement;
     }
 
-    public void setComplement(String complement) {
+    public void setComplement(
+            String complement
+    ) {
         this.complement = complement;
     }
 
@@ -97,7 +121,9 @@ public class Order {
         return deliveryFee;
     }
 
-    public void setDeliveryFee(BigDecimal deliveryFee) {
+    public void setDeliveryFee(
+            BigDecimal deliveryFee
+    ) {
         this.deliveryFee = deliveryFee;
     }
 
@@ -105,7 +131,9 @@ public class Order {
         return total;
     }
 
-    public void setTotal(BigDecimal total) {
+    public void setTotal(
+            BigDecimal total
+    ) {
         this.total = total;
     }
 
@@ -113,8 +141,41 @@ public class Order {
         return status;
     }
 
-    public void setStatus(OrderStatus status) {
+    public void setStatus(
+            OrderStatus status
+    ) {
         this.status = status;
+    }
+
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(
+            PaymentStatus paymentStatus
+    ) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(
+            PaymentMethod paymentMethod
+    ) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public String getPaymentExternalId() {
+        return paymentExternalId;
+    }
+
+    public void setPaymentExternalId(
+            String paymentExternalId
+    ) {
+        this.paymentExternalId =
+                paymentExternalId;
     }
 
     public LocalDateTime getCreatedAt() {

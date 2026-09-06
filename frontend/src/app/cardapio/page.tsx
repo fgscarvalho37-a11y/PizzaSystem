@@ -21,6 +21,14 @@ type Product = {
 type CartItem = {
   product: Product;
   quantity: number;
+  observation: string;
+};
+
+type StoreStatus = {
+  storeName: string;
+  manualOpen: boolean;
+  open: boolean;
+  message: string;
 };
 
 export default function CardapioPage() {
@@ -28,17 +36,24 @@ export default function CardapioPage() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [storeStatus, setStoreStatus] = useState<StoreStatus | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [cartLoaded, setCartLoaded] = useState(false);
 
-  // Carrega o carrinho salvo no navegador
   useEffect(() => {
     const savedCart = localStorage.getItem("pizzasystem-cart");
 
     if (savedCart) {
       try {
-        const parsedCart = JSON.parse(savedCart);
-        setCart(parsedCart);
+        const parsedCart: CartItem[] = JSON.parse(savedCart);
+
+        const normalizedCart = parsedCart.map((item) => ({
+          ...item,
+          observation: item.observation ?? "",
+        }));
+
+        setCart(normalizedCart);
       } catch {
         localStorage.removeItem("pizzasystem-cart");
       }
@@ -47,9 +62,156 @@ export default function CardapioPage() {
     setCartLoaded(true);
   }, []);
 
-  // Salva o carrinho sempre que ele mudar
   useEffect(() => {
-    if (!cartLoaded) {
+    async function loadData() {
+      try {
+        const [productsResponse, statusResponse] =
+          await Promise.all([
+            fetch("http://localhost:8080/api/products/available"),
+            fetch("http://localhost:8080/api/store/status"),
+          ]);
+
+        if (!productsResponse.ok) {
+          throw new Error("Erro ao buscar produtos");
+        }
+
+        if (!statusResponse.ok) {
+          throw new Error("Erro ao buscar status da pizzaria");
+        }
+
+        const productsData: Product[] =
+          await productsResponse.json();
+
+        const statusData: StoreStatus =
+          await statusResponse.json();
+
+        setProducts(productsData);
+        setStoreStatus(statusData);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+
+    const interval = setInterval(() => {
+      fetch("http://localhost:8080/api/store/status")
+        .then((response) => response.json())
+        .then((data: StoreStatus) => {
+          setStoreStatus(data);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  function saveCart(updatedCart: CartItem[]) {
+    setCart(updatedCart);
+
+    localStorage.setItem(
+      "pizzasystem-cart",
+      JSON.stringify(updatedCart)
+    );
+  }
+
+  function addToCart(product: Product) {
+    const existingItem = cart.find(
+      (item) => item.product.id === product.id
+    );
+
+    let updatedCart: CartItem[];
+
+    if (existingItem) {
+      updatedCart = cart.map((item) =>
+        item.product.id === product.id
+          ? {
+              ...item,
+              quantity: item.quantity + 1,
+            }
+          : item
+      );
+    } else {
+      updatedCart = [
+        ...cart,
+        {
+          product,
+          quantity: 1,
+          observation: "",
+        },
+      ];
+    }
+
+    saveCart(updatedCart);
+  }
+
+  function increaseQuantity(productId: number) {
+    const updatedCart = cart.map((item) =>
+      item.product.id === productId
+        ? {
+            ...item,
+            quantity: item.quantity + 1,
+          }
+        : item
+    );
+
+    saveCart(updatedCart);
+  }
+
+  function decreaseQuantity(productId: number) {
+    const updatedCart = cart
+      .map((item) =>
+        item.product.id === productId
+          ? {
+              ...item,
+              quantity: item.quantity - 1,
+            }
+          : item
+      )
+      .filter((item) => item.quantity > 0);
+
+    saveCart(updatedCart);
+  }
+
+  function removeFromCart(productId: number) {
+    const updatedCart = cart.filter(
+      (item) => item.product.id !== productId
+    );
+
+    saveCart(updatedCart);
+  }
+
+  function updateObservation(
+    productId: number,
+    observation: string
+  ) {
+    const updatedCart = cart.map((item) =>
+      item.product.id === productId
+        ? {
+            ...item,
+            observation,
+          }
+        : item
+    );
+
+    saveCart(updatedCart);
+  }
+
+  function continueOrder() {
+    if (!storeStatus?.open) {
+      alert(
+        storeStatus?.message ||
+          "A pizzaria não está recebendo pedidos agora."
+      );
+
+      return;
+    }
+
+    if (cart.length === 0) {
       return;
     }
 
@@ -57,95 +219,6 @@ export default function CardapioPage() {
       "pizzasystem-cart",
       JSON.stringify(cart)
     );
-  }, [cart, cartLoaded]);
-
-  // Busca os produtos disponíveis
-  useEffect(() => {
-    fetch("http://localhost:8080/api/products/available")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Erro ao buscar produtos");
-        }
-
-        return response.json();
-      })
-      .then((data: Product[]) => {
-        setProducts(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Erro:", error);
-        setLoading(false);
-      });
-  }, []);
-
-  function addToCart(product: Product) {
-    setCart((currentCart) => {
-      const existingItem = currentCart.find(
-        (item) => item.product.id === product.id
-      );
-
-      if (existingItem) {
-        return currentCart.map((item) =>
-          item.product.id === product.id
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-              }
-            : item
-        );
-      }
-
-      return [
-        ...currentCart,
-        {
-          product,
-          quantity: 1,
-        },
-      ];
-    });
-  }
-
-  function increaseQuantity(productId: number) {
-    setCart((currentCart) =>
-      currentCart.map((item) =>
-        item.product.id === productId
-          ? {
-              ...item,
-              quantity: item.quantity + 1,
-            }
-          : item
-      )
-    );
-  }
-
-  function decreaseQuantity(productId: number) {
-    setCart((currentCart) =>
-      currentCart
-        .map((item) =>
-          item.product.id === productId
-            ? {
-                ...item,
-                quantity: item.quantity - 1,
-              }
-            : item
-        )
-        .filter((item) => item.quantity > 0)
-    );
-  }
-
-  function removeFromCart(productId: number) {
-    setCart((currentCart) =>
-      currentCart.filter(
-        (item) => item.product.id !== productId
-      )
-    );
-  }
-
-  function continueOrder() {
-    if (cart.length === 0) {
-      return;
-    }
 
     router.push("/checkout");
   }
@@ -175,7 +248,7 @@ export default function CardapioPage() {
     ).values()
   );
 
-  if (loading) {
+  if (loading || !cartLoaded) {
     return (
       <main className="min-h-screen bg-gray-100 p-6">
         <p>Carregando cardápio...</p>
@@ -189,7 +262,7 @@ export default function CardapioPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
           <div>
             <h1 className="text-3xl font-bold">
-              Cardápio
+              {storeStatus?.storeName || "Cardápio"}
             </h1>
 
             <p className="mt-1 text-sm text-gray-600">
@@ -202,6 +275,31 @@ export default function CardapioPage() {
           </div>
         </div>
       </header>
+
+      {!storeStatus?.open && (
+        <div className="border-b border-red-200 bg-red-50">
+          <div className="mx-auto max-w-6xl px-6 py-4">
+            <p className="font-bold text-red-700">
+              Pedidos encerrados no momento
+            </p>
+
+            <p className="mt-1 text-sm text-red-600">
+              {storeStatus?.message ||
+                "A pizzaria não está recebendo novos pedidos."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {storeStatus?.open && (
+        <div className="border-b border-green-200 bg-green-50">
+          <div className="mx-auto max-w-6xl px-6 py-3">
+            <p className="text-sm font-semibold text-green-700">
+              Recebendo pedidos
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="mx-auto grid max-w-6xl gap-8 px-6 py-8 lg:grid-cols-[1fr_360px]">
         <div>
@@ -251,17 +349,14 @@ export default function CardapioPage() {
 
                           <div className="mt-5 flex items-center justify-between">
                             <span className="text-lg font-bold">
-                              R${" "}
-                              {Number(product.price)
+                              R$ {Number(product.price)
                                 .toFixed(2)
                                 .replace(".", ",")}
                             </span>
 
                             <button
                               type="button"
-                              onClick={() =>
-                                addToCart(product)
-                              }
+                              onClick={() => addToCart(product)}
                               className="rounded-lg bg-black px-4 py-2 font-semibold text-white hover:bg-gray-800"
                             >
                               Adicionar
@@ -288,11 +383,11 @@ export default function CardapioPage() {
             </p>
           ) : (
             <>
-              <div className="mt-5 space-y-4">
+              <div className="mt-5 space-y-5">
                 {cart.map((item) => (
                   <div
                     key={item.product.id}
-                    className="border-b pb-4"
+                    className="border-b pb-5"
                   >
                     <div className="flex justify-between gap-4">
                       <div>
@@ -301,8 +396,7 @@ export default function CardapioPage() {
                         </p>
 
                         <p className="text-sm text-gray-500">
-                          R${" "}
-                          {Number(item.product.price)
+                          R$ {Number(item.product.price)
                             .toFixed(2)
                             .replace(".", ",")}
                         </p>
@@ -326,7 +420,7 @@ export default function CardapioPage() {
                           onClick={() =>
                             decreaseQuantity(item.product.id)
                           }
-                          className="flex h-8 w-8 items-center justify-center rounded-full border text-lg"
+                          className="flex h-8 w-8 items-center justify-center rounded-full border"
                         >
                           -
                         </button>
@@ -340,21 +434,39 @@ export default function CardapioPage() {
                           onClick={() =>
                             increaseQuantity(item.product.id)
                           }
-                          className="flex h-8 w-8 items-center justify-center rounded-full border text-lg"
+                          className="flex h-8 w-8 items-center justify-center rounded-full border"
                         >
                           +
                         </button>
                       </div>
 
                       <span className="font-semibold">
-                        R${" "}
-                        {(
+                        R$ {(
                           Number(item.product.price) *
                           item.quantity
                         )
                           .toFixed(2)
                           .replace(".", ",")}
                       </span>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="mb-1 block text-sm font-semibold">
+                        Observação
+                      </label>
+
+                      <textarea
+                        value={item.observation}
+                        onChange={(e) =>
+                          updateObservation(
+                            item.product.id,
+                            e.target.value
+                          )
+                        }
+                        placeholder="Ex: sem cebola"
+                        rows={2}
+                        className="w-full resize-none rounded-lg border p-3 text-sm"
+                      />
                     </div>
                   </div>
                 ))}
@@ -365,8 +477,7 @@ export default function CardapioPage() {
                   <span>Subtotal</span>
 
                   <span>
-                    R${" "}
-                    {subtotal
+                    R$ {subtotal
                       .toFixed(2)
                       .replace(".", ",")}
                   </span>
@@ -375,9 +486,12 @@ export default function CardapioPage() {
                 <button
                   type="button"
                   onClick={continueOrder}
-                  className="mt-5 w-full rounded-lg bg-black px-4 py-3 font-semibold text-white hover:bg-gray-800"
+                  disabled={!storeStatus?.open}
+                  className="mt-5 w-full rounded-lg bg-black px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:bg-gray-400"
                 >
-                  Continuar pedido
+                  {storeStatus?.open
+                    ? "Continuar pedido"
+                    : "Pedidos encerrados"}
                 </button>
               </div>
             </>
