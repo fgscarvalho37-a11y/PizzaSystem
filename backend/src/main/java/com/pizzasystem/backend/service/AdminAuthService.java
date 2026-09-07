@@ -7,8 +7,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
+
 @Service
 public class AdminAuthService {
+
+    private static final int MIN_PASSWORD_LENGTH = 12;
+
+    private static final String INVALID_CREDENTIALS_MESSAGE =
+            "E-mail ou senha inválidos";
 
     private final AdminUserRepository adminUserRepository;
     private final PasswordEncoder passwordEncoder;
@@ -17,6 +24,7 @@ public class AdminAuthService {
             AdminUserRepository adminUserRepository,
             PasswordEncoder passwordEncoder
     ) {
+
         this.adminUserRepository =
                 adminUserRepository;
 
@@ -25,28 +33,52 @@ public class AdminAuthService {
     }
 
     // =========================
+    // NORMALIZAR E-MAIL
+    // =========================
+
+    private String normalizeEmail(
+            String email
+    ) {
+
+        if (email == null) {
+            return "";
+        }
+
+        return email
+                .trim()
+                .toLowerCase(
+                        Locale.ROOT
+                );
+    }
+
+    // =========================
     // BUSCAR POR E-MAIL
     // =========================
 
+    @Transactional(readOnly = true)
     public AdminUser findByEmail(
             String email
     ) {
 
-        if (email == null
-                || email.isBlank()) {
+        String normalizedEmail =
+                normalizeEmail(
+                        email
+                );
 
-            throw new RuntimeException(
+        if (normalizedEmail.isBlank()) {
+
+            throw new IllegalArgumentException(
                     "E-mail não informado"
             );
         }
 
         return adminUserRepository
                 .findByEmailIgnoreCase(
-                        email.trim()
+                        normalizedEmail
                 )
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Usuário administrativo não encontrado"
+                        new IllegalArgumentException(
+                                "Administrador não encontrado"
                         )
                 );
     }
@@ -55,42 +87,46 @@ public class AdminAuthService {
     // AUTENTICAR
     // =========================
 
+    @Transactional(readOnly = true)
     public AdminUser authenticate(
             String email,
             String password
     ) {
 
-        if (email == null
-                || email.isBlank()) {
+        String normalizedEmail =
+                normalizeEmail(
+                        email
+                );
 
-            throw new RuntimeException(
-                    "E-mail não informado"
-            );
-        }
-
-        if (password == null
+        /*
+         * Para autenticação pública, não diferenciamos
+         * e-mail ausente, usuário inexistente, conta
+         * inativa ou senha incorreta.
+         */
+        if (normalizedEmail.isBlank()
+                || password == null
                 || password.isBlank()) {
 
-            throw new RuntimeException(
-                    "Senha não informada"
+            throw new IllegalArgumentException(
+                    INVALID_CREDENTIALS_MESSAGE
             );
         }
 
         AdminUser user =
                 adminUserRepository
                         .findByEmailIgnoreCase(
-                                email.trim()
+                                normalizedEmail
                         )
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "E-mail ou senha inválidos"
+                                new IllegalArgumentException(
+                                        INVALID_CREDENTIALS_MESSAGE
                                 )
                         );
 
         if (!user.isActive()) {
 
-            throw new RuntimeException(
-                    "Usuário administrativo inativo"
+            throw new IllegalArgumentException(
+                    INVALID_CREDENTIALS_MESSAGE
             );
         }
 
@@ -102,8 +138,8 @@ public class AdminAuthService {
 
         if (!passwordMatches) {
 
-            throw new RuntimeException(
-                    "E-mail ou senha inválidos"
+            throw new IllegalArgumentException(
+                    INVALID_CREDENTIALS_MESSAGE
             );
         }
 
@@ -111,7 +147,7 @@ public class AdminAuthService {
     }
 
     // =========================
-    // CRIAR PRIMEIRO ADMIN
+    // CRIAR ADMIN
     // =========================
 
     @Transactional
@@ -120,33 +156,42 @@ public class AdminAuthService {
             String password
     ) {
 
-        if (email == null
-                || email.isBlank()) {
+        String normalizedEmail =
+                normalizeEmail(
+                        email
+                );
 
-            throw new RuntimeException(
+        if (normalizedEmail.isBlank()) {
+
+            throw new IllegalArgumentException(
                     "E-mail não informado"
             );
         }
 
-        if (password == null
-                || password.length() < 8) {
+        if (!normalizedEmail.contains("@")) {
 
-            throw new RuntimeException(
-                    "A senha deve ter pelo menos 8 caracteres"
+            throw new IllegalArgumentException(
+                    "E-mail inválido"
             );
         }
 
-        String normalizedEmail =
-                email
-                        .trim()
-                        .toLowerCase();
+        if (password == null
+                || password.length()
+                < MIN_PASSWORD_LENGTH) {
+
+            throw new IllegalArgumentException(
+                    "A senha deve ter pelo menos "
+                            + MIN_PASSWORD_LENGTH
+                            + " caracteres"
+            );
+        }
 
         if (adminUserRepository
                 .existsByEmailIgnoreCase(
                         normalizedEmail
                 )) {
 
-            throw new RuntimeException(
+            throw new IllegalStateException(
                     "Já existe um administrador com este e-mail"
             );
         }

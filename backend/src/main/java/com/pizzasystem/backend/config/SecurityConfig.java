@@ -2,6 +2,8 @@ package com.pizzasystem.backend.config;
 
 import com.pizzasystem.backend.security.AdminSessionAuthenticationFilter;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -31,10 +33,16 @@ public class SecurityConfig {
     private final AdminSessionAuthenticationFilter
             adminSessionAuthenticationFilter;
 
+    @Value(
+            "${pizzasystem.cors.allowed-origin:http://localhost:3000}"
+    )
+    private String allowedOrigin;
+
     public SecurityConfig(
             AdminSessionAuthenticationFilter
                     adminSessionAuthenticationFilter
     ) {
+
         this.adminSessionAuthenticationFilter =
                 adminSessionAuthenticationFilter;
     }
@@ -78,30 +86,43 @@ public class SecurityConfig {
                                 )
 
                                 // =========================
-                                // LOGIN / LOGOUT
+                                // LOGIN
                                 // =========================
 
+                                /*
+                                 * Login ainda não possui sessão
+                                 * autenticada, então não exigimos
+                                 * CSRF nessa operação.
+                                 */
                                 .ignoringRequestMatchers(
                                         "/api/auth/login"
-                                )
-
-                                .ignoringRequestMatchers(
-                                        "/api/auth/logout"
                                 )
 
                                 // =========================
                                 // PEDIDO DO CLIENTE
                                 // =========================
 
+                                /*
+                                 * Pedido público criado pelo
+                                 * checkout do cliente.
+                                 */
                                 .ignoringRequestMatchers(
                                         "/api/orders"
                                 )
 
                                 // =========================
-                                // PAGAMENTOS DO CLIENTE
-                                // + WEBHOOK MERCADO PAGO
+                                // PAGAMENTOS / WEBHOOK
                                 // =========================
 
+                                /*
+                                 * Os endpoints de pagamento
+                                 * precisam receber chamadas
+                                 * externas, incluindo webhook
+                                 * do Mercado Pago.
+                                 *
+                                 * Vamos auditar esses endpoints
+                                 * individualmente no controller.
+                                 */
                                 .ignoringRequestMatchers(
                                         "/api/payments/**"
                                 )
@@ -134,24 +155,71 @@ public class SecurityConfig {
                                 .permitAll()
 
                                 // =========================
-                                // AUTENTICAÇÃO
+                                // LOGIN ADMIN
                                 // =========================
 
                                 .requestMatchers(
-                                        "/api/auth/**"
+                                        HttpMethod.POST,
+                                        "/api/auth/login"
                                 )
                                 .permitAll()
+
+                                // =========================
+                                // VERIFICAR SESSÃO
+                                // =========================
+
+                                /*
+                                 * Precisa ser público para que
+                                 * o frontend consiga descobrir
+                                 * se a sessão existe.
+                                 *
+                                 * Sem sessão válida, o próprio
+                                 * controller retorna 401.
+                                 */
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/auth/me"
+                                )
+                                .permitAll()
+
+                                // =========================
+                                // TOKEN CSRF
+                                // =========================
+
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/auth/csrf"
+                                )
+                                .permitAll()
+
+                                // =========================
+                                // LOGOUT
+                                // =========================
+
+                                /*
+                                 * Logout só faz sentido para
+                                 * uma sessão autenticada.
+                                 *
+                                 * Diferente do login, ele não
+                                 * fica mais liberado por /**.
+                                 */
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/auth/logout"
+                                )
+                                .authenticated()
 
                                 // =========================
                                 // PRODUTOS PÚBLICOS
                                 // =========================
 
-                              .requestMatchers(
-        HttpMethod.GET,
-        "/api/products/available",
-        "/api/products/category/*"
-)
-.permitAll()
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/products/available",
+                                        "/api/products/category/*"
+                                )
+                                .permitAll()
+
                                 // =========================
                                 // CATEGORIAS PÚBLICAS
                                 // =========================
@@ -194,7 +262,6 @@ public class SecurityConfig {
 
                                 // =========================
                                 // BORDAS ATIVAS
-                                // PÚBLICO
                                 // =========================
 
                                 .requestMatchers(
@@ -306,7 +373,7 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(
                 List.of(
-                        "http://localhost:3000"
+                        allowedOrigin
                 )
         );
 

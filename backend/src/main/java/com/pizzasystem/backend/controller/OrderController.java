@@ -19,14 +19,16 @@ import com.pizzasystem.backend.service.CouponService;
 import com.pizzasystem.backend.service.StoreStatusService;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
@@ -48,6 +50,7 @@ public class OrderController {
             CouponService couponService,
             CrustRepository crustRepository
     ) {
+
         this.orderRepository =
                 orderRepository;
 
@@ -71,7 +74,7 @@ public class OrderController {
     }
 
     // =========================
-    // LISTAR TODOS
+    // LISTAR TODOS - ADMIN
     // =========================
 
     @GetMapping
@@ -83,24 +86,32 @@ public class OrderController {
 
     // =========================
     // BUSCAR POR ID
+    //
+    // ADMIN:
+    // token não é necessário.
+    //
+    // CLIENTE:
+    // precisa apresentar o token público
+    // recebido na criação do pedido.
     // =========================
 
     @GetMapping("/{id}")
     public Order findById(
-            @PathVariable Long id
+            @PathVariable Long id,
+            @RequestParam(
+                    required = false
+            )
+            String token
     ) {
 
-        return orderRepository
-                .findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Pedido não encontrado"
-                        )
-                );
+        return getOrderForAccess(
+                id,
+                token
+        );
     }
 
     // =========================
-    // LISTAR POR STATUS
+    // LISTAR POR STATUS - ADMIN
     // =========================
 
     @GetMapping("/status/{status}")
@@ -115,7 +126,7 @@ public class OrderController {
     }
 
     // =========================
-    // CRIAR PEDIDO
+    // CRIAR PEDIDO - PÚBLICO
     // =========================
 
     @PostMapping
@@ -267,6 +278,10 @@ public class OrderController {
                 request.getPaymentMethod()
         );
 
+        /*
+         * Neste save o @PrePersist de Order
+         * gera publicAccessToken automaticamente.
+         */
         order =
                 orderRepository.save(
                         order
@@ -281,7 +296,7 @@ public class OrderController {
 
         for (
                 OrderItemRequest itemRequest :
-                request.getItems()
+                        request.getItems()
         ) {
 
             Product product =
@@ -515,12 +530,7 @@ public class OrderController {
         );
 
         /*
-         * IMPORTANTE:
-         *
          * O uso do cupom NÃO é registrado aqui.
-         *
-         * O pedido pode ser criado e o cliente
-         * abandonar o pagamento.
          *
          * O usageCount será incrementado somente
          * quando o pagamento for APPROVED.
@@ -533,20 +543,27 @@ public class OrderController {
 
     // =========================
     // ITENS DO PEDIDO
+    //
+    // ADMIN:
+    // token não é necessário.
+    //
+    // CLIENTE:
+    // precisa apresentar o token público.
     // =========================
 
     @GetMapping("/{id}/items")
     public List<OrderItem> listItems(
-            @PathVariable Long id
+            @PathVariable Long id,
+            @RequestParam(
+                    required = false
+            )
+            String token
     ) {
 
-        orderRepository
-                .findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Pedido não encontrado"
-                        )
-                );
+        getOrderForAccess(
+                id,
+                token
+        );
 
         return orderItemRepository
                 .findByOrderId(
@@ -555,7 +572,7 @@ public class OrderController {
     }
 
     // =========================
-    // ALTERAR STATUS
+    // ALTERAR STATUS - ADMIN
     // =========================
 
     @PatchMapping("/{id}/status")
@@ -579,6 +596,98 @@ public class OrderController {
 
         return orderRepository.save(
                 order
+        );
+    }
+
+    // =========================
+    // ACESSO AO PEDIDO
+    // =========================
+
+    private Order getOrderForAccess(
+            Long id,
+            String token
+    ) {
+
+        /*
+         * Administrador autenticado continua podendo
+         * acessar os pedidos normalmente pelo ID.
+         */
+        if (isAdminAuthenticated()) {
+
+            return orderRepository
+                    .findById(id)
+                    .orElseThrow(
+                            this::orderNotFound
+                    );
+        }
+
+        /*
+         * Para o acesso público, o ID sozinho não
+         * funciona mais.
+         */
+        if (token == null
+                || token.isBlank()) {
+
+            throw orderNotFound();
+        }
+
+        /*
+         * Retornamos o mesmo 404 para:
+         *
+         * - pedido inexistente
+         * - token ausente
+         * - token incorreto
+         *
+         * Assim não confirmamos para terceiros que
+         * determinado ID de pedido realmente existe.
+         */
+        return orderRepository
+                .findByIdAndPublicAccessToken(
+                        id,
+                        token.trim()
+                )
+                .orElseThrow(
+                        this::orderNotFound
+                );
+    }
+
+    // =========================
+    // ADMIN AUTENTICADO?
+    // =========================
+
+    private boolean isAdminAuthenticated() {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()) {
+
+            return false;
+        }
+
+        return authentication
+                .getAuthorities()
+                .stream()
+                .anyMatch(
+                        authority ->
+                                "ROLE_ADMIN".equals(
+                                        authority.getAuthority()
+                                )
+                );
+    }
+
+    // =========================
+    // 404 GENÉRICO
+    // =========================
+
+    private ResponseStatusException orderNotFound() {
+
+        return new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Pedido não encontrado"
         );
     }
 }

@@ -3,6 +3,9 @@ package com.pizzasystem.backend.config;
 import com.pizzasystem.backend.repository.AdminUserRepository;
 import com.pizzasystem.backend.service.AdminAuthService;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +13,14 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class AdminBootstrapConfig {
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(
+                    AdminBootstrapConfig.class
+            );
+
+    private static final int MIN_PASSWORD_LENGTH =
+            12;
 
     @Bean
     public CommandLineRunner createInitialAdmin(
@@ -31,31 +42,63 @@ public class AdminBootstrapConfig {
 
             if (adminUserRepository.count() > 0) {
 
-                System.out.println(
-                        "Administrador já cadastrado."
+                logger.info(
+                        "Administrador já cadastrado. Bootstrap ignorado."
                 );
 
                 return;
             }
 
             // =========================
-            // CREDENCIAIS NÃO CONFIGURADAS
+            // NORMALIZAR CREDENCIAIS
             // =========================
 
-            if (adminEmail == null
-                    || adminEmail.isBlank()
-                    || adminPassword == null
-                    || adminPassword.isBlank()) {
+            String normalizedEmail =
+                    adminEmail != null
+                            ? adminEmail.trim().toLowerCase()
+                            : "";
 
-                System.out.println(
-                        "Nenhum administrador cadastrado."
-                );
+            String password =
+                    adminPassword != null
+                            ? adminPassword
+                            : "";
 
-                System.out.println(
-                        "Configure pizzasystem.admin.email e pizzasystem.admin.password para criar o primeiro administrador."
+            // =========================
+            // CREDENCIAIS AUSENTES
+            // =========================
+
+            if (normalizedEmail.isBlank()
+                    || password.isBlank()) {
+
+                logger.warn(
+                        "Nenhum administrador cadastrado. " +
+                        "Configure PIZZASYSTEM_ADMIN_EMAIL e " +
+                        "PIZZASYSTEM_ADMIN_PASSWORD para criar " +
+                        "o primeiro administrador."
                 );
 
                 return;
+            }
+
+            // =========================
+            // VALIDAÇÃO BÁSICA
+            // =========================
+
+            if (!normalizedEmail.contains("@")) {
+
+                throw new IllegalStateException(
+                        "PIZZASYSTEM_ADMIN_EMAIL inválido."
+                );
+            }
+
+            if (password.length() < MIN_PASSWORD_LENGTH) {
+
+                throw new IllegalStateException(
+                        "PIZZASYSTEM_ADMIN_PASSWORD deve ter " +
+                        "pelo menos " +
+                        MIN_PASSWORD_LENGTH +
+                        " caracteres."
+                );
             }
 
             // =========================
@@ -63,13 +106,12 @@ public class AdminBootstrapConfig {
             // =========================
 
             adminAuthService.createAdmin(
-                    adminEmail,
-                    adminPassword
+                    normalizedEmail,
+                    password
             );
 
-            System.out.println(
-                    "Primeiro administrador criado com sucesso: "
-                            + adminEmail
+            logger.info(
+                    "Primeiro administrador criado com sucesso."
             );
         };
     }

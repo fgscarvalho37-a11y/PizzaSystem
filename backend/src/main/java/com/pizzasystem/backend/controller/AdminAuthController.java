@@ -13,10 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-@CrossOrigin(
-        origins = "http://localhost:3000",
-        allowCredentials = "true"
-)
 @RestController
 @RequestMapping("/api/auth")
 public class AdminAuthController {
@@ -54,6 +50,10 @@ public class AdminAuthController {
                             request.password()
                     );
 
+            /*
+             * Invalida qualquer sessão anterior
+             * antes de criar uma nova.
+             */
             HttpSession oldSession =
                     servletRequest.getSession(
                             false
@@ -102,6 +102,10 @@ public class AdminAuthController {
 
         } catch (RuntimeException e) {
 
+            /*
+             * Nunca devolvemos detalhes da falha
+             * de autenticação ao cliente.
+             */
             Map<String, Object> response =
                     new HashMap<>();
 
@@ -112,14 +116,16 @@ public class AdminAuthController {
 
             response.put(
                     "message",
-                    e.getMessage()
+                    "E-mail ou senha inválidos"
             );
 
             return ResponseEntity
                     .status(
                             HttpStatus.UNAUTHORIZED
                     )
-                    .body(response);
+                    .body(
+                            response
+                    );
         }
     }
 
@@ -174,47 +180,78 @@ public class AdminAuthController {
                 );
 
         if (session == null) {
-
             return unauthorized();
         }
 
-        Object adminId =
-                session.getAttribute(
-                        SESSION_ADMIN_ID
-                );
-
-        Object adminEmail =
+        Object adminEmailObject =
                 session.getAttribute(
                         SESSION_ADMIN_EMAIL
                 );
 
-        if (adminId == null
-                || adminEmail == null) {
+        if (!(adminEmailObject instanceof String adminEmail)
+                || adminEmail.isBlank()) {
+
+            session.invalidate();
 
             return unauthorized();
         }
 
-        Map<String, Object> response =
-                new HashMap<>();
+        try {
 
-        response.put(
-                "authenticated",
-                true
-        );
+            AdminUser user =
+                    adminAuthService.findByEmail(
+                            adminEmail
+                    );
 
-        response.put(
-                "id",
-                adminId
-        );
+            if (!user.isActive()) {
 
-        response.put(
-                "email",
-                adminEmail
-        );
+                session.invalidate();
 
-        return ResponseEntity.ok(
-                response
-        );
+                return unauthorized();
+            }
+
+            /*
+             * Atualiza os valores da sessão
+             * com os dados atuais do usuário.
+             */
+            session.setAttribute(
+                    SESSION_ADMIN_ID,
+                    user.getId()
+            );
+
+            session.setAttribute(
+                    SESSION_ADMIN_EMAIL,
+                    user.getEmail()
+            );
+
+            Map<String, Object> response =
+                    new HashMap<>();
+
+            response.put(
+                    "authenticated",
+                    true
+            );
+
+            response.put(
+                    "id",
+                    user.getId()
+            );
+
+            response.put(
+                    "email",
+                    user.getEmail()
+            );
+
+            return ResponseEntity.ok(
+                    response
+            );
+
+        } catch (RuntimeException e) {
+
+            session.invalidate();
+
+            return unauthorized();
+        }
     }
 
     // =========================
@@ -235,7 +272,9 @@ public class AdminAuthController {
                 .status(
                         HttpStatus.UNAUTHORIZED
                 )
-                .body(response);
+                .body(
+                        response
+                );
     }
 
     // =========================

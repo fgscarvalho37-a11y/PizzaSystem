@@ -4,20 +4,59 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
-@Table(name = "orders")
+@Table(
+        name = "orders",
+        indexes = {
+                @Index(
+                        name = "idx_orders_public_access_token",
+                        columnList = "public_access_token"
+                )
+        }
+)
 public class Order {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(
+            strategy = GenerationType.IDENTITY
+    )
     private Long id;
+
+    // =========================
+    // TOKEN PÚBLICO DO PEDIDO
+    // =========================
+
+    /*
+     * Usado pelas páginas públicas para que saber
+     * apenas o ID sequencial do pedido não seja
+     * suficiente para acessá-lo.
+     *
+     * nullable permanece true temporariamente por
+     * compatibilidade com pedidos antigos existentes
+     * no banco.
+     */
+    @Column(
+            name = "public_access_token",
+            unique = true,
+            length = 36
+    )
+    private String publicAccessToken;
+
+    // =========================
+    // CLIENTE
+    // =========================
 
     @Column(nullable = false)
     private String customerName;
 
     @Column(nullable = false)
     private String customerPhone;
+
+    // =========================
+    // ENTREGA
+    // =========================
 
     private String street;
 
@@ -28,6 +67,10 @@ public class Order {
     private String complement;
 
     private BigDecimal deliveryFee;
+
+    // =========================
+    // VALORES
+    // =========================
 
     private BigDecimal total;
 
@@ -45,6 +88,10 @@ public class Order {
     private boolean couponUsageRegistered =
             false;
 
+    // =========================
+    // STATUS
+    // =========================
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status =
@@ -58,7 +105,15 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod;
 
+    // =========================
+    // PAGAMENTO EXTERNO
+    // =========================
+
     private String paymentExternalId;
+
+    // =========================
+    // DATA
+    // =========================
 
     @Column(nullable = false)
     private LocalDateTime createdAt =
@@ -67,9 +122,41 @@ public class Order {
     public Order() {
     }
 
+    // =========================
+    // GERAR TOKEN
+    // =========================
+
+    @PrePersist
+    @PreUpdate
+    private void ensurePublicAccessToken() {
+
+        if (publicAccessToken == null
+                || publicAccessToken.isBlank()) {
+
+            publicAccessToken =
+                    UUID.randomUUID()
+                            .toString();
+        }
+    }
+
+    // =========================
+    // GETTERS / SETTERS
+    // =========================
+
     public Long getId() {
         return id;
     }
+
+    public String getPublicAccessToken() {
+        return publicAccessToken;
+    }
+
+    /*
+     * Não criamos setter público para o token.
+     *
+     * Depois de gerado, ele não deve ser alterado
+     * por DTO, controller ou formulário.
+     */
 
     public String getCustomerName() {
         return customerName;

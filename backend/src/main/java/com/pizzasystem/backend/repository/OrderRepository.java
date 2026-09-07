@@ -82,4 +82,12 @@ public interface OrderRepository
     Optional<Order> findByPaymentExternalId(
             String paymentExternalId
     );
+    // =========================
+// ACESSO PÚBLICO SEGURO
+// =========================
+
+Optional<Order> findByIdAndPublicAccessToken(
+        Long id,
+        String publicAccessToken
+);
 }

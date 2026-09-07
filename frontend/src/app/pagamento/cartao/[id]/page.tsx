@@ -9,6 +9,7 @@ import {
 import {
   useParams,
   useRouter,
+  useSearchParams,
 } from "next/navigation";
 
 import {
@@ -19,6 +20,10 @@ import {
   createCardToken,
   initMercadoPago,
 } from "@mercadopago/sdk-react";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
 
 type Order = {
   id: number;
@@ -77,8 +82,20 @@ export default function CardPaymentPage() {
   const router =
     useRouter();
 
+  const searchParams =
+    useSearchParams();
+
   const id =
     params.id as string;
+
+  const tokenFromUrl =
+    searchParams.get("token");
+
+  const [accessToken, setAccessToken] =
+    useState<string | null>(null);
+
+  const [tokenReady, setTokenReady] =
+    useState(false);
 
   const [order, setOrder] =
     useState<Order | null>(
@@ -114,6 +131,48 @@ export default function CardPaymentPage() {
   ] = useState("");
 
   // =========================
+  // TOKEN DE ACESSO
+  // =========================
+
+  useEffect(() => {
+
+    if (!id) {
+      return;
+    }
+
+    const storageKey =
+      `pizzasystem-order-token:${id}`;
+
+    if (tokenFromUrl) {
+
+      sessionStorage.setItem(
+        storageKey,
+        tokenFromUrl
+      );
+
+      setAccessToken(
+        tokenFromUrl
+      );
+
+      setTokenReady(true);
+
+      return;
+    }
+
+    const storedToken =
+      sessionStorage.getItem(
+        storageKey
+      );
+
+    setAccessToken(
+      storedToken
+    );
+
+    setTokenReady(true);
+
+  }, [id, tokenFromUrl]);
+
+  // =========================
   // CARREGAR PEDIDO
   // =========================
 
@@ -121,11 +180,26 @@ export default function CardPaymentPage() {
 
     async function loadOrder() {
 
+      if (!tokenReady) {
+        return;
+      }
+
+      if (!accessToken) {
+        setOrder(null);
+        setLoading(false);
+        return;
+      }
+
       try {
+
+        const encodedToken =
+          encodeURIComponent(
+            accessToken
+          );
 
         const response =
           await fetch(
-            `http://localhost:8080/api/orders/${id}`,
+            `${API_URL}/api/orders/${id}?token=${encodedToken}`,
             {
               cache: "no-store",
             }
@@ -157,7 +231,11 @@ export default function CardPaymentPage() {
 
     loadOrder();
 
-  }, [id]);
+  }, [
+    id,
+    accessToken,
+    tokenReady,
+  ]);
 
   // =========================
   // LER MENSAGEM DO BACKEND
@@ -208,7 +286,7 @@ export default function CardPaymentPage() {
 
       const response =
         await fetch(
-          `http://localhost:8080/api/payments/${order.id}/card`,
+          `${API_URL}/api/payments/${order.id}/card?token=${encodeURIComponent(accessToken ?? "")}`,
           {
             method: "POST",
 
@@ -277,7 +355,7 @@ export default function CardPaymentPage() {
       await response.json();
 
       router.push(
-        `/pagamento/sucesso/${order.id}`
+        `/pagamento/sucesso/${order.id}?token=${encodeURIComponent(accessToken ?? "")}`
       );
 
     } catch {
@@ -375,7 +453,7 @@ export default function CardPaymentPage() {
 
       const response =
         await fetch(
-          `http://localhost:8080/api/payments/${order.id}/card`,
+          `${API_URL}/api/payments/${order.id}/card?token=${encodeURIComponent(accessToken ?? "")}`,
           {
             method: "POST",
 
@@ -428,7 +506,7 @@ export default function CardPaymentPage() {
       await response.json();
 
       router.push(
-        `/pagamento/sucesso/${order.id}`
+        `/pagamento/sucesso/${order.id}?token=${encodeURIComponent(accessToken ?? "")}`
       );
 
     } catch {
@@ -447,7 +525,7 @@ export default function CardPaymentPage() {
   // CARREGANDO
   // =========================
 
-  if (loading) {
+  if (!tokenReady || loading) {
     return (
       <main className="min-h-screen bg-background pb-16 text-foreground">
         <header className="border-b border-border bg-background/85 backdrop-blur-md">
@@ -590,7 +668,9 @@ export default function CardPaymentPage() {
           type="button"
           onClick={() =>
             router.push(
-              `/pedido/${order.id}`
+              `/pedido/${order.id}?token=${encodeURIComponent(
+                  accessToken ?? ""
+                )}`
             )
           }
           className="font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"

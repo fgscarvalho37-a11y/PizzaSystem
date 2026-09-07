@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
 
 type PixPayment = {
   id: string;
@@ -97,8 +101,18 @@ function CopyIcon({
 export default function PagamentoPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const id = params.id as string;
+
+  const tokenFromUrl =
+    searchParams.get("token");
+
+  const [accessToken, setAccessToken] =
+    useState<string | null>(null);
+
+  const [tokenReady, setTokenReady] =
+    useState(false);
 
   const [data, setData] =
     useState<MercadoPagoOrder | null>(null);
@@ -112,19 +126,66 @@ export default function PagamentoPage() {
   const [copied, setCopied] =
     useState(false);
 
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    const storageKey =
+      `pizzasystem-order-token:${id}`;
+
+    if (tokenFromUrl) {
+      sessionStorage.setItem(
+        storageKey,
+        tokenFromUrl
+      );
+
+      setAccessToken(
+        tokenFromUrl
+      );
+
+      setTokenReady(true);
+
+      return;
+    }
+
+    const storedToken =
+      sessionStorage.getItem(
+        storageKey
+      );
+
+    setAccessToken(
+      storedToken
+    );
+
+    setTokenReady(true);
+  }, [id, tokenFromUrl]);
+
   async function loadData() {
+    if (!accessToken) {
+      setData(null);
+      setLocalOrder(null);
+      setLoading(false);
+      return;
+    }
+
     try {
+      const encodedToken =
+        encodeURIComponent(
+          accessToken
+        );
+
       const [pixResponse, orderResponse] =
         await Promise.all([
           fetch(
-            `http://localhost:8080/api/payments/${id}/pix`,
+            `${API_URL}/api/payments/${id}/pix?token=${encodedToken}`,
             {
               cache: "no-store",
             }
           ),
 
           fetch(
-            `http://localhost:8080/api/orders/${id}`,
+            `${API_URL}/api/orders/${id}?token=${encodedToken}`,
             {
               cache: "no-store",
             }
@@ -159,16 +220,24 @@ export default function PagamentoPage() {
   }
 
   useEffect(() => {
+    if (!tokenReady) {
+      return;
+    }
+
     loadData();
+
+    if (!accessToken) {
+      return;
+    }
 
     const interval = setInterval(() => {
       loadData();
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [id]);
+  }, [id, accessToken, tokenReady]);
 
-  if (loading) {
+  if (!tokenReady || loading) {
     return (
       <main className="min-h-screen bg-background pb-16 text-foreground">
         <header className="border-b border-border bg-background/85 backdrop-blur-md">
@@ -319,7 +388,9 @@ export default function PagamentoPage() {
               type="button"
               onClick={() =>
                 router.push(
-                  `/pedido/${localOrder.id}`
+                  `/pedido/${localOrder.id}?token=${encodeURIComponent(
+                    accessToken ?? ""
+                  )}`
                 )
               }
               className="brand-button mt-7 w-full rounded-2xl px-5 py-3.5"

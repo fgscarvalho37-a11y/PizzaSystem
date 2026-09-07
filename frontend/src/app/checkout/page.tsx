@@ -9,6 +9,10 @@ import {
 
 import { useRouter } from "next/navigation";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
+
 type Product = {
   id: number;
   name: string;
@@ -172,11 +176,11 @@ export default function CheckoutPage() {
           statusResponse,
         ] = await Promise.all([
           fetch(
-            "http://localhost:8080/api/delivery-areas/active"
+            `${API_URL}/api/delivery-areas/active`
           ),
 
           fetch(
-            "http://localhost:8080/api/store/status"
+            `${API_URL}/api/store/status`
           ),
         ]);
 
@@ -215,7 +219,7 @@ export default function CheckoutPage() {
     const interval =
       setInterval(() => {
         fetch(
-          "http://localhost:8080/api/store/status"
+          `${API_URL}/api/store/status`
         )
           .then((response) => {
             if (!response.ok) {
@@ -447,7 +451,7 @@ export default function CheckoutPage() {
 
       const response =
         await fetch(
-          `http://localhost:8080/api/coupons/validate?code=${encodeURIComponent(
+          `${API_URL}/api/coupons/validate?code=${encodeURIComponent(
             code
           )}&orderValue=${encodeURIComponent(
             totalBeforeDiscount.toFixed(
@@ -654,7 +658,7 @@ export default function CheckoutPage() {
 
       const orderResponse =
         await fetch(
-          "http://localhost:8080/api/orders",
+          `${API_URL}/api/orders`,
           {
             method: "POST",
 
@@ -703,8 +707,36 @@ export default function CheckoutPage() {
         );
       }
 
-      const order =
+      const order: {
+        id: number;
+        publicAccessToken?: string;
+      } =
         await orderResponse.json();
+
+      const publicAccessToken =
+        order.publicAccessToken;
+
+      if (!publicAccessToken) {
+        throw new Error(
+          "Pedido criado, mas o token de acesso não foi retornado."
+        );
+      }
+
+      /*
+       * O token fica associado somente a este pedido.
+       * Ele será usado pelas páginas públicas para
+       * consultar pedido e pagamento sem depender
+       * apenas do ID sequencial.
+       */
+      sessionStorage.setItem(
+        `pizzasystem-order-token:${order.id}`,
+        publicAccessToken
+      );
+
+      const encodedToken =
+        encodeURIComponent(
+          publicAccessToken
+        );
 
       // =========================
       // PIX
@@ -716,7 +748,7 @@ export default function CheckoutPage() {
       ) {
         const pixResponse =
           await fetch(
-            `http://localhost:8080/api/payments/${order.id}/pix`,
+            `${API_URL}/api/payments/${order.id}/pix?token=${encodedToken}`,
             {
               method: "POST",
             }
@@ -743,7 +775,7 @@ export default function CheckoutPage() {
         );
 
         router.push(
-          `/pagamento/${order.id}`
+          `/pagamento/${order.id}?token=${encodedToken}`
         );
 
         return;
@@ -762,7 +794,7 @@ export default function CheckoutPage() {
         );
 
         router.push(
-          `/pagamento/cartao/${order.id}`
+          `/pagamento/cartao/${order.id}?token=${encodedToken}`
         );
 
         return;
@@ -773,7 +805,7 @@ export default function CheckoutPage() {
       );
 
       router.push(
-        `/pedido/${order.id}`
+        `/pedido/${order.id}?token=${encodedToken}`
       );
     } catch (error) {
       console.error(error);

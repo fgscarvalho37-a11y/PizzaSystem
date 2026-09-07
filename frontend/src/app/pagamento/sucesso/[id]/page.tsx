@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  useParams,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 
 type Order = {
   id: number;
@@ -9,6 +17,10 @@ type Order = {
   paymentStatus: string;
   status: string;
 };
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat(
@@ -64,25 +76,119 @@ function ClockIcon({
 }
 
 export default function PaymentSuccessPage() {
-  const params = useParams();
-  const router = useRouter();
+  const params =
+    useParams();
 
-  const id = params.id as string;
+  const router =
+    useRouter();
 
-  const [order, setOrder] =
-    useState<Order | null>(null);
+  const searchParams =
+    useSearchParams();
 
-  const [loading, setLoading] =
+  const id =
+    params.id as string;
+
+  const tokenFromUrl =
+    searchParams.get("token");
+
+  const [
+    accessToken,
+    setAccessToken,
+  ] =
+    useState<string | null>(
+      null
+    );
+
+  const [
+    tokenReady,
+    setTokenReady,
+  ] =
+    useState(false);
+
+  const [
+    order,
+    setOrder,
+  ] =
+    useState<Order | null>(
+      null
+    );
+
+  const [
+    loading,
+    setLoading,
+  ] =
     useState(true);
 
+  // =========================
+  // TOKEN DE ACESSO
+  // =========================
+
   useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    const storageKey =
+      `pizzasystem-order-token:${id}`;
+
+    if (tokenFromUrl) {
+      sessionStorage.setItem(
+        storageKey,
+        tokenFromUrl
+      );
+
+      setAccessToken(
+        tokenFromUrl
+      );
+
+      setTokenReady(true);
+
+      return;
+    }
+
+    const storedToken =
+      sessionStorage.getItem(
+        storageKey
+      );
+
+    setAccessToken(
+      storedToken
+    );
+
+    setTokenReady(true);
+  }, [
+    id,
+    tokenFromUrl,
+  ]);
+
+  // =========================
+  // CARREGAR PEDIDO
+  // =========================
+
+  useEffect(() => {
+    if (!tokenReady) {
+      return;
+    }
+
     async function loadOrder() {
+      if (!accessToken) {
+        setOrder(null);
+        setLoading(false);
+        return;
+      }
+
       try {
+        const encodedToken =
+          encodeURIComponent(
+            accessToken
+          );
+
         const response =
           await fetch(
-            `http://localhost:8080/api/orders/${id}`,
+            `${API_URL}/api/orders/${id}?token=${encodedToken}`,
             {
-              cache: "no-store",
+              cache:
+                "no-store",
             }
           );
 
@@ -92,21 +198,33 @@ export default function PaymentSuccessPage() {
           );
         }
 
-        const data: Order =
+        const data:
+          Order =
           await response.json();
 
         setOrder(data);
+
       } catch (error) {
         console.error(error);
+
+        setOrder(null);
+
       } finally {
         setLoading(false);
       }
     }
 
     loadOrder();
-  }, [id]);
+  }, [
+    id,
+    accessToken,
+    tokenReady,
+  ]);
 
-  if (loading) {
+  if (
+    !tokenReady ||
+    loading
+  ) {
     return (
       <main className="min-h-screen bg-background pb-16 text-foreground">
         <header className="border-b border-border bg-background/85 backdrop-blur-md">
@@ -158,6 +276,11 @@ export default function PaymentSuccessPage() {
   const approved =
     order.paymentStatus ===
     "APPROVED";
+
+  const encodedToken =
+    encodeURIComponent(
+      accessToken ?? ""
+    );
 
   return (
     <main className="min-h-screen bg-background pb-16 text-foreground">
@@ -285,7 +408,7 @@ export default function PaymentSuccessPage() {
             type="button"
             onClick={() =>
               router.push(
-                `/pedido/${order.id}`
+                `/pedido/${order.id}?token=${encodedToken}`
               )
             }
             className="brand-button mt-7 w-full rounded-2xl px-5 py-3.5"

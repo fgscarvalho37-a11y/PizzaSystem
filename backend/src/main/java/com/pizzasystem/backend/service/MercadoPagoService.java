@@ -1,5 +1,8 @@
 package com.pizzasystem.backend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -15,13 +18,22 @@ import java.util.UUID;
 @Service
 public class MercadoPagoService {
 
+    private static final Logger logger =
+            LoggerFactory.getLogger(
+                    MercadoPagoService.class
+            );
+
     @Value("${mercadopago.access-token}")
     private String accessToken;
+
+    @Value("${mercadopago.pix-payer-email:test@testuser.com}")
+    private String pixPayerEmail;
 
     private final RestTemplate restTemplate;
 
     public MercadoPagoService() {
-        this.restTemplate = new RestTemplate();
+        this.restTemplate =
+                new RestTemplate();
     }
 
     // =========================
@@ -62,7 +74,7 @@ public class MercadoPagoService {
         return createOrder(
                 orderId,
                 amount,
-                "test@testuser.com",
+                pixPayerEmail,
                 null,
                 null,
                 payment
@@ -111,16 +123,6 @@ public class MercadoPagoService {
             paymentType =
                     "credit_card";
         }
-
-        System.out.println(
-                "Tipo de cartão do pedido: "
-                        + paymentType
-        );
-
-        System.out.println(
-                "Payment Method enviado: "
-                        + finalPaymentMethodId
-        );
 
         Map<String, Object> paymentMethod =
                 new HashMap<>();
@@ -193,10 +195,15 @@ public class MercadoPagoService {
         Map<String, Object> payer =
                 new HashMap<>();
 
-        payer.put(
-                "email",
-                email
-        );
+        if (email != null
+                && !email.isBlank()) {
+
+            payer.put(
+                    "email",
+                    email.trim()
+            );
+        }
+
 
         if (identificationType != null
                 && !identificationType.isBlank()
@@ -227,7 +234,9 @@ public class MercadoPagoService {
 
         transactions.put(
                 "payments",
-                List.of(payment)
+                List.of(
+                        payment
+                )
         );
 
         Map<String, Object> body =
@@ -250,7 +259,8 @@ public class MercadoPagoService {
 
         body.put(
                 "external_reference",
-                "pizzasystem-order-" + orderId
+                "pizzasystem-order-"
+                        + orderId
         );
 
         body.put(
@@ -264,19 +274,18 @@ public class MercadoPagoService {
         );
 
         HttpHeaders headers =
-                new HttpHeaders();
+                createHeaders();
 
-        headers.setContentType(
-                MediaType.APPLICATION_JSON
-        );
-
-        headers.setBearerAuth(
-                accessToken
-        );
-
+        /*
+         * Cada criação recebe uma chave única.
+         * O controller já evita uma nova cobrança
+         * quando a order possui pagamento em andamento
+         * ou aprovado.
+         */
         headers.set(
                 "X-Idempotency-Key",
-                UUID.randomUUID().toString()
+                UUID.randomUUID()
+                        .toString()
         );
 
         HttpEntity<Map<String, Object>> request =
@@ -295,25 +304,39 @@ public class MercadoPagoService {
                             String.class
                     );
 
+            logger.info(
+                    "Mercado Pago order criada para pedido {} com HTTP {}.",
+                    orderId,
+                    response
+                            .getStatusCode()
+                            .value()
+            );
+
             return new MercadoPagoResult(
-                    response.getStatusCode().value(),
+                    response
+                            .getStatusCode()
+                            .value(),
                     response.getBody()
             );
 
         } catch (HttpStatusCodeException e) {
 
-            System.out.println(
-                    "Mercado Pago HTTP: "
-                            + e.getStatusCode()
-            );
-
-            System.out.println(
-                    "Mercado Pago BODY: "
-                            + e.getResponseBodyAsString()
+            /*
+             * Não registramos o body completo em log.
+             * Respostas de meios de pagamento podem
+             * conter informações que não devem ficar
+             * persistidas desnecessariamente.
+             */
+            logger.warn(
+                    "Mercado Pago recusou criação da order do pedido {}. HTTP {}.",
+                    orderId,
+                    e.getStatusCode()
+                            .value()
             );
 
             return new MercadoPagoResult(
-                    e.getStatusCode().value(),
+                    e.getStatusCode()
+                            .value(),
                     e.getResponseBodyAsString()
             );
         }
@@ -327,16 +350,20 @@ public class MercadoPagoService {
             String mercadoPagoOrderId
     ) {
 
+        if (mercadoPagoOrderId == null
+                || mercadoPagoOrderId.isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "ID da order do Mercado Pago não informado."
+            );
+        }
+
         String url =
                 "https://api.mercadopago.com/v1/orders/"
                         + mercadoPagoOrderId;
 
         HttpHeaders headers =
-                new HttpHeaders();
-
-        headers.setBearerAuth(
-                accessToken
-        );
+                createHeaders();
 
         HttpEntity<Void> request =
                 new HttpEntity<>(
@@ -357,24 +384,51 @@ public class MercadoPagoService {
 
         } catch (HttpStatusCodeException e) {
 
-            System.out.println(
-                    "Mercado Pago HTTP: "
-                            + e.getStatusCode()
-            );
-
-            System.out.println(
-                    "Mercado Pago BODY: "
-                            + e.getResponseBodyAsString()
+            logger.warn(
+                    "Falha ao consultar order do Mercado Pago. HTTP {}.",
+                    e.getStatusCode()
+                            .value()
             );
 
             throw new RuntimeException(
-                    "Erro Mercado Pago: "
-                            + e.getStatusCode()
-                            + " - "
-                            + e.getResponseBodyAsString(),
+                    "Não foi possível consultar o pagamento no Mercado Pago.",
                     e
             );
         }
+    }
+
+    // =========================
+    // HEADERS
+    // =========================
+
+    private HttpHeaders createHeaders() {
+
+        if (accessToken == null
+                || accessToken.isBlank()) {
+
+            throw new IllegalStateException(
+                    "MERCADOPAGO_ACCESS_TOKEN não configurado."
+            );
+        }
+
+        HttpHeaders headers =
+                new HttpHeaders();
+
+        headers.setContentType(
+                MediaType.APPLICATION_JSON
+        );
+
+        headers.setAccept(
+                List.of(
+                        MediaType.APPLICATION_JSON
+                )
+        );
+
+        headers.setBearerAuth(
+                accessToken.trim()
+        );
+
+        return headers;
     }
 
     // =========================
@@ -390,6 +444,7 @@ public class MercadoPagoService {
                 int statusCode,
                 String body
         ) {
+
             this.statusCode =
                     statusCode;
 

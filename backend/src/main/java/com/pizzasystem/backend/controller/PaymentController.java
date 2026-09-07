@@ -16,12 +16,14 @@ import com.pizzasystem.backend.service.MercadoPagoService.MercadoPagoResult;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/payments")
 public class PaymentController {
@@ -58,11 +60,15 @@ public class PaymentController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<?> createPix(
-            @PathVariable Long orderId
+            @PathVariable Long orderId,
+            @RequestParam(required = false) String token
     ) throws Exception {
 
         Order order =
-                getOrderOrThrow(orderId);
+                getOrderForAccess(
+                        orderId,
+                        token
+                );
 
         if (order.getPaymentMethod()
                 != PaymentMethod.PIX) {
@@ -140,11 +146,15 @@ public class PaymentController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<?> getPix(
-            @PathVariable Long orderId
+            @PathVariable Long orderId,
+            @RequestParam(required = false) String token
     ) {
 
         Order order =
-                getOrderOrThrow(orderId);
+                getOrderForAccess(
+                        orderId,
+                        token
+                );
 
         if (order.getPaymentExternalId() == null
                 || order.getPaymentExternalId().isBlank()) {
@@ -173,11 +183,15 @@ public class PaymentController {
     )
     public ResponseEntity<?> createCardPayment(
             @PathVariable Long orderId,
+            @RequestParam(required = false) String token,
             @RequestBody CardPaymentRequest request
     ) throws Exception {
 
         Order order =
-                getOrderOrThrow(orderId);
+                getOrderForAccess(
+                        orderId,
+                        token
+                );
 
         boolean debit =
                 order.getPaymentMethod()
@@ -268,21 +282,6 @@ public class PaymentController {
             paymentMethodId =
                     "debelo";
         }
-
-        System.out.println(
-                "Pedido: "
-                        + order.getId()
-        );
-
-        System.out.println(
-                "Forma do pedido: "
-                        + order.getPaymentMethod()
-        );
-
-        System.out.println(
-                "Payment Method: "
-                        + paymentMethodId
-        );
 
         /*
          * Se a tentativa anterior foi recusada,
@@ -447,11 +446,15 @@ public class PaymentController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<?> getPayment(
-            @PathVariable Long orderId
+            @PathVariable Long orderId,
+            @RequestParam(required = false) String token
     ) {
 
         Order order =
-                getOrderOrThrow(orderId);
+                getOrderForAccess(
+                        orderId,
+                        token
+                );
 
         if (order.getPaymentExternalId() == null
                 || order.getPaymentExternalId().isBlank()) {
@@ -473,17 +476,74 @@ public class PaymentController {
     // AUXILIARES
     // =========================
 
-    private Order getOrderOrThrow(
-            Long orderId
+    private Order getOrderForAccess(
+            Long orderId,
+            String token
     ) {
 
+        /*
+         * O painel administrativo continua podendo
+         * consultar pagamentos pelo ID do pedido.
+         */
+        if (isAdminAuthenticated()) {
+
+            return orderRepository
+                    .findById(orderId)
+                    .orElseThrow(
+                            this::orderNotFound
+                    );
+        }
+
+        /*
+         * No fluxo público, conhecer apenas o ID
+         * sequencial do pedido não autoriza acesso.
+         */
+        if (token == null
+                || token.isBlank()) {
+
+            throw orderNotFound();
+        }
+
         return orderRepository
-                .findById(orderId)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Pedido não encontrado"
-                        )
+                .findByIdAndPublicAccessToken(
+                        orderId,
+                        token.trim()
+                )
+                .orElseThrow(
+                        this::orderNotFound
                 );
+    }
+
+    private boolean isAdminAuthenticated() {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()) {
+
+            return false;
+        }
+
+        return authentication
+                .getAuthorities()
+                .stream()
+                .anyMatch(
+                        authority ->
+                                "ROLE_ADMIN".equals(
+                                        authority.getAuthority()
+                                )
+                );
+    }
+
+    private ResponseStatusException orderNotFound() {
+
+        return new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Pedido não encontrado"
+        );
     }
 
     private ResponseEntity<?> validateCardRequest(
@@ -550,18 +610,6 @@ public class PaymentController {
                     payment.path("status_detail")
                             .asText();
         }
-
-        System.out.println(
-                "Mercado Pago Order: "
-                        + orderStatus
-        );
-
-        System.out.println(
-                "Mercado Pago Payment: "
-                        + paymentStatus
-                        + " / "
-                        + statusDetail
-        );
 
         boolean approved =
                 "processed".equalsIgnoreCase(
