@@ -9,6 +9,10 @@ import {
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
+
 type Category = {
   id: number;
   name: string;
@@ -60,7 +64,7 @@ export default function AdminCategoriasPage() {
 
       const response =
         await adminFetch(
-          "http://localhost:8080/api/categories",
+          `${API_URL}/api/categories`,
           {
             cache: "no-store",
             credentials: "include",
@@ -151,8 +155,8 @@ export default function AdminCategoriasPage() {
 
       const url =
         editingId
-          ? `http://localhost:8080/api/categories/${editingId}`
-          : "http://localhost:8080/api/categories";
+          ? `${API_URL}/api/categories/${editingId}`
+          : `${API_URL}/api/categories`;
 
       const method =
         editingId
@@ -212,25 +216,23 @@ export default function AdminCategoriasPage() {
   // =========================
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-background">
 
-      <AdminHeader
-        title="Gerenciar categorias"
-      />
+      <AdminHeader />
 
-      <div className="mx-auto max-w-5xl p-6">
+      <div className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8">
 
-        <div className="mb-8">
+        <div className="mb-6 border-b border-border pb-6">
 
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
             Cardápio
           </p>
 
-          <h2 className="mt-1 text-3xl font-bold text-gray-900">
+          <h2 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
             Categorias
           </h2>
 
-          <p className="mt-2 max-w-2xl text-gray-600">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
             Organize os produtos do cardápio em grupos como pizzas, esfihas, bebidas e outros itens.
           </p>
 
@@ -255,13 +257,13 @@ export default function AdminCategoriasPage() {
         )}
 
         {successMessage && (
-          <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-4">
+          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
 
-            <p className="font-semibold text-green-700">
+            <p className="font-semibold text-emerald-700">
               Tudo certo
             </p>
 
-            <p className="mt-1 text-sm text-green-600">
+            <p className="mt-1 text-sm text-emerald-700">
               {successMessage}
             </p>
 
@@ -274,20 +276,20 @@ export default function AdminCategoriasPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+          className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]"
         >
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
 
-              <h3 className="text-xl font-bold text-gray-900">
+              <h3 className="font-display text-2xl uppercase tracking-tight text-foreground">
                 {editingId
                   ? "Editar categoria"
                   : "Nova categoria"}
               </h3>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {editingId
                   ? "Altere o nome da categoria selecionada."
                   : "Crie uma nova categoria para organizar o cardápio."}
@@ -301,7 +303,7 @@ export default function AdminCategoriasPage() {
                 onClick={
                   cancelEdit
                 }
-                className="text-sm font-semibold text-red-600 transition hover:text-red-700"
+                className="h-9 rounded-lg border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 transition hover:bg-red-100"
               >
                 Cancelar edição
               </button>
@@ -324,7 +326,7 @@ export default function AdminCategoriasPage() {
                 )
               }
               placeholder="Ex: Bebidas"
-              className="h-12 flex-1 rounded-xl border border-gray-300 px-4 outline-none transition focus:border-black"
+              className="h-12 flex-1 rounded-xl border border-input px-4 outline-none transition focus:border-border"
             />
 
             <button
@@ -332,7 +334,7 @@ export default function AdminCategoriasPage() {
               disabled={
                 saving
               }
-              className="h-12 rounded-xl bg-black px-6 font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:shadow-sm disabled:pointer-events-none disabled:opacity-50"
             >
               {saving
                 ? "Salvando..."
@@ -349,17 +351,17 @@ export default function AdminCategoriasPage() {
             LISTA
             ========================= */}
 
-        <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <section className="mt-6 rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
 
-              <h3 className="text-xl font-bold text-gray-900">
+              <h3 className="font-display text-2xl uppercase tracking-tight text-foreground">
                 Categorias cadastradas
               </h3>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {categories.length}{" "}
                 {categories.length === 1
                   ? "categoria cadastrada"
@@ -373,18 +375,46 @@ export default function AdminCategoriasPage() {
               onClick={() =>
                 loadCategories()
               }
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+              className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-background"
             >
               Atualizar
             </button>
 
           </div>
 
+          {!loading && categories.length > 0 && (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  Total de categorias
+                </p>
+
+                <p className="mt-1 text-2xl font-bold text-foreground">
+                  {categories.length}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  Organização
+                </p>
+
+                <p className="mt-1 text-sm font-bold text-foreground">
+                  Estrutura do cardápio
+                </p>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Use nomes curtos e fáceis de identificar.
+                </p>
+              </div>
+            </div>
+          )}
+
           {loading ? (
 
-            <div className="mt-6 rounded-xl bg-gray-50 p-6 text-center">
+            <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center">
 
-              <p className="text-gray-500">
+              <p className="text-muted-foreground">
                 Carregando categorias...
               </p>
 
@@ -392,17 +422,17 @@ export default function AdminCategoriasPage() {
 
           ) : categories.length === 0 ? (
 
-            <div className="mt-6 rounded-xl bg-gray-50 p-8 text-center">
+            <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center">
 
               <p className="text-4xl">
                 🗂️
               </p>
 
-              <h4 className="mt-3 font-bold text-gray-900">
+              <h4 className="mt-3 font-bold text-foreground">
                 Nenhuma categoria cadastrada
               </h4>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Cadastre a primeira categoria para organizar os produtos.
               </p>
 
@@ -417,16 +447,16 @@ export default function AdminCategoriasPage() {
 
                   <div
                     key={category.id}
-                    className="flex flex-col gap-4 rounded-xl border border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    className="group flex flex-col gap-4 rounded-[18px] border border-border bg-background p-4 transition hover:-translate-y-0.5 hover:border-foreground/10 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
                   >
 
                     <div>
 
-                      <p className="font-semibold text-gray-900">
+                      <p className="text-base font-bold tracking-tight text-foreground">
                         {category.name}
                       </p>
 
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Categoria #{category.id}
                       </p>
 
@@ -439,7 +469,7 @@ export default function AdminCategoriasPage() {
                           category
                         )
                       }
-                      className="rounded-lg border border-black px-4 py-2 text-sm font-semibold transition hover:bg-gray-50"
+                      className="rounded-lg border border-border px-4 py-2 text-sm font-semibold transition hover:bg-background"
                     >
                       Editar
                     </button>

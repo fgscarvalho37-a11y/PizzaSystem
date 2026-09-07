@@ -9,6 +9,10 @@ import {
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
+
 type Crust = {
   id: number;
   name: string;
@@ -127,7 +131,7 @@ export default function AdminBordasPage() {
 
       const response =
         await adminFetch(
-          "http://localhost:8080/api/crusts",
+          `${API_URL}/api/crusts`,
           {
             method: "GET",
             cache: "no-store",
@@ -168,7 +172,7 @@ export default function AdminBordasPage() {
     try {
       const response =
         await adminFetch(
-          "http://localhost:8080/api/products",
+          `${API_URL}/api/products`,
           {
             method: "GET",
             cache: "no-store",
@@ -370,8 +374,8 @@ export default function AdminBordasPage() {
       const url =
         editingId ===
         null
-          ? "http://localhost:8080/api/crusts"
-          : `http://localhost:8080/api/crusts/${editingId}`;
+          ? `${API_URL}/api/crusts`
+          : `${API_URL}/api/crusts/${editingId}`;
 
       const method =
         editingId ===
@@ -494,7 +498,7 @@ export default function AdminBordasPage() {
 
       const response =
         await adminFetch(
-          `http://localhost:8080/api/crusts/${crust.id}/active?active=${!crust.active}`,
+          `${API_URL}/api/crusts/${crust.id}/active?active=${!crust.active}`,
           {
             method: "PATCH",
           }
@@ -555,7 +559,7 @@ export default function AdminBordasPage() {
 
       const response =
         await adminFetch(
-          `http://localhost:8080/api/products/${product.id}/allow-crust?allowCrust=${newValue}`,
+          `${API_URL}/api/products/${product.id}/allow-crust?allowCrust=${newValue}`,
           {
             method: "PATCH",
           }
@@ -608,25 +612,23 @@ export default function AdminBordasPage() {
   // =========================
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-background">
 
-      <AdminHeader
-        title="Bordas"
-      />
+      <AdminHeader />
 
-      <div className="mx-auto max-w-6xl p-6">
+      <div className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8">
 
-        <div className="mb-8">
+        <div className="mb-6 border-b border-border pb-6">
 
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
             Cardápio
           </p>
 
-          <h2 className="mt-1 text-3xl font-bold text-gray-900">
+          <h2 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
             Bordas recheadas
           </h2>
 
-          <p className="mt-2 max-w-3xl text-gray-600">
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
             Cadastre as opções de borda que podem ser escolhidas nas pizzas marcadas como compatíveis.
           </p>
 
@@ -647,13 +649,13 @@ export default function AdminBordasPage() {
         )}
 
         {successMessage && (
-          <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-4">
+          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
 
-            <p className="font-semibold text-green-700">
+            <p className="font-semibold text-emerald-700">
               Tudo certo
             </p>
 
-            <p className="mt-1 text-sm text-green-600">
+            <p className="mt-1 text-sm text-emerald-700">
               {successMessage}
             </p>
 
@@ -666,13 +668,13 @@ export default function AdminBordasPage() {
               FORMULÁRIO
               ========================= */}
 
-          <section className="h-fit rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <section className="h-fit rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
 
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
               Cadastro
             </p>
 
-            <h3 className="mt-1 text-2xl font-bold text-gray-900">
+            <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
               {editingId ===
               null
                 ? "Nova borda"
@@ -688,7 +690,7 @@ export default function AdminBordasPage() {
 
               <div>
 
-                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                   Nome
                 </label>
 
@@ -705,14 +707,14 @@ export default function AdminBordasPage() {
                     )
                   }
                   placeholder="Ex: Catupiry"
-                  className="w-full rounded-xl border border-gray-300 p-3 outline-none transition focus:border-black"
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
 
               </div>
 
               <div>
 
-                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                   Preço adicional
                 </label>
 
@@ -732,14 +734,14 @@ export default function AdminBordasPage() {
                     )
                   }
                   placeholder="Ex: 6.00"
-                  className="w-full rounded-xl border border-gray-300 p-3 outline-none transition focus:border-black"
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
 
               </div>
 
               <div>
 
-                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                   Ordem de exibição
                 </label>
 
@@ -757,43 +759,33 @@ export default function AdminBordasPage() {
                       event.target.value
                     )
                   }
-                  className="w-full rounded-xl border border-gray-300 p-3 outline-none transition focus:border-black"
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
 
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Números menores aparecem primeiro.
                 </p>
 
               </div>
 
-              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
-
-                <input
-                  type="checkbox"
-                  checked={
-                    active
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setActive(
-                      event.target.checked
-                    )
-                  }
-                />
-
+              <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-border bg-background p-4">
                 <div>
-
-                  <p className="font-semibold text-gray-800">
-                    Borda ativa
-                  </p>
-
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm font-bold text-foreground">Borda ativa</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     Quando desativada, não aparece para o cliente.
                   </p>
-
                 </div>
 
+                <div className="relative inline-flex h-7 w-12 shrink-0 items-center">
+                  <input
+                    type="checkbox"
+                    checked={active}
+                    onChange={(event) => setActive(event.target.checked)}
+                    className="peer sr-only"
+                  />
+                  <span className="absolute inset-0 rounded-full bg-muted-foreground/25 transition peer-checked:bg-primary" />
+                  <span className="absolute left-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
+                </div>
               </label>
 
               <button
@@ -801,7 +793,7 @@ export default function AdminBordasPage() {
                 disabled={
                   saving
                 }
-                className="w-full rounded-xl bg-black px-5 py-3 font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+                className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:shadow-sm disabled:pointer-events-none disabled:opacity-50"
               >
                 {saving
                   ? "Salvando..."
@@ -818,7 +810,7 @@ export default function AdminBordasPage() {
                   onClick={
                     clearForm
                   }
-                  className="w-full rounded-xl border border-gray-300 bg-white px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
+                  className="w-full rounded-xl border border-input bg-card px-5 py-3 font-semibold text-foreground transition hover:bg-background"
                 >
                   Cancelar edição
                 </button>
@@ -832,17 +824,17 @@ export default function AdminBordasPage() {
               LISTA
               ========================= */}
 
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
 
             <div className="flex items-end justify-between gap-4">
 
               <div>
 
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
                   Cadastradas
                 </p>
 
-                <h3 className="mt-1 text-2xl font-bold text-gray-900">
+                <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
                   Opções disponíveis
                 </h3>
 
@@ -853,21 +845,42 @@ export default function AdminBordasPage() {
                 onClick={
                   loadCrusts
                 }
-                className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                className="rounded-xl border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-background"
               >
                 Atualizar
               </button>
 
             </div>
 
+            {!loading && crusts.length > 0 && (
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-border bg-background p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Bordas</p>
+                  <p className="mt-1 text-2xl font-bold text-foreground">{crusts.length}</p>
+                </div>
+                <div className="rounded-xl border border-border bg-background p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Ativas</p>
+                  <p className="mt-1 text-2xl font-bold text-emerald-700">
+                    {crusts.filter((crust) => crust.active).length}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border bg-background p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Preço médio</p>
+                  <p className="mt-1 text-lg font-bold text-foreground">
+                    {formatMoney(crusts.reduce((total, crust) => total + Number(crust.price), 0) / crusts.length)}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {loading ? (
-              <div className="mt-6 rounded-xl bg-gray-50 p-6 text-center text-gray-500">
+              <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center text-sm text-muted-foreground">
                 Carregando bordas...
               </div>
 
             ) : crusts.length ===
               0 ? (
-              <div className="mt-6 rounded-xl bg-gray-50 p-6 text-center text-gray-500">
+              <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center text-sm text-muted-foreground">
                 Nenhuma borda cadastrada.
               </div>
 
@@ -880,7 +893,7 @@ export default function AdminBordasPage() {
                       key={
                         crust.id
                       }
-                      className="rounded-2xl border border-gray-200 p-5"
+                      className="rounded-[20px] border border-border bg-background p-5 transition hover:-translate-y-0.5 hover:shadow-sm"
                     >
 
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -889,15 +902,15 @@ export default function AdminBordasPage() {
 
                           <div className="flex flex-wrap items-center gap-2">
 
-                            <h4 className="text-lg font-bold text-gray-900">
+                            <h4 className="text-lg font-bold tracking-tight text-foreground">
                               {crust.name}
                             </h4>
 
                             <span
                               className={
                                 crust.active
-                                  ? "rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700"
-                                  : "rounded-full bg-gray-200 px-3 py-1 text-xs font-bold text-gray-600"
+                                  ? "rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-700"
+                                  : "rounded-full border border-border bg-muted px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground"
                               }
                             >
                               {crust.active
@@ -907,7 +920,7 @@ export default function AdminBordasPage() {
 
                           </div>
 
-                          <p className="mt-2 text-xl font-bold text-gray-900">
+                          <p className="mt-2 text-xl font-bold tracking-tight text-foreground">
                             {formatMoney(
                               Number(
                                 crust.price
@@ -915,7 +928,7 @@ export default function AdminBordasPage() {
                             )}
                           </p>
 
-                          <p className="mt-1 text-xs text-gray-500">
+                          <p className="mt-1 text-xs text-muted-foreground">
                             Ordem:{" "}
                             {crust.sortOrder}
                           </p>
@@ -931,7 +944,7 @@ export default function AdminBordasPage() {
                                 crust
                               )
                             }
-                            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                            className="rounded-lg border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-background"
                           >
                             Editar
                           </button>
@@ -950,7 +963,7 @@ export default function AdminBordasPage() {
                             className={
                               crust.active
                                 ? "rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
-                                : "rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100 disabled:opacity-50"
+                                : "rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
                             }
                           >
                             {updatingId ===
@@ -980,21 +993,21 @@ export default function AdminBordasPage() {
             PRODUTOS COM BORDA
             ========================= */}
 
-        <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <section className="mt-6 rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 
             <div>
 
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
                 Aplicação
               </p>
 
-              <h3 className="mt-1 text-2xl font-bold text-gray-900">
+              <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
                 Produtos que aceitam borda
               </h3>
 
-              <p className="mt-2 max-w-3xl text-sm text-gray-600">
+              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
                 Marque somente as pizzas em que o cliente pode escolher uma borda recheada. Produtos desmarcados não mostrarão essa opção no cardápio.
               </p>
 
@@ -1005,20 +1018,31 @@ export default function AdminBordasPage() {
               onClick={
                 loadProducts
               }
-              className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+              className="rounded-xl border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-background"
             >
               Atualizar produtos
             </button>
 
           </div>
 
+          {!loadingProducts && products.length > 0 && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              <span className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-bold text-foreground">
+                {products.filter((product) => product.allowCrust).length} aceitam borda
+              </span>
+              <span className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                {products.length} produtos cadastrados
+              </span>
+            </div>
+          )}
+
           {loadingProducts ? (
-            <div className="mt-6 rounded-xl bg-gray-50 p-6 text-center text-gray-500">
+            <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center text-sm text-muted-foreground">
               Carregando produtos...
             </div>
 
           ) : products.length === 0 ? (
-            <div className="mt-6 rounded-xl bg-gray-50 p-6 text-center text-gray-500">
+            <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center text-sm text-muted-foreground">
               Nenhum produto cadastrado.
             </div>
 
@@ -1048,8 +1072,8 @@ export default function AdminBordasPage() {
                       }
                       className={
                         product.allowCrust
-                          ? "flex items-center justify-between gap-4 rounded-2xl border-2 border-black bg-gray-50 p-4 text-left transition hover:bg-gray-100 disabled:cursor-wait disabled:opacity-60"
-                          : "flex items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-4 text-left transition hover:border-gray-400 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
+                          ? "flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-left transition hover:bg-primary/10 disabled:cursor-wait disabled:opacity-60"
+                          : "flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-foreground/20 hover:bg-background disabled:cursor-wait disabled:opacity-60"
                       }
                     >
 
@@ -1057,19 +1081,19 @@ export default function AdminBordasPage() {
 
                         <div className="flex flex-wrap items-center gap-2">
 
-                          <p className="truncate font-bold text-gray-900">
+                          <p className="truncate font-bold text-foreground">
                             {product.name}
                           </p>
 
                           {!product.available && (
-                            <span className="rounded-full bg-gray-200 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-600">
+                            <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
                               Produto inativo
                             </span>
                           )}
 
                         </div>
 
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-xs text-muted-foreground">
                           {product.category.name}
                         </p>
 
@@ -1078,15 +1102,15 @@ export default function AdminBordasPage() {
                       <div
                         className={
                           product.allowCrust
-                            ? "relative h-7 w-12 shrink-0 rounded-full bg-black transition"
-                            : "relative h-7 w-12 shrink-0 rounded-full bg-gray-300 transition"
+                            ? "relative h-6 w-11 shrink-0 rounded-full bg-primary transition"
+                            : "relative h-6 w-11 shrink-0 rounded-full bg-muted-foreground/25 transition"
                         }
                       >
                         <span
                           className={
                             product.allowCrust
-                              ? "absolute left-6 top-1 h-5 w-5 rounded-full bg-white shadow transition"
-                              : "absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition"
+                              ? "absolute left-6 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition"
+                              : "absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition"
                           }
                         />
                       </div>

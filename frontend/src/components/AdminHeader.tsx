@@ -5,74 +5,480 @@ import {
   usePathname,
   useRouter,
 } from "next/navigation";
-import { useState } from "react";
+import {
+  useState,
+} from "react";
 
 import {
+  adminFetch,
   clearAdminCsrfToken,
 } from "@/lib/adminFetch";
 
-const links = [
+type IconProps = {
+  className?: string;
+};
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
+
+/* =========================
+   ÍCONES
+========================= */
+
+function DashboardIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+function OrdersIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
+      <path d="M9 8h6" />
+      <path d="M9 12h6" />
+    </svg>
+  );
+}
+
+function KitchenIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M5 11h14" />
+      <path d="M7 11a5 5 0 0 1 10 0" />
+      <path d="M4 15h16" />
+      <path d="M8 19h8" />
+    </svg>
+  );
+}
+
+function DeliveryIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M3 6h11v11H3Z" />
+      <path d="M14 10h4l3 3v4h-7Z" />
+      <circle cx="7" cy="18" r="2" />
+      <circle cx="18" cy="18" r="2" />
+    </svg>
+  );
+}
+
+function HistoryIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 4v6h6" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+
+function ChartIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M4 20V10" />
+      <path d="M10 20V4" />
+      <path d="M16 20v-7" />
+      <path d="M22 20H2" />
+    </svg>
+  );
+}
+
+function CashIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M7 9H6v1" />
+      <path d="M17 15h1v-1" />
+    </svg>
+  );
+}
+
+function CouponIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M4 7a2 2 0 0 0 2-2h12a2 2 0 0 0 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 0-2 2H6a2 2 0 0 0-2-2v-3a2 2 0 0 0 0-4V7Z" />
+      <path d="M9 9h.01" />
+      <path d="M15 15h.01" />
+      <path d="m9 15 6-6" />
+    </svg>
+  );
+}
+
+function MenuIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h10" />
+    </svg>
+  );
+}
+
+function CategoryIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="7" height="7" rx="1.5" />
+      <rect x="14" y="4" width="7" height="7" rx="1.5" />
+      <rect x="3" y="15" width="7" height="5" rx="1.5" />
+      <rect x="14" y="15" width="7" height="5" rx="1.5" />
+    </svg>
+  );
+}
+
+function CrustIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="4" />
+    </svg>
+  );
+}
+
+function ClockIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+
+function SettingsIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19 12a7 7 0 0 0-.09-1.1l2-1.55-2-3.46-2.47 1a7 7 0 0 0-1.9-1.1L14.2 3h-4.4l-.34 2.79a7 7 0 0 0-1.9 1.1l-2.47-1-2 3.46 2 1.55A7 7 0 0 0 5 12c0 .37.03.74.09 1.1l-2 1.55 2 3.46 2.47-1a7 7 0 0 0 1.9 1.1L9.8 21h4.4l.34-2.79a7 7 0 0 0 1.9-1.1l2.47 1 2-3.46-2-1.55A7 7 0 0 0 19 12Z" />
+    </svg>
+  );
+}
+
+function ExternalIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M14 5h5v5" />
+      <path d="m19 5-8 8" />
+      <path d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" />
+    </svg>
+  );
+}
+
+function MobileMenuIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+    </svg>
+  );
+}
+
+function CloseIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M6 6l12 12" />
+      <path d="M18 6 6 18" />
+    </svg>
+  );
+}
+
+function LogoutIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M10 5H5v14h5" />
+      <path d="M14 8l4 4-4 4" />
+      <path d="M18 12H9" />
+    </svg>
+  );
+}
+
+/* =========================
+   NAVEGAÇÃO
+========================= */
+
+const sections = [
   {
-    label: "Painel",
-    href: "/admin",
+    title: "Operação",
+    items: [
+      {
+        label: "Painel",
+        href: "/admin",
+        icon: DashboardIcon,
+      },
+      {
+        label: "Pedidos",
+        href: "/admin/pedidos",
+        icon: OrdersIcon,
+      },
+      {
+        label: "Cozinha",
+        href: "/admin/cozinha",
+        icon: KitchenIcon,
+      },
+      {
+        label: "Entregas",
+        href: "/admin/entregas",
+        icon: DeliveryIcon,
+      },
+    ],
   },
   {
-    label: "Pedidos",
-    href: "/admin/pedidos",
+    title: "Gestão",
+    items: [
+      {
+        label: "Histórico",
+        href: "/admin/historico",
+        icon: HistoryIcon,
+      },
+      {
+        label: "Relatórios",
+        href: "/admin/relatorios",
+        icon: ChartIcon,
+      },
+      {
+        label: "Caixa",
+        href: "/admin/caixa",
+        icon: CashIcon,
+      },
+      {
+        label: "Cupons",
+        href: "/admin/cupons",
+        icon: CouponIcon,
+      },
+    ],
   },
   {
-    label: "Cozinha",
-    href: "/admin/cozinha",
+    title: "Cardápio",
+    items: [
+      {
+        label: "Produtos",
+        href: "/admin/cardapio",
+        icon: MenuIcon,
+      },
+      {
+        label: "Categorias",
+        href: "/admin/categorias",
+        icon: CategoryIcon,
+      },
+      {
+        label: "Bordas",
+        href: "/admin/bordas",
+        icon: CrustIcon,
+      },
+    ],
   },
   {
-    label: "Histórico",
-    href: "/admin/historico",
-  },
-  {
-    label: "Relatórios",
-    href: "/admin/relatorios",
-  },
-  {
-    label: "Caixa",
-    href: "/admin/caixa",
-  },
-  {
-    label: "Cupons",
-    href: "/admin/cupons",
-  },
-  {
-    label: "Entregas",
-    href: "/admin/entregas",
-  },
-  {
-    label: "Cardápio",
-    href: "/admin/cardapio",
-  },
-  {
-    label: "Categorias",
-    href: "/admin/categorias",
-  },
-  {
-    label: "Bordas",
-    href: "/admin/bordas",
-  },
-  {
-    label: "Horários",
-    href: "/admin/horarios",
-  },
-  {
-    label: "Configurações",
-    href: "/admin/configuracoes",
+    title: "Sistema",
+    items: [
+      {
+        label: "Horários",
+        href: "/admin/horarios",
+        icon: ClockIcon,
+      },
+      {
+        label: "Configurações",
+        href: "/admin/configuracoes",
+        icon: SettingsIcon,
+      },
+    ],
   },
 ];
 
-type AdminHeaderProps = {
-  title?: string;
-};
-
-export default function AdminHeader({
-  title = "Painel administrativo",
-}: AdminHeaderProps) {
+export default function AdminHeader() {
   const pathname =
     usePathname();
 
@@ -84,6 +490,27 @@ export default function AdminHeader({
     setLoggingOut,
   ] = useState(false);
 
+  const [
+    mobileOpen,
+    setMobileOpen,
+  ] = useState(false);
+
+  function closeMobileMenu() {
+    setMobileOpen(false);
+  }
+
+  function isActive(
+    href: string
+  ) {
+    if (href === "/admin") {
+      return pathname === "/admin";
+    }
+
+    return pathname.startsWith(
+      href
+    );
+  }
+
   async function handleLogout() {
     if (loggingOut) {
       return;
@@ -93,17 +520,16 @@ export default function AdminHeader({
       setLoggingOut(true);
 
       const response =
-        await fetch(
-          "http://localhost:8080/api/auth/logout",
+        await adminFetch(
+          `${API_URL}/api/auth/logout`,
           {
             method: "POST",
-            credentials: "include",
           }
         );
 
       if (!response.ok) {
         throw new Error(
-          "Não foi possível sair."
+          "Falha ao encerrar sessão."
         );
       }
 
@@ -117,12 +543,8 @@ export default function AdminHeader({
 
     } catch (error) {
       console.error(
-        "Erro ao realizar logout:",
+        "Erro ao sair:",
         error
-      );
-
-      alert(
-        "Não foi possível sair. Tente novamente."
       );
 
     } finally {
@@ -131,57 +553,210 @@ export default function AdminHeader({
   }
 
   return (
-    <header className="border-b bg-white">
+    <>
+      <aside
+        className="
+          group/sidebar
+          fixed inset-y-0 left-0 z-50
+          hidden w-20 flex-col
+          overflow-hidden
+          border-r border-border
+          bg-background/98
+          shadow-[8px_0_28px_rgba(0,0,0,0.025)]
+          transition-[width] duration-300 ease-out
+          lg:flex
+          lg:hover:w-64
+        "
+      >
+        {/* LOGO */}
 
-      <div className="mx-auto max-w-7xl px-6 py-5">
+        <div className="flex h-20 shrink-0 items-center">
+          <Link
+            href="/admin"
+            className="
+              flex h-full w-full items-center
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-ring
+            "
+          >
+            <div className="flex w-20 shrink-0 items-center justify-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                <span className="font-display text-xl leading-none">
+                  P
+                </span>
+              </div>
+            </div>
 
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-
-          <div>
-
-            <Link
-              href="/admin"
-              className="text-sm font-semibold text-gray-500 transition hover:text-black"
+            <div
+              className="
+                min-w-0
+                translate-x-2 opacity-0
+                transition-all duration-200
+                group-hover/sidebar:translate-x-0
+                group-hover/sidebar:opacity-100
+              "
             >
-              PizzaSystem
-            </Link>
+              <p className="whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                PizzaSystem
+              </p>
 
-            <h1 className="mt-1 text-2xl font-bold text-gray-900">
-              {title}
-            </h1>
+              <p className="mt-0.5 whitespace-nowrap text-sm font-semibold text-foreground">
+                Administração
+              </p>
+            </div>
+          </Link>
+        </div>
 
-          </div>
+        {/* NAVEGAÇÃO */}
 
-          <nav className="flex flex-wrap gap-2">
-
-            {links.map(
-              (link) => {
-
-                const active =
-                  pathname ===
-                  link.href;
-
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={
-                      active
-                        ? "rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white"
-                        : "rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-                    }
+        <nav
+          aria-label="Navegação administrativa"
+          className="
+            flex-1 overflow-y-auto
+            overflow-x-hidden
+            border-t border-border
+            py-4
+          "
+        >
+          <div className="space-y-5">
+            {sections.map(
+              (section) => (
+                <div
+                  key={
+                    section.title
+                  }
+                >
+                  <div
+                    className="
+                      mb-2 ml-20 h-4
+                      whitespace-nowrap
+                      text-[10px] font-bold
+                      uppercase tracking-[0.18em]
+                      text-muted-foreground
+                      opacity-0
+                      transition-opacity
+                      duration-200
+                      group-hover/sidebar:opacity-100
+                    "
                   >
-                    {link.label}
-                  </Link>
-                );
-              }
+                    {section.title}
+                  </div>
+
+                  <div className="space-y-1 px-3">
+                    {section.items.map(
+                      (item) => {
+                        const active =
+                          isActive(
+                            item.href
+                          );
+
+                        const Icon =
+                          item.icon;
+
+                        return (
+                          <Link
+                            key={
+                              item.href
+                            }
+                            href={
+                              item.href
+                            }
+                            title={
+                              item.label
+                            }
+                            aria-current={
+                              active
+                                ? "page"
+                                : undefined
+                            }
+                            className={[
+                              "relative flex h-11 w-14 items-center overflow-hidden rounded-xl transition-all duration-300 group-hover/sidebar:w-full",
+                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                              active
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "text-muted-foreground hover:bg-card hover:text-foreground",
+                            ].join(
+                              " "
+                            )}
+                          >
+                            <div className="flex w-14 shrink-0 items-center justify-center">
+                              <Icon className="h-5 w-5 shrink-0" />
+                            </div>
+
+                            <span
+                              className="
+                                whitespace-nowrap
+                                pr-4 text-sm font-semibold
+                                opacity-0
+                                transition-opacity duration-150
+                                group-hover/sidebar:opacity-100
+                              "
+                            >
+                              {item.label}
+                            </span>
+
+                            {active && (
+                              <span
+                                className="
+                                  absolute left-0
+                                  h-5 w-[3px]
+                                  rounded-r-full
+                                  bg-primary
+                                "
+                                aria-hidden="true"
+                              />
+                            )}
+                          </Link>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+              )
             )}
+          </div>
+        </nav>
+
+        {/* RODAPÉ */}
+
+        <div className="shrink-0 border-t border-border py-3">
+          <div className="space-y-1 px-3">
 
             <Link
               href="/cardapio"
-              className="rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100"
+              target="_blank"
+              rel="noreferrer"
+              title="Ver cardápio"
+              className="
+                flex h-11 w-14
+                items-center overflow-hidden
+                rounded-xl
+                text-muted-foreground
+                transition-all duration-300
+                hover:bg-card
+                hover:text-foreground
+                group-hover/sidebar:w-full
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-ring
+              "
             >
-              Ver site
+              <div className="flex w-14 shrink-0 items-center justify-center">
+                <ExternalIcon className="h-5 w-5 shrink-0" />
+              </div>
+
+              <span
+                className="
+                  whitespace-nowrap
+                  pr-4 text-sm font-semibold
+                  opacity-0
+                  transition-opacity duration-150
+                  group-hover/sidebar:opacity-100
+                "
+              >
+                Ver cardápio
+              </span>
             </Link>
 
             <button
@@ -192,19 +767,233 @@ export default function AdminHeader({
               disabled={
                 loggingOut
               }
-              className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Sair"
+              className="
+                flex h-11 w-14
+                items-center overflow-hidden
+                rounded-xl
+                text-muted-foreground
+                transition-all duration-300
+                hover:bg-destructive/10
+                hover:text-destructive
+                group-hover/sidebar:w-full
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-ring
+                disabled:pointer-events-none
+                disabled:opacity-50
+              "
             >
-              {loggingOut
-                ? "Saindo..."
-                : "Sair"}
+              <div className="flex w-14 shrink-0 items-center justify-center">
+                {loggingOut ? (
+                  <div
+                    className="
+                      h-5 w-5
+                      animate-spin
+                      rounded-full
+                      border-2
+                      border-current
+                      border-t-transparent
+                    "
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <LogoutIcon className="h-5 w-5 shrink-0" />
+                )}
+              </div>
+
+              <span
+                className="
+                  whitespace-nowrap
+                  pr-4 text-sm font-semibold
+                  opacity-0
+                  transition-opacity duration-150
+                  group-hover/sidebar:opacity-100
+                "
+              >
+                {loggingOut
+                  ? "Saindo..."
+                  : "Sair"}
+              </span>
             </button>
 
-          </nav>
-
+          </div>
         </div>
+      </aside>
 
-      </div>
+      {/* MOBILE */}
 
-    </header>
+      <header
+        className="
+          sticky top-0 z-40
+          flex h-16 items-center
+          justify-between
+          border-b border-border
+          bg-background/95 px-4
+          backdrop-blur
+          lg:hidden
+        "
+      >
+        <Link
+          href="/admin"
+          className="flex items-center gap-3"
+          onClick={closeMobileMenu}
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+            <span className="font-display text-lg">P</span>
+          </div>
+
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary">
+              PizzaSystem
+            </p>
+            <p className="text-sm font-semibold text-foreground">
+              Administração
+            </p>
+          </div>
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => setMobileOpen((current) => !current)}
+          aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+          aria-expanded={mobileOpen}
+          className="
+            flex h-10 w-10 items-center justify-center
+            rounded-xl border border-border bg-card
+            text-foreground transition
+            hover:bg-muted
+            focus-visible:outline-none
+            focus-visible:ring-2 focus-visible:ring-ring
+          "
+        >
+          {mobileOpen ? (
+            <CloseIcon className="h-5 w-5" />
+          ) : (
+            <MobileMenuIcon className="h-5 w-5" />
+          )}
+        </button>
+      </header>
+
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Fechar menu"
+            className="absolute inset-0 bg-foreground/20 backdrop-blur-[2px]"
+            onClick={closeMobileMenu}
+          />
+
+          <aside
+            className="
+              absolute inset-y-0 left-0
+              flex w-[min(88vw,340px)] flex-col
+              border-r border-border bg-background
+              shadow-2xl
+            "
+          >
+            <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4">
+              <Link
+                href="/admin"
+                onClick={closeMobileMenu}
+                className="flex items-center gap-3"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                  <span className="font-display text-lg">P</span>
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary">
+                    PizzaSystem
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">
+                    Administração
+                  </p>
+                </div>
+              </Link>
+
+              <button
+                type="button"
+                onClick={closeMobileMenu}
+                aria-label="Fechar menu"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <CloseIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <nav
+              aria-label="Navegação administrativa móvel"
+              className="flex-1 overflow-y-auto px-3 py-4"
+            >
+              <div className="space-y-5">
+                {sections.map((section) => (
+                  <div key={section.title}>
+                    <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                      {section.title}
+                    </p>
+
+                    <div className="space-y-1">
+                      {section.items.map((item) => {
+                        const active = isActive(item.href);
+                        const Icon = item.icon;
+
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={closeMobileMenu}
+                            aria-current={active ? "page" : undefined}
+                            className={[
+                              "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition",
+                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                              active
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                            ].join(" ")}
+                          >
+                            <Icon className="h-5 w-5 shrink-0" />
+                            <span>{item.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </nav>
+
+            <div className="shrink-0 border-t border-border p-3">
+              <Link
+                href="/cardapio"
+                target="_blank"
+                rel="noreferrer"
+                onClick={closeMobileMenu}
+                className="flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <ExternalIcon className="h-5 w-5" />
+                Ver cardápio
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="mt-1 flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-50"
+              >
+                {loggingOut ? (
+                  <span
+                    className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <LogoutIcon className="h-5 w-5" />
+                )}
+                <span>{loggingOut ? "Saindo..." : "Sair"}</span>
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

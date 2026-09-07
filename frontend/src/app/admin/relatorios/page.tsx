@@ -40,14 +40,26 @@ type ReportData = {
   };
 };
 
+type IconProps = {
+  className?: string;
+};
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
+
 function formatMoney(
   value: number | undefined
 ) {
-  return `R$ ${Number(
+  return Number(
     value ?? 0
-  )
-    .toFixed(2)
-    .replace(".", ",")}`;
+  ).toLocaleString(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL",
+    }
+  );
 }
 
 function formatDate(
@@ -57,10 +69,132 @@ function formatDate(
     return "";
   }
 
-  const [year, month, day] =
-    value.split("-");
+  const [
+    year,
+    month,
+    day,
+  ] = value.split("-");
 
   return `${day}/${month}/${year}`;
+}
+
+function CalendarIcon({
+  className = "h-4 w-4",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect
+        x="3"
+        y="5"
+        width="18"
+        height="16"
+        rx="2"
+      />
+      <path d="M8 3v4" />
+      <path d="M16 3v4" />
+      <path d="M3 10h18" />
+    </svg>
+  );
+}
+
+function AlertIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+      />
+      <path d="M12 8v5" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4 animate-spin"
+      aria-hidden="true"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        opacity="0.2"
+      />
+
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function ReportSkeleton() {
+  return (
+    <div
+      className="mt-6 space-y-6"
+      role="status"
+      aria-label="Carregando relatório"
+    >
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[1, 2, 3, 4].map(
+          (item) => (
+            <div
+              key={item}
+              className="rounded-2xl border border-border bg-card p-5"
+            >
+              <div className="animate-pulse">
+                <div className="h-3 w-24 rounded bg-muted" />
+                <div className="mt-3 h-8 w-28 rounded bg-muted" />
+                <div className="mt-3 h-3 w-36 rounded bg-muted" />
+              </div>
+            </div>
+          )
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="animate-pulse">
+          <div className="h-4 w-40 rounded bg-muted" />
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="h-24 rounded-xl bg-muted" />
+            <div className="h-24 rounded-xl bg-muted" />
+            <div className="h-24 rounded-xl bg-muted" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function AdminRelatoriosPage() {
@@ -107,10 +241,6 @@ export default function AdminRelatoriosPage() {
     setErrorMessage,
   ] = useState("");
 
-  // =========================
-  // CARREGAR RELATÓRIO
-  // =========================
-
   async function loadReport(
     start: string,
     end: string
@@ -119,14 +249,13 @@ export default function AdminRelatoriosPage() {
       setLoading(true);
       setErrorMessage("");
 
-     const response =
-  await adminFetch(
-    `http://localhost:8080/api/reports?startDate=${start}&endDate=${end}`,
-    {
-      cache: "no-store",
-      credentials: "include",
-    }
-  );
+      const response =
+        await adminFetch(
+          `${API_URL}/api/reports?startDate=${start}&endDate=${end}`,
+          {
+            cache: "no-store",
+          }
+        );
 
       if (!response.ok) {
         throw new Error(
@@ -150,20 +279,12 @@ export default function AdminRelatoriosPage() {
     }
   }
 
-  // =========================
-  // CARREGAMENTO INICIAL
-  // =========================
-
   useEffect(() => {
     loadReport(
       firstDayOfMonth,
       today
     );
   }, []);
-
-  // =========================
-  // FILTRAR
-  // =========================
 
   async function handleSubmit(
     event:
@@ -199,10 +320,6 @@ export default function AdminRelatoriosPage() {
     );
   }
 
-  // =========================
-  // ATALHOS DE PERÍODO
-  // =========================
-
   async function showToday() {
     setStartDate(today);
     setEndDate(today);
@@ -227,10 +344,6 @@ export default function AdminRelatoriosPage() {
       today
     );
   }
-
-  // =========================
-  // VALORES
-  // =========================
 
   const pixCount =
     report
@@ -293,94 +406,112 @@ export default function AdminRelatoriosPage() {
       ?.CANCELLED ?? 0;
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-background">
 
-      <AdminHeader
-        title="Relatórios"
-      />
+      <AdminHeader />
 
-      <div className="mx-auto max-w-7xl p-6">
+      <div className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8">
 
-        {/* =========================
-            TÍTULO
-            ========================= */}
+        <section className="border-b border-border pb-6">
 
-        <div className="mb-8">
-
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
             Gestão
           </p>
 
-          <h2 className="mt-1 text-3xl font-bold text-gray-900">
-            Relatórios de vendas
-          </h2>
+          <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
+            Relatórios
+          </h1>
 
-          <p className="mt-2 max-w-3xl text-gray-600">
-            Acompanhe faturamento, pedidos aprovados, ticket médio, formas de pagamento e andamento dos pedidos.
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Acompanhe faturamento, ticket médio, pagamentos e andamento dos pedidos.
           </p>
 
-        </div>
-
-        {/* =========================
-            FILTRO
-            ========================= */}
+        </section>
 
         <form
           onSubmit={
             handleSubmit
           }
-          className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+          className="mt-6 rounded-2xl border border-border bg-card p-4 sm:p-5"
         >
 
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
 
-            <div className="grid flex-1 gap-4 sm:grid-cols-2">
+            <div>
 
-              <div>
+              <label
+                htmlFor="report-start"
+                className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
+              >
+                Data inicial
+              </label>
 
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Data inicial
-                </label>
+              <input
+                id="report-start"
+                type="date"
+                value={
+                  startDate
+                }
+                onChange={(
+                  event
+                ) =>
+                  setStartDate(
+                    event.target.value
+                  )
+                }
+                className="
+                  h-11 w-full
+                  rounded-xl
+                  border border-input
+                  bg-background
+                  px-4
+                  text-sm text-foreground
+                  outline-none
+                  transition
+                  focus:border-primary
+                  focus:ring-2
+                  focus:ring-primary/10
+                "
+              />
 
-                <input
-                  type="date"
-                  value={
-                    startDate
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setStartDate(
-                      event.target.value
-                    )
-                  }
-                  className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none transition focus:border-black"
-                />
+            </div>
 
-              </div>
+            <div>
 
-              <div>
+              <label
+                htmlFor="report-end"
+                className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
+              >
+                Data final
+              </label>
 
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Data final
-                </label>
-
-                <input
-                  type="date"
-                  value={
-                    endDate
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setEndDate(
-                      event.target.value
-                    )
-                  }
-                  className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none transition focus:border-black"
-                />
-
-              </div>
+              <input
+                id="report-end"
+                type="date"
+                value={
+                  endDate
+                }
+                onChange={(
+                  event
+                ) =>
+                  setEndDate(
+                    event.target.value
+                  )
+                }
+                className="
+                  h-11 w-full
+                  rounded-xl
+                  border border-input
+                  bg-background
+                  px-4
+                  text-sm text-foreground
+                  outline-none
+                  transition
+                  focus:border-primary
+                  focus:ring-2
+                  focus:ring-primary/10
+                "
+              />
 
             </div>
 
@@ -391,7 +522,21 @@ export default function AdminRelatoriosPage() {
                 onClick={
                   showToday
                 }
-                className="h-12 rounded-xl border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                disabled={
+                  loading
+                }
+                className="
+                  h-11 rounded-xl
+                  border border-border
+                  bg-background
+                  px-4
+                  text-sm font-bold
+                  text-foreground
+                  transition
+                  hover:bg-muted
+                  disabled:pointer-events-none
+                  disabled:opacity-50
+                "
               >
                 Hoje
               </button>
@@ -401,7 +546,21 @@ export default function AdminRelatoriosPage() {
                 onClick={
                   showMonth
                 }
-                className="h-12 rounded-xl border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                disabled={
+                  loading
+                }
+                className="
+                  h-11 rounded-xl
+                  border border-border
+                  bg-background
+                  px-4
+                  text-sm font-bold
+                  text-foreground
+                  transition
+                  hover:bg-muted
+                  disabled:pointer-events-none
+                  disabled:opacity-50
+                "
               >
                 Este mês
               </button>
@@ -411,11 +570,29 @@ export default function AdminRelatoriosPage() {
                 disabled={
                   loading
                 }
-                className="h-12 rounded-xl bg-black px-6 font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="
+                  inline-flex h-11
+                  items-center
+                  justify-center
+                  gap-2 rounded-xl
+                  bg-foreground
+                  px-5
+                  text-sm font-bold
+                  text-background
+                  transition
+                  hover:opacity-90
+                  disabled:pointer-events-none
+                  disabled:opacity-50
+                "
               >
+
+                {loading && (
+                  <Spinner />
+                )}
+
                 {loading
-                  ? "Carregando..."
-                  : "Aplicar período"}
+                  ? "Carregando"
+                  : "Aplicar"}
               </button>
 
             </div>
@@ -424,339 +601,327 @@ export default function AdminRelatoriosPage() {
 
         </form>
 
-        {/* =========================
-            ERRO
-            ========================= */}
-
         {errorMessage && (
+          <div
+            className="mt-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
+            role="alert"
+          >
+            <AlertIcon className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
 
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4">
+            <div>
+              <p className="text-sm font-bold text-red-800">
+                Não foi possível gerar o relatório
+              </p>
 
-            <p className="font-semibold text-red-700">
-              Atenção
-            </p>
-
-            <p className="mt-1 text-sm text-red-600">
-              {errorMessage}
-            </p>
-
+              <p className="mt-1 text-sm text-red-700">
+                {errorMessage}
+              </p>
+            </div>
           </div>
-
         )}
 
-        {/* =========================
-            PERÍODO
-            ========================= */}
+        {report && !loading && (
+          <div className="mt-5 flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
 
-        {report && (
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <CalendarIcon />
+            </div>
 
-          <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                Período analisado
+              </p>
 
-            <p className="text-sm font-semibold text-blue-800">
-              Período analisado
-            </p>
-
-            <p className="mt-1 text-sm text-blue-700">
-              {formatDate(
-                report.startDate
-              )}{" "}
-              até{" "}
-              {formatDate(
-                report.endDate
-              )}
-            </p>
+              <p className="mt-0.5 text-sm font-bold text-foreground">
+                {formatDate(
+                  report.startDate
+                )}{" "}
+                —{" "}
+                {formatDate(
+                  report.endDate
+                )}
+              </p>
+            </div>
 
           </div>
-
         )}
 
-        {/* =========================
-            RESUMO
-            ========================= */}
+        {loading ? (
+          <ReportSkeleton />
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        ) : (
+          <>
+            <section className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-border bg-primary p-5 text-primary-foreground">
 
-            <p className="text-sm text-gray-500">
-              Faturamento
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-gray-900">
-              {formatMoney(
-                report?.revenue
-              )}
-            </p>
-
-            <p className="mt-2 text-xs text-gray-500">
-              Soma dos pedidos com pagamento aprovado.
-            </p>
-
-          </section>
-
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-
-            <p className="text-sm text-gray-500">
-              Pedidos aprovados
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-gray-900">
-              {
-                report?.orderCount ??
-                0
-              }
-            </p>
-
-            <p className="mt-2 text-xs text-gray-500">
-              Pedidos pagos dentro do período.
-            </p>
-
-          </section>
-
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-
-            <p className="text-sm text-gray-500">
-              Ticket médio
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-gray-900">
-              {formatMoney(
-                report?.averageTicket
-              )}
-            </p>
-
-            <p className="mt-2 text-xs text-gray-500">
-              Valor médio por pedido aprovado.
-            </p>
-
-          </section>
-
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-
-            <p className="text-sm text-gray-500">
-              Entregues
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-green-700">
-              {delivered}
-            </p>
-
-            <p className="mt-2 text-xs text-gray-500">
-              Pedidos concluídos no período.
-            </p>
-
-          </section>
-
-        </div>
-
-        {/* =========================
-            FORMAS DE PAGAMENTO
-            ========================= */}
-
-        <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-
-          <div>
-
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-              Pagamentos
-            </p>
-
-            <h3 className="mt-1 text-xl font-bold text-gray-900">
-              Formas de pagamento
-            </h3>
-
-            <p className="mt-1 text-sm text-gray-500">
-              Quantidade e faturamento por meio de pagamento.
-            </p>
-
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-
-            {/* PIX */}
-
-            <div className="rounded-xl border border-gray-200 p-5">
-
-              <div className="flex items-center justify-between gap-3">
-
-                <p className="font-bold text-gray-900">
-                  Pix
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary-foreground/70">
+                  Faturamento
                 </p>
 
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
-                  {pixCount}{" "}
-                  {pixCount === 1
-                    ? "pedido"
-                    : "pedidos"}
-                </span>
+                <p className="mt-2 text-3xl font-bold tracking-tight">
+                  {formatMoney(
+                    report?.revenue
+                  )}
+                </p>
+
+                <p className="mt-2 text-xs leading-5 text-primary-foreground/70">
+                  Pagamentos aprovados no período.
+                </p>
 
               </div>
 
-              <p className="mt-4 text-2xl font-bold text-gray-900">
-                {formatMoney(
-                  pixRevenue
-                )}
-              </p>
+              <div className="rounded-2xl border border-border bg-card p-5">
 
-            </div>
-
-            {/* CRÉDITO */}
-
-            <div className="rounded-xl border border-gray-200 p-5">
-
-              <div className="flex items-center justify-between gap-3">
-
-                <p className="font-bold text-gray-900">
-                  Cartão de crédito
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                  Pedidos pagos
                 </p>
 
-                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
-                  {creditCount}{" "}
-                  {creditCount === 1
-                    ? "pedido"
-                    : "pedidos"}
-                </span>
+                <p className="mt-2 text-3xl font-bold tracking-tight text-foreground">
+                  {report?.orderCount ??
+                    0}
+                </p>
+
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  Pedidos aprovados no período.
+                </p>
 
               </div>
 
-              <p className="mt-4 text-2xl font-bold text-gray-900">
-                {formatMoney(
-                  creditRevenue
-                )}
-              </p>
+              <div className="rounded-2xl border border-border bg-card p-5">
 
-            </div>
-
-            {/* DÉBITO */}
-
-            <div className="rounded-xl border border-gray-200 p-5">
-
-              <div className="flex items-center justify-between gap-3">
-
-                <p className="font-bold text-gray-900">
-                  Cartão de débito
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                  Ticket médio
                 </p>
 
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-600">
-                  {debitCount}{" "}
-                  {debitCount === 1
-                    ? "pedido"
-                    : "pedidos"}
-                </span>
+                <p className="mt-2 text-3xl font-bold tracking-tight text-foreground">
+                  {formatMoney(
+                    report?.averageTicket
+                  )}
+                </p>
+
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  Valor médio por pedido aprovado.
+                </p>
 
               </div>
 
-              <p className="mt-4 text-2xl font-bold text-gray-900">
-                {formatMoney(
-                  debitRevenue
-                )}
+              <div className="rounded-2xl border border-border bg-card p-5">
+
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                  Entregues
+                </p>
+
+                <div className="mt-2 flex items-end justify-between">
+
+                  <p className="text-3xl font-bold tracking-tight text-emerald-700">
+                    {delivered}
+                  </p>
+
+                  <span className="mb-1 h-2.5 w-2.5 rounded-full bg-emerald-500" />
+
+                </div>
+
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  Pedidos concluídos no período.
+                </p>
+
+              </div>
+
+            </section>
+
+            <section className="mt-6 rounded-2xl border border-border bg-card p-5">
+
+              <div>
+
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                  Pagamentos
+                </p>
+
+                <h2 className="mt-1 text-xl font-bold text-foreground">
+                  Formas de pagamento
+                </h2>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Quantidade de pedidos e faturamento por meio de pagamento.
+                </p>
+
+              </div>
+
+              <div className="mt-5 grid gap-3 md:grid-cols-3">
+
+                <div className="rounded-xl border border-border bg-background p-4">
+
+                  <div className="flex items-center justify-between gap-3">
+
+                    <p className="font-bold text-foreground">
+                      Pix
+                    </p>
+
+                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                      {pixCount}{" "}
+                      {pixCount === 1
+                        ? "pedido"
+                        : "pedidos"}
+                    </span>
+
+                  </div>
+
+                  <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+                    {formatMoney(
+                      pixRevenue
+                    )}
+                  </p>
+
+                </div>
+
+                <div className="rounded-xl border border-border bg-background p-4">
+
+                  <div className="flex items-center justify-between gap-3">
+
+                    <p className="font-bold text-foreground">
+                      Cartão de crédito
+                    </p>
+
+                    <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+                      {creditCount}{" "}
+                      {creditCount === 1
+                        ? "pedido"
+                        : "pedidos"}
+                    </span>
+
+                  </div>
+
+                  <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+                    {formatMoney(
+                      creditRevenue
+                    )}
+                  </p>
+
+                </div>
+
+                <div className="rounded-xl border border-border bg-background p-4">
+
+                  <div className="flex items-center justify-between gap-3">
+
+                    <p className="font-bold text-foreground">
+                      Cartão de débito
+                    </p>
+
+                    <span className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">
+                      {debitCount}{" "}
+                      {debitCount === 1
+                        ? "pedido"
+                        : "pedidos"}
+                    </span>
+
+                  </div>
+
+                  <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+                    {formatMoney(
+                      debitRevenue
+                    )}
+                  </p>
+
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Temporariamente indisponível no checkout.
+                  </p>
+
+                </div>
+
+              </div>
+
+            </section>
+
+            <section className="mt-6 rounded-2xl border border-border bg-card p-5">
+
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                Operação
               </p>
 
-              <p className="mt-2 text-xs text-gray-400">
-                Débito temporariamente indisponível no checkout.
-              </p>
+              <h2 className="mt-1 text-xl font-bold text-foreground">
+                Status dos pedidos pagos
+              </h2>
 
-            </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 
-          </div>
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
 
-        </section>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
+                    Recebidos
+                  </p>
 
-        {/* =========================
-            STATUS
-            ========================= */}
+                  <p className="mt-2 text-2xl font-bold text-blue-800">
+                    {received}
+                  </p>
 
-        <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                </div>
 
-          <div>
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
 
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-              Operação
-            </p>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
+                    Preparando
+                  </p>
 
-            <h3 className="mt-1 text-xl font-bold text-gray-900">
-              Status dos pedidos pagos
-            </h3>
+                  <p className="mt-2 text-2xl font-bold text-amber-800">
+                    {preparing}
+                  </p>
 
-          </div>
+                </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
 
-            <div className="rounded-xl bg-blue-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
+                    Prontos
+                  </p>
 
-              <p className="text-sm font-semibold text-blue-700">
-                Recebidos
-              </p>
+                  <p className="mt-2 text-2xl font-bold text-emerald-800">
+                    {ready}
+                  </p>
 
-              <p className="mt-1 text-2xl font-bold text-blue-800">
-                {received}
-              </p>
+                </div>
 
-            </div>
+                <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
 
-            <div className="rounded-xl bg-yellow-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-violet-700">
+                    Em entrega
+                  </p>
 
-              <p className="text-sm font-semibold text-yellow-700">
-                Preparando
-              </p>
+                  <p className="mt-2 text-2xl font-bold text-violet-800">
+                    {outForDelivery}
+                  </p>
 
-              <p className="mt-1 text-2xl font-bold text-yellow-800">
-                {preparing}
-              </p>
+                </div>
 
-            </div>
+                <div className="rounded-xl border border-green-200 bg-green-50 p-4">
 
-            <div className="rounded-xl bg-green-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-green-700">
+                    Entregues
+                  </p>
 
-              <p className="text-sm font-semibold text-green-700">
-                Prontos
-              </p>
+                  <p className="mt-2 text-2xl font-bold text-green-800">
+                    {delivered}
+                  </p>
 
-              <p className="mt-1 text-2xl font-bold text-green-800">
-                {ready}
-              </p>
+                </div>
 
-            </div>
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4">
 
-            <div className="rounded-xl bg-purple-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-red-700">
+                    Cancelados
+                  </p>
 
-              <p className="text-sm font-semibold text-purple-700">
-                Em entrega
-              </p>
+                  <p className="mt-2 text-2xl font-bold text-red-800">
+                    {cancelled}
+                  </p>
 
-              <p className="mt-1 text-2xl font-bold text-purple-800">
-                {outForDelivery}
-              </p>
+                </div>
 
-            </div>
+              </div>
 
-            <div className="rounded-xl bg-emerald-50 p-4">
-
-              <p className="text-sm font-semibold text-emerald-700">
-                Entregues
-              </p>
-
-              <p className="mt-1 text-2xl font-bold text-emerald-800">
-                {delivered}
-              </p>
-
-            </div>
-
-            <div className="rounded-xl bg-red-50 p-4">
-
-              <p className="text-sm font-semibold text-red-700">
-                Cancelados
-              </p>
-
-              <p className="mt-1 text-2xl font-bold text-red-800">
-                {cancelled}
-              </p>
-
-            </div>
-
-          </div>
-
-        </section>
+            </section>
+          </>
+        )}
 
       </div>
 

@@ -10,6 +10,10 @@ import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
 
+/* =========================
+   TIPOS
+========================= */
+
 type OrderStatus =
   | "PENDING_PAYMENT"
   | "RECEIVED"
@@ -69,9 +73,22 @@ type Order = {
   createdAt: string;
 };
 
-type OrderWithItems = Order & {
-  items: OrderItem[];
+type OrderWithItems =
+  Order & {
+    items: OrderItem[];
+  };
+
+type IconProps = {
+  className?: string;
 };
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
+
+/* =========================
+   FILTROS
+========================= */
 
 const orderStatuses: {
   value: OrderStatus | "ALL";
@@ -141,6 +158,22 @@ const paymentStatuses: {
   },
 ];
 
+/* =========================
+   HELPERS
+========================= */
+
+function currency(
+  value: number
+) {
+  return Number(value).toLocaleString(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL",
+    }
+  );
+}
+
 function orderStatusName(
   status: OrderStatus
 ) {
@@ -176,28 +209,28 @@ function orderStatusClass(
 ) {
   switch (status) {
     case "PENDING_PAYMENT":
-      return "bg-gray-100 text-gray-700";
+      return "border-border bg-muted text-muted-foreground";
 
     case "RECEIVED":
-      return "bg-blue-100 text-blue-700";
+      return "border-blue-200 bg-blue-50 text-blue-700";
 
     case "PREPARING":
-      return "bg-yellow-100 text-yellow-700";
+      return "border-amber-200 bg-amber-50 text-amber-700";
 
     case "READY":
-      return "bg-green-100 text-green-700";
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
 
     case "OUT_FOR_DELIVERY":
-      return "bg-purple-100 text-purple-700";
+      return "border-violet-200 bg-violet-50 text-violet-700";
 
     case "DELIVERED":
-      return "bg-emerald-100 text-emerald-700";
+      return "border-green-200 bg-green-50 text-green-700";
 
     case "CANCELLED":
-      return "bg-red-100 text-red-700";
+      return "border-red-200 bg-red-50 text-red-700";
 
     default:
-      return "bg-gray-100 text-gray-700";
+      return "border-border bg-muted text-muted-foreground";
   }
 }
 
@@ -230,22 +263,22 @@ function paymentStatusClass(
 ) {
   switch (status) {
     case "APPROVED":
-      return "bg-green-100 text-green-700";
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
 
     case "PENDING":
-      return "bg-yellow-100 text-yellow-700";
+      return "border-amber-200 bg-amber-50 text-amber-700";
 
     case "REJECTED":
-      return "bg-red-100 text-red-700";
+      return "border-red-200 bg-red-50 text-red-700";
 
     case "CANCELLED":
-      return "bg-gray-100 text-gray-600";
+      return "border-border bg-muted text-muted-foreground";
 
     case "REFUNDED":
-      return "bg-purple-100 text-purple-700";
+      return "border-violet-200 bg-violet-50 text-violet-700";
 
     default:
-      return "bg-gray-100 text-gray-700";
+      return "border-border bg-muted text-muted-foreground";
   }
 }
 
@@ -267,64 +300,267 @@ function paymentMethodName(
   }
 }
 
+/* =========================
+   ÍCONES
+========================= */
+
+function RefreshIcon({
+  className = "h-4 w-4",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+      <path d="M20 4v7h-7" />
+    </svg>
+  );
+}
+
+function SearchIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle
+        cx="11"
+        cy="11"
+        r="7"
+      />
+      <path d="m20 20-4-4" />
+    </svg>
+  );
+}
+
+function ChevronIcon({
+  className = "h-4 w-4",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function KitchenIcon({
+  className = "h-4 w-4",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M5 11h14" />
+      <path d="M7 11a5 5 0 0 1 10 0" />
+      <path d="M4 15h16" />
+    </svg>
+  );
+}
+
+function EmptyIcon({
+  className = "h-6 w-6",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
+      <path d="M9 9h6" />
+      <path d="M9 13h4" />
+    </svg>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4 animate-spin"
+      aria-hidden="true"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        opacity="0.2"
+      />
+
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/* =========================
+   SKELETON
+========================= */
+
+function OrdersSkeleton() {
+  return (
+    <div
+      className="mt-6 space-y-3"
+      aria-label="Carregando pedidos"
+      role="status"
+    >
+      {[1, 2, 3].map(
+        (item) => (
+          <div
+            key={item}
+            className="rounded-2xl border border-border bg-card p-5"
+          >
+            <div className="animate-pulse">
+              <div className="flex items-center justify-between gap-6">
+                <div className="flex flex-1 items-center gap-6">
+                  <div className="h-8 w-16 rounded-lg bg-muted" />
+
+                  <div className="hidden h-8 w-44 rounded-lg bg-muted sm:block" />
+
+                  <div className="hidden h-8 w-28 rounded-lg bg-muted lg:block" />
+                </div>
+
+                <div className="h-8 w-28 rounded-full bg-muted" />
+              </div>
+
+              <div className="mt-5 h-px bg-border" />
+
+              <div className="mt-4 flex gap-3">
+                <div className="h-9 w-28 rounded-lg bg-muted" />
+                <div className="h-9 w-28 rounded-lg bg-muted" />
+              </div>
+            </div>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+/* =========================
+   PÁGINA
+========================= */
+
 export default function AdminPedidosPage() {
   const [
     orders,
     setOrders,
-  ] = useState<OrderWithItems[]>([]);
+  ] =
+    useState<
+      OrderWithItems[]
+    >([]);
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
+
+  const [
+    refreshing,
+    setRefreshing,
+  ] =
+    useState(false);
 
   const [
     errorMessage,
     setErrorMessage,
-  ] = useState("");
+  ] =
+    useState("");
 
   const [
     search,
     setSearch,
-  ] = useState("");
+  ] =
+    useState("");
 
   const [
     orderStatusFilter,
     setOrderStatusFilter,
   ] =
-    useState<OrderStatus | "ALL">(
-      "ALL"
-    );
+    useState<
+      OrderStatus | "ALL"
+    >("ALL");
 
   const [
     paymentStatusFilter,
     setPaymentStatusFilter,
   ] =
-    useState<PaymentStatus | "ALL">(
-      "ALL"
-    );
+    useState<
+      PaymentStatus | "ALL"
+    >("ALL");
 
   const [
     expandedId,
     setExpandedId,
-  ] = useState<number | null>(
-    null
-  );
+  ] =
+    useState<
+      number | null
+    >(null);
 
-  // =========================
-  // CARREGAR PEDIDOS
-  // =========================
+  /* =========================
+     CARREGAR PEDIDOS
+  ========================= */
 
-  async function loadOrders() {
+  async function loadOrders(
+    manual = false
+  ) {
     try {
+      if (manual) {
+        setRefreshing(true);
+      }
+
       setErrorMessage("");
 
       const response =
         await adminFetch(
-          "http://localhost:8080/api/orders",
+          `${API_URL}/api/orders`,
           {
             cache: "no-store",
-            credentials: "include",
           }
         );
 
@@ -344,12 +580,10 @@ export default function AdminPedidosPage() {
               try {
                 const itemsResponse =
                   await adminFetch(
-                    `http://localhost:8080/api/orders/${order.id}/items`,
+                    `${API_URL}/api/orders/${order.id}/items`,
                     {
                       cache:
                         "no-store",
-                      credentials:
-                        "include",
                     }
                   );
 
@@ -392,6 +626,7 @@ export default function AdminPedidosPage() {
 
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
@@ -399,9 +634,9 @@ export default function AdminPedidosPage() {
     loadOrders();
   }, []);
 
-  // =========================
-  // FILTROS
-  // =========================
+  /* =========================
+     FILTROS
+  ========================= */
 
   const filteredOrders =
     useMemo(() => {
@@ -412,7 +647,6 @@ export default function AdminPedidosPage() {
 
       return orders.filter(
         (order) => {
-
           if (
             orderStatusFilter !==
               "ALL" &&
@@ -442,16 +676,12 @@ export default function AdminPedidosPage() {
               String(
                 order.id
               ),
-
               order.customerName ??
                 "",
-
               order.customerPhone ??
                 "",
-
               order.neighborhood ??
                 "",
-
               order.street ??
                 "",
             ]
@@ -470,9 +700,9 @@ export default function AdminPedidosPage() {
       paymentStatusFilter,
     ]);
 
-  // =========================
-  // RESUMOS
-  // =========================
+  /* =========================
+     RESUMOS
+  ========================= */
 
   const approvedCount =
     orders.filter(
@@ -508,163 +738,246 @@ export default function AdminPedidosPage() {
         )
     ).length;
 
+  /* =========================
+     RENDER
+  ========================= */
+
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-background">
 
-      <AdminHeader
-        title="Pedidos"
-      />
+      <AdminHeader />
 
-      <div className="mx-auto max-w-7xl p-6">
+      <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
 
-        {/* =========================
-            TÍTULO
-            ========================= */}
+        {/* CABEÇALHO */}
 
-        <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <section className="border-b border-border pb-7">
 
-          <div>
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
 
-            <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-              Operação
-            </p>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                Operação
+              </p>
 
-            <h2 className="mt-1 text-3xl font-bold text-gray-900">
-              Todos os pedidos
-            </h2>
+              <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground sm:text-5xl">
+                Pedidos
+              </h1>
 
-            <p className="mt-2 max-w-3xl text-gray-600">
-              Consulte pedidos, pagamentos, clientes, itens e andamento da operação.
-            </p>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                Acompanhe pedidos, pagamentos,
+                clientes e andamento da operação.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                loadOrders(true)
+              }
+              disabled={
+                refreshing
+              }
+              className="
+                inline-flex h-11
+                items-center justify-center
+                gap-2 rounded-full
+                border border-border
+                bg-card px-5
+                text-sm font-bold
+                text-foreground
+                transition
+                hover:-translate-y-0.5
+                hover:border-foreground/20
+                hover:shadow-sm
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-ring
+                disabled:pointer-events-none
+                disabled:opacity-50
+              "
+            >
+              {refreshing ? (
+                <Spinner />
+              ) : (
+                <RefreshIcon />
+              )}
+
+              {refreshing
+                ? "Atualizando"
+                : "Atualizar"}
+            </button>
 
           </div>
+        </section>
 
-          <button
-            type="button"
-            onClick={() =>
-              loadOrders()
-            }
-            className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
-          >
-            Atualizar pedidos
-          </button>
+        {/* MÉTRICAS */}
 
-        </div>
+        <section className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 
-        {/* =========================
-            RESUMOS
-            ========================= */}
+          <div className="rounded-2xl border border-border bg-card p-5">
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-
-            <p className="text-sm text-gray-500">
-              Pedidos cadastrados
+            <p className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground">
+              Total
             </p>
 
-            <p className="mt-1 text-3xl font-bold text-gray-900">
-              {orders.length}
-            </p>
+            <div className="mt-3 flex items-end justify-between gap-4">
 
+              <p className="text-3xl font-bold tracking-tight text-foreground">
+                {orders.length}
+              </p>
+
+              <span className="text-xs font-medium text-muted-foreground">
+                pedidos
+              </span>
+
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-5">
 
-            <p className="text-sm text-gray-500">
+            <p className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground">
               Em andamento
             </p>
 
-            <p className="mt-1 text-3xl font-bold text-blue-700">
-              {activeCount}
-            </p>
+            <div className="mt-3 flex items-end justify-between gap-4">
 
+              <p className="text-3xl font-bold tracking-tight text-blue-700">
+                {activeCount}
+              </p>
+
+              <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-5">
 
-            <p className="text-sm text-gray-500">
-              Pagamentos aprovados
+            <p className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground">
+              Pagos
             </p>
 
-            <p className="mt-1 text-3xl font-bold text-green-700">
-              {approvedCount}
-            </p>
+            <div className="mt-3 flex items-end justify-between gap-4">
 
+              <p className="text-3xl font-bold tracking-tight text-emerald-700">
+                {approvedCount}
+              </p>
+
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-5">
 
-            <p className="text-sm text-gray-500">
-              Pendentes / recusados
-            </p>
-
-            <p className="mt-1 text-3xl font-bold text-gray-900">
-              {pendingCount +
-                rejectedCount}
-            </p>
-
-          </div>
-
-        </div>
-
-        {/* =========================
-            ERRO
-            ========================= */}
-
-        {errorMessage && (
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4">
-
-            <p className="font-semibold text-red-700">
+            <p className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground">
               Atenção
             </p>
 
-            <p className="mt-1 text-sm text-red-600">
-              {errorMessage}
+            <div className="mt-3 flex items-end justify-between gap-4">
+
+              <p className="text-3xl font-bold tracking-tight text-foreground">
+                {pendingCount +
+                  rejectedCount}
+              </p>
+
+              <span className="text-xs font-medium text-muted-foreground">
+                pendentes / recusados
+              </span>
+
+            </div>
+          </div>
+
+        </section>
+
+        {/* ERRO */}
+
+        {errorMessage && (
+          <div
+            className="
+              mt-6 rounded-2xl
+              border border-red-200
+              bg-red-50 p-4
+            "
+            role="alert"
+          >
+            <p className="text-sm font-bold text-red-800">
+              Não foi possível atualizar os pedidos
             </p>
 
+            <p className="mt-1 text-sm text-red-700">
+              {errorMessage}
+            </p>
           </div>
         )}
 
-        {/* =========================
-            FILTROS
-            ========================= */}
+        {/* FILTROS */}
 
-        <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <section className="mt-7 rounded-2xl border border-border bg-card p-4 sm:p-5">
 
-          <div className="grid gap-4 lg:grid-cols-[1fr_220px_220px]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
 
             <div>
-
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
+              <label
+                htmlFor="search-order"
+                className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground"
+              >
                 Buscar pedido
               </label>
 
-              <input
-                type="text"
-                value={
-                  search
-                }
-                onChange={(
-                  event
-                ) =>
-                  setSearch(
-                    event.target.value
-                  )
-                }
-                placeholder="Número, cliente, telefone, bairro..."
-                className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none transition focus:border-black"
-              />
+              <div className="relative">
 
+                <SearchIcon
+                  className="
+                    pointer-events-none
+                    absolute left-4 top-1/2
+                    h-5 w-5
+                    -translate-y-1/2
+                    text-muted-foreground
+                  "
+                />
+
+                <input
+                  id="search-order"
+                  type="search"
+                  value={search}
+                  onChange={(
+                    event
+                  ) =>
+                    setSearch(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Número, cliente, telefone, bairro..."
+                  className="
+                    h-12 w-full
+                    rounded-xl
+                    border border-input
+                    bg-background
+                    pl-11 pr-4
+                    text-sm text-foreground
+                    outline-none
+                    transition
+                    placeholder:text-muted-foreground
+                    focus:border-primary
+                    focus:ring-2
+                    focus:ring-primary/10
+                  "
+                />
+
+              </div>
             </div>
 
             <div>
-
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Status do pedido
+              <label
+                htmlFor="order-status"
+                className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground"
+              >
+                Status
               </label>
 
               <select
+                id="order-status"
                 value={
                   orderStatusFilter
                 }
@@ -678,12 +991,20 @@ export default function AdminPedidosPage() {
                       | "ALL"
                   )
                 }
-                className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 outline-none transition focus:border-black"
+                className="
+                  h-12 w-full
+                  rounded-xl
+                  border border-input
+                  bg-background px-4
+                  text-sm text-foreground
+                  outline-none transition
+                  focus:border-primary
+                  focus:ring-2
+                  focus:ring-primary/10
+                "
               >
-
                 {orderStatuses.map(
                   (status) => (
-
                     <option
                       key={
                         status.value
@@ -694,21 +1015,21 @@ export default function AdminPedidosPage() {
                     >
                       {status.label}
                     </option>
-
                   )
                 )}
-
               </select>
-
             </div>
 
             <div>
-
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
+              <label
+                htmlFor="payment-status"
+                className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground"
+              >
                 Pagamento
               </label>
 
               <select
+                id="payment-status"
                 value={
                   paymentStatusFilter
                 }
@@ -722,12 +1043,20 @@ export default function AdminPedidosPage() {
                       | "ALL"
                   )
                 }
-                className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 outline-none transition focus:border-black"
+                className="
+                  h-12 w-full
+                  rounded-xl
+                  border border-input
+                  bg-background px-4
+                  text-sm text-foreground
+                  outline-none transition
+                  focus:border-primary
+                  focus:ring-2
+                  focus:ring-primary/10
+                "
               >
-
                 {paymentStatuses.map(
                   (status) => (
-
                     <option
                       key={
                         status.value
@@ -738,72 +1067,80 @@ export default function AdminPedidosPage() {
                     >
                       {status.label}
                     </option>
-
                   )
                 )}
-
               </select>
-
             </div>
 
           </div>
 
-          <p className="mt-4 text-sm text-gray-500">
-            Mostrando{" "}
-            <strong>
-              {
-                filteredOrders.length
-              }
-            </strong>{" "}
-            de{" "}
-            <strong>
-              {orders.length}
-            </strong>{" "}
-            pedidos.
-          </p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+
+            <p className="text-sm text-muted-foreground">
+              <strong className="font-bold text-foreground">
+                {filteredOrders.length}
+              </strong>{" "}
+              de{" "}
+              <strong className="font-bold text-foreground">
+                {orders.length}
+              </strong>{" "}
+              pedidos
+            </p>
+
+            {(search ||
+              orderStatusFilter !==
+                "ALL" ||
+              paymentStatusFilter !==
+                "ALL") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setOrderStatusFilter(
+                    "ALL"
+                  );
+                  setPaymentStatusFilter(
+                    "ALL"
+                  );
+                }}
+                className="text-sm font-bold text-primary transition hover:opacity-70"
+              >
+                Limpar filtros
+              </button>
+            )}
+
+          </div>
 
         </section>
 
-        {/* =========================
-            LISTA
-            ========================= */}
+        {/* LISTA */}
 
         {loading ? (
-
-          <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-
-            <p className="font-semibold text-gray-600">
-              Carregando pedidos...
-            </p>
-
-          </div>
+          <OrdersSkeleton />
 
         ) : filteredOrders.length ===
           0 ? (
+          <div className="mt-6 rounded-2xl border border-dashed border-border bg-card px-6 py-14 text-center">
 
-          <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-gray-200 bg-gray-50">
-              <div className="h-6 w-6 rounded-md border-2 border-gray-300" />
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <EmptyIcon />
             </div>
 
-            <h3 className="mt-4 text-xl font-bold text-gray-900">
+            <h2 className="mt-4 text-lg font-bold text-foreground">
               Nenhum pedido encontrado
-            </h3>
+            </h2>
 
-            <p className="mt-2 text-gray-500">
-              Altere os filtros ou aguarde novos pedidos.
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+              Não encontramos pedidos com os filtros selecionados.
             </p>
 
           </div>
 
         ) : (
-
-          <div className="mt-8 space-y-4">
+          <section className="mt-6 space-y-3">
 
             {filteredOrders.map(
               (order) => {
-
                 const createdDate =
                   new Date(
                     order.createdAt
@@ -844,71 +1181,68 @@ export default function AdminPedidosPage() {
                     key={
                       order.id
                     }
-                    className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+                    className="
+                      overflow-hidden
+                      rounded-2xl
+                      border border-border
+                      bg-card
+                      transition
+                      hover:border-foreground/10
+                    "
                   >
 
                     {/* RESUMO */}
 
-                    <div className="p-5">
+                    <div className="p-5 sm:p-6">
 
                       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
 
-                        <div className="flex flex-wrap items-start gap-6">
+                        <div className="flex min-w-0 flex-wrap items-start gap-x-8 gap-y-4">
 
                           <div>
-
-                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                               Pedido
                             </p>
 
-                            <p className="mt-1 text-2xl font-bold text-gray-900">
+                            <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
                               #{order.id}
                             </p>
-
                           </div>
 
-                          <div>
-
-                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                          <div className="min-w-44">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                               Cliente
                             </p>
 
-                            <p className="mt-1 font-bold text-gray-900">
-                              {
-                                order.customerName
-                              }
+                            <p className="mt-1 font-bold text-foreground">
+                              {order.customerName}
                             </p>
 
-                            <p className="text-sm text-gray-500">
-                              {
-                                order.customerPhone
-                              }
+                            <p className="mt-0.5 text-sm text-muted-foreground">
+                              {order.customerPhone}
                             </p>
-
                           </div>
 
                           <div>
-
-                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                              Data
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                              Criado em
                             </p>
 
-                            <p className="mt-1 font-semibold text-gray-700">
+                            <p className="mt-1 font-semibold text-foreground">
                               {dateLabel}
                             </p>
 
-                            <p className="text-sm text-gray-500">
+                            <p className="mt-0.5 text-sm text-muted-foreground">
                               {timeLabel}
                             </p>
-
                           </div>
 
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
 
                           <span
-                            className={`rounded-full px-3 py-1 text-xs font-bold ${paymentStatusClass(
+                            className={`rounded-full border px-3 py-1.5 text-xs font-bold ${paymentStatusClass(
                               order.paymentStatus
                             )}`}
                           >
@@ -918,7 +1252,7 @@ export default function AdminPedidosPage() {
                           </span>
 
                           <span
-                            className={`rounded-full px-3 py-1 text-xs font-bold ${orderStatusClass(
+                            className={`rounded-full border px-3 py-1.5 text-xs font-bold ${orderStatusClass(
                               order.status
                             )}`}
                           >
@@ -927,25 +1261,25 @@ export default function AdminPedidosPage() {
                             )}
                           </span>
 
-                          <p className="min-w-28 text-right text-xl font-bold text-gray-900">
-                            R${" "}
-                            {Number(
-                              order.total
-                            )
-                              .toFixed(
-                                2
-                              )
-                              .replace(
-                                ".",
-                                ","
+                          <div className="ml-0 min-w-28 sm:ml-3 sm:text-right">
+
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                              Total
+                            </p>
+
+                            <p className="mt-1 text-xl font-bold tracking-tight text-foreground">
+                              {currency(
+                                order.total
                               )}
-                          </p>
+                            </p>
+
+                          </div>
 
                         </div>
 
                       </div>
 
-                      <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
+                      <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4">
 
                         <button
                           type="button"
@@ -956,23 +1290,57 @@ export default function AdminPedidosPage() {
                                 : order.id
                             )
                           }
-                          className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                          aria-expanded={
+                            expanded
+                          }
+                          className="
+                            inline-flex h-9
+                            items-center gap-2
+                            rounded-lg
+                            border border-border
+                            bg-background
+                            px-3.5
+                            text-sm font-bold
+                            text-foreground
+                            transition
+                            hover:bg-muted
+                          "
                         >
                           {expanded
-                            ? "Ocultar detalhes"
-                            : "Ver detalhes"}
+                            ? "Ocultar"
+                            : "Detalhes"}
+
+                          <ChevronIcon
+                            className={`h-4 w-4 transition-transform ${
+                              expanded
+                                ? "rotate-180"
+                                : ""
+                            }`}
+                          />
                         </button>
 
                         {active && (
                           <Link
                             href="/admin/cozinha"
-                            className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white"
+                            className="
+                              inline-flex h-9
+                              items-center gap-2
+                              rounded-lg
+                              bg-foreground
+                              px-3.5
+                              text-sm font-bold
+                              text-background
+                              transition
+                              hover:opacity-90
+                            "
                           >
+                            <KitchenIcon />
+
                             Abrir cozinha
                           </Link>
                         )}
 
-                        <span className="ml-auto text-sm text-gray-500">
+                        <span className="ml-auto text-sm font-medium text-muted-foreground">
                           {paymentMethodName(
                             order.paymentMethod
                           )}
@@ -985,8 +1353,7 @@ export default function AdminPedidosPage() {
                     {/* DETALHES */}
 
                     {expanded && (
-
-                      <div className="border-t border-gray-100 bg-gray-50 p-5">
+                      <div className="border-t border-border bg-muted/30 p-5 sm:p-6">
 
                         <div className="grid gap-6 lg:grid-cols-3">
 
@@ -994,36 +1361,32 @@ export default function AdminPedidosPage() {
 
                           <section className="lg:col-span-2">
 
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                              Itens
+                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                              Itens do pedido
                             </p>
 
-                            <div className="mt-3 space-y-3">
+                            <div className="mt-3 space-y-2">
 
                               {order.items.length ===
                               0 ? (
-
-                                <div className="rounded-xl bg-white p-4 text-sm text-gray-500">
-                                  Nenhum item carregado.
+                                <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+                                  Nenhum item foi carregado para este pedido.
                                 </div>
 
                               ) : (
-
                                 order.items.map(
                                   (item) => (
-
                                     <div
                                       key={
                                         item.id
                                       }
-                                      className="rounded-xl border border-gray-200 bg-white p-4"
+                                      className="rounded-xl border border-border bg-card p-4"
                                     >
 
                                       <div className="flex items-start justify-between gap-4">
 
                                         <div>
-
-                                          <p className="font-bold text-gray-900">
+                                          <p className="font-bold text-foreground">
                                             {item.quantity}x{" "}
                                             {
                                               item
@@ -1032,196 +1395,159 @@ export default function AdminPedidosPage() {
                                             }
                                           </p>
 
-                                          <p className="mt-1 text-sm text-gray-500">
-                                            R${" "}
-                                            {Number(
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {currency(
                                               item.unitPrice
-                                            )
-                                              .toFixed(
-                                                2
-                                              )
-                                              .replace(
-                                                ".",
-                                                ","
-                                              )}{" "}
+                                            )}{" "}
                                             cada
                                           </p>
-
                                         </div>
 
-                                        <p className="font-bold text-gray-900">
-                                          R${" "}
-                                          {(
+                                        <p className="font-bold text-foreground">
+                                          {currency(
                                             Number(
                                               item.unitPrice
                                             ) *
-                                            item.quantity
-                                          )
-                                            .toFixed(
-                                              2
-                                            )
-                                            .replace(
-                                              ".",
-                                              ","
-                                            )}
+                                              item.quantity
+                                          )}
                                         </p>
 
                                       </div>
 
                                       {item.crustName && (
+                                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
 
-                                        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-
-                                          <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
-                                            Borda
-                                          </p>
-
-                                          <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
-
-                                            <p className="text-sm font-bold text-amber-900">
-                                              {item.crustName}
+                                          <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                                              Borda recheada
                                             </p>
 
-                                            {item.crustPrice !== null && (
-
-                                              <p className="text-xs font-semibold text-amber-700">
-                                                + R${" "}
-                                                {Number(
-                                                  item.crustPrice
-                                                )
-                                                  .toFixed(
-                                                    2
-                                                  )
-                                                  .replace(
-                                                    ".",
-                                                    ","
-                                                  )}
-                                              </p>
-
-                                            )}
-
+                                            <p className="mt-1 text-sm font-bold text-amber-900">
+                                              {item.crustName}
+                                            </p>
                                           </div>
 
-                                        </div>
+                                          {item.crustPrice !==
+                                            null && (
+                                            <p className="text-sm font-bold text-amber-700">
+                                              +{" "}
+                                              {currency(
+                                                item.crustPrice
+                                              )}
+                                            </p>
+                                          )}
 
+                                        </div>
                                       )}
 
                                       {item.observation && (
+                                        <div className="mt-3 rounded-lg border border-primary/15 bg-primary/5 p-3">
 
-                                        <div className="mt-3 rounded-lg bg-red-50 p-3">
-
-                                          <p className="text-xs font-bold uppercase text-red-700">
+                                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
                                             Observação
                                           </p>
 
-                                          <p className="mt-1 text-sm text-red-700">
-                                            {
-                                              item.observation
-                                            }
+                                          <p className="mt-1 text-sm leading-6 text-foreground">
+                                            {item.observation}
                                           </p>
 
                                         </div>
-
                                       )}
 
                                     </div>
-
                                   )
                                 )
                               )}
 
                             </div>
-
                           </section>
 
-                          {/* CLIENTE / ENTREGA */}
+                          {/* ENTREGA / PAGAMENTO */}
 
-                          <section>
+                          <aside>
 
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
                               Entrega
                             </p>
 
-                            <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4">
+                            <div className="mt-3 rounded-xl border border-border bg-card p-4">
 
-                              <p className="font-semibold text-gray-900">
+                              <p className="font-bold text-foreground">
                                 {order.street},{" "}
                                 {order.number}
                               </p>
 
-                              <p className="mt-1 text-sm text-gray-600">
-                                {
-                                  order.neighborhood
-                                }
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {order.neighborhood}
                               </p>
 
                               {order.complement && (
-                                <p className="mt-1 text-sm text-gray-600">
-                                  {
-                                    order.complement
-                                  }
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  {order.complement}
                                 </p>
                               )}
 
-                              <div className="mt-4 border-t border-gray-100 pt-4">
+                              <div className="mt-4 border-t border-border pt-4">
 
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-muted-foreground">
                                   Taxa de entrega
                                 </p>
 
-                                <p className="mt-1 font-semibold">
-                                  R${" "}
-                                  {Number(
+                                <p className="mt-1 font-bold text-foreground">
+                                  {currency(
                                     order.deliveryFee
-                                  )
-                                    .toFixed(
-                                      2
-                                    )
-                                    .replace(
-                                      ".",
-                                      ","
-                                    )}
+                                  )}
                                 </p>
 
                               </div>
 
                             </div>
 
-                            <p className="mt-5 text-xs font-bold uppercase tracking-wide text-gray-500">
+                            <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
                               Pagamento
                             </p>
 
-                            <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4">
+                            <div className="mt-3 rounded-xl border border-border bg-card p-4">
 
-                              <p className="font-semibold text-gray-900">
+                              <p className="font-bold text-foreground">
                                 {paymentMethodName(
                                   order.paymentMethod
                                 )}
                               </p>
 
-                              <p className="mt-1 text-sm text-gray-500">
+                              <span
+                                className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${paymentStatusClass(
+                                  order.paymentStatus
+                                )}`}
+                              >
                                 {paymentStatusName(
                                   order.paymentStatus
                                 )}
-                              </p>
+                              </span>
 
                               {order.paymentExternalId && (
-                                <p className="mt-3 break-all text-xs text-gray-400">
-                                  ID externo:{" "}
-                                  {
-                                    order.paymentExternalId
-                                  }
-                                </p>
+                                <div className="mt-4 border-t border-border pt-4">
+
+                                  <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                                    Referência
+                                  </p>
+
+                                  <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
+                                    {
+                                      order.paymentExternalId
+                                    }
+                                  </p>
+
+                                </div>
                               )}
 
                             </div>
 
-                          </section>
+                          </aside>
 
                         </div>
 
                       </div>
-
                     )}
 
                   </article>
@@ -1229,7 +1555,7 @@ export default function AdminPedidosPage() {
               }
             )}
 
-          </div>
+          </section>
         )}
 
       </div>

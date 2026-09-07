@@ -66,15 +66,40 @@ type Order = {
   createdAt: string;
 };
 
-type OrderWithItems = Order & {
-  items: OrderItem[];
-};
+type OrderWithItems =
+  Order & {
+    items: OrderItem[];
+  };
 
 type HistoryFilter =
   | "ALL"
   | "DELIVERED"
   | "CANCELLED"
   | "REJECTED";
+
+type IconProps = {
+  className?: string;
+};
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
+
+/* =========================
+   HELPERS
+========================= */
+
+function currency(
+  value: number
+) {
+  return Number(value).toLocaleString(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL",
+    }
+  );
+}
 
 function orderStatusName(
   status: OrderStatus
@@ -148,41 +173,265 @@ function paymentMethodName(
   }
 }
 
-function statusClass(
+function orderStatusClass(
   status: OrderStatus
 ) {
   switch (status) {
     case "DELIVERED":
-      return "bg-green-100 text-green-700";
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
 
     case "CANCELLED":
-      return "bg-red-100 text-red-700";
+      return "border-red-200 bg-red-50 text-red-700";
 
     default:
-      return "bg-gray-100 text-gray-700";
+      return "border-border bg-muted text-muted-foreground";
   }
 }
+
+function paymentStatusClass(
+  status: PaymentStatus
+) {
+  switch (status) {
+    case "APPROVED":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+
+    case "PENDING":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+
+    case "REJECTED":
+      return "border-red-200 bg-red-50 text-red-700";
+
+    case "CANCELLED":
+      return "border-border bg-muted text-muted-foreground";
+
+    case "REFUNDED":
+      return "border-violet-200 bg-violet-50 text-violet-700";
+
+    default:
+      return "border-border bg-muted text-muted-foreground";
+  }
+}
+
+/* =========================
+   ÍCONES
+========================= */
+
+function SearchIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle
+        cx="11"
+        cy="11"
+        r="7"
+      />
+      <path d="m20 20-4-4" />
+    </svg>
+  );
+}
+
+function RefreshIcon({
+  className = "h-4 w-4",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+      <path d="M20 4v7h-7" />
+    </svg>
+  );
+}
+
+function ChevronIcon({
+  className = "h-4 w-4",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function ReceiptIcon({
+  className = "h-6 w-6",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
+      <path d="M9 8h6" />
+      <path d="M9 12h6" />
+    </svg>
+  );
+}
+
+function AlertIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+      />
+      <path d="M12 8v5" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4 animate-spin"
+      aria-hidden="true"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        opacity="0.2"
+      />
+
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/* =========================
+   SKELETON
+========================= */
+
+function HistorySkeleton() {
+  return (
+    <div
+      className="mt-6 space-y-3"
+      role="status"
+      aria-label="Carregando histórico"
+    >
+      {[1, 2, 3].map(
+        (item) => (
+          <div
+            key={item}
+            className="rounded-2xl border border-border bg-card p-5"
+          >
+            <div className="animate-pulse">
+
+              <div className="flex items-center justify-between gap-6">
+
+                <div className="flex flex-1 gap-6">
+                  <div className="h-8 w-16 rounded-lg bg-muted" />
+                  <div className="hidden h-8 w-40 rounded-lg bg-muted sm:block" />
+                  <div className="hidden h-8 w-28 rounded-lg bg-muted lg:block" />
+                </div>
+
+                <div className="h-8 w-28 rounded-full bg-muted" />
+
+              </div>
+
+              <div className="mt-5 h-px bg-border" />
+
+              <div className="mt-4 h-9 w-28 rounded-lg bg-muted" />
+
+            </div>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+/* =========================
+   PÁGINA
+========================= */
 
 export default function AdminHistoricoPage() {
   const [
     orders,
     setOrders,
-  ] = useState<OrderWithItems[]>([]);
+  ] =
+    useState<
+      OrderWithItems[]
+    >([]);
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
+
+  const [
+    refreshing,
+    setRefreshing,
+  ] =
+    useState(false);
 
   const [
     errorMessage,
     setErrorMessage,
-  ] = useState("");
+  ] =
+    useState("");
 
   const [
     search,
     setSearch,
-  ] = useState("");
+  ] =
+    useState("");
 
   const [
     filter,
@@ -195,26 +444,32 @@ export default function AdminHistoricoPage() {
   const [
     expandedId,
     setExpandedId,
-  ] = useState<number | null>(
-    null
-  );
+  ] =
+    useState<
+      number | null
+    >(null);
 
-  // =========================
-  // CARREGAR HISTÓRICO
-  // =========================
+  /* =========================
+     CARREGAR HISTÓRICO
+  ========================= */
 
-  async function loadHistory() {
+  async function loadHistory(
+    manual = false
+  ) {
     try {
+      if (manual) {
+        setRefreshing(true);
+      }
+
       setErrorMessage("");
 
       const response =
-  await adminFetch(
-    "http://localhost:8080/api/orders",
-    {
-      cache: "no-store",
-      credentials: "include",
-    }
-  );
+        await adminFetch(
+          `${API_URL}/api/orders`,
+          {
+            cache: "no-store",
+          }
+        );
 
       if (!response.ok) {
         throw new Error(
@@ -222,19 +477,10 @@ export default function AdminHistoricoPage() {
         );
       }
 
-      const data: Order[] =
+      const data:
+        Order[] =
         await response.json();
 
-      /*
-       * Histórico:
-       *
-       * - entregues
-       * - cancelados
-       * - pagamentos recusados
-       *
-       * Pedidos ativos continuam
-       * na área de Pedidos/Cozinha.
-       */
       const historyOrders =
         data.filter(
           (order) =>
@@ -252,15 +498,13 @@ export default function AdminHistoricoPage() {
             async (order) => {
               try {
                 const itemsResponse =
-  await adminFetch(
-    `http://localhost:8080/api/orders/${order.id}/items`,
-    {
-      cache:
-        "no-store",
-      credentials:
-        "include",
-    }
-  );
+                  await adminFetch(
+                    `${API_URL}/api/orders/${order.id}/items`,
+                    {
+                      cache:
+                        "no-store",
+                    }
+                  );
 
                 if (
                   !itemsResponse.ok
@@ -301,6 +545,7 @@ export default function AdminHistoricoPage() {
 
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
@@ -308,9 +553,9 @@ export default function AdminHistoricoPage() {
     loadHistory();
   }, []);
 
-  // =========================
-  // FILTROS
-  // =========================
+  /* =========================
+     FILTROS
+  ========================= */
 
   const filteredOrders =
     useMemo(() => {
@@ -382,9 +627,9 @@ export default function AdminHistoricoPage() {
       filter,
     ]);
 
-  // =========================
-  // RESUMO
-  // =========================
+  /* =========================
+     RESUMO
+  ========================= */
 
   const deliveredCount =
     orders.filter(
@@ -429,166 +674,234 @@ export default function AdminHistoricoPage() {
       );
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-background">
 
-      <AdminHeader
-        title="Histórico"
-      />
+      <AdminHeader />
 
-      <div className="mx-auto max-w-7xl p-6">
+      <div className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8">
 
-        {/* =========================
-            CABEÇALHO
-            ========================= */}
+        {/* CABEÇALHO */}
 
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <section className="border-b border-border pb-6">
 
-          <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 
-            <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-              Operação
-            </p>
+            <div>
 
-            <h2 className="mt-1 text-3xl font-bold text-gray-900">
-              Histórico de pedidos
-            </h2>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                Operação
+              </p>
 
-            <p className="mt-2 max-w-3xl text-gray-600">
-              Consulte pedidos finalizados, cancelados e pagamentos recusados.
-            </p>
+              <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
+                Histórico
+              </h1>
+
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Consulte pedidos entregues, cancelados e pagamentos recusados.
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                loadHistory(true)
+              }
+              disabled={
+                refreshing
+              }
+              className="
+                inline-flex h-10
+                items-center justify-center
+                gap-2 rounded-full
+                border border-border
+                bg-card px-4
+                text-sm font-bold
+                text-foreground
+                transition
+                hover:-translate-y-0.5
+                hover:border-foreground/20
+                hover:shadow-sm
+                disabled:pointer-events-none
+                disabled:opacity-50
+              "
+            >
+              {refreshing ? (
+                <Spinner />
+              ) : (
+                <RefreshIcon />
+              )}
+
+              {refreshing
+                ? "Atualizando"
+                : "Atualizar"}
+            </button>
 
           </div>
 
-          <button
-            type="button"
-            onClick={() =>
-              loadHistory()
-            }
-            className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
-          >
-            Atualizar histórico
-          </button>
+        </section>
 
-        </div>
+        {/* RESUMO */}
 
-        {/* =========================
-            CARDS
-            ========================= */}
+        <section className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-border bg-card p-4">
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-
-            <p className="text-sm text-gray-500">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
               Entregues
             </p>
 
-            <p className="mt-1 text-3xl font-bold text-green-700">
-              {deliveredCount}
-            </p>
+            <div className="mt-2 flex items-end justify-between">
+
+              <p className="text-2xl font-bold text-emerald-700">
+                {deliveredCount}
+              </p>
+
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+
+            </div>
 
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-4">
 
-            <p className="text-sm text-gray-500">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
               Cancelados
             </p>
 
-            <p className="mt-1 text-3xl font-bold text-red-700">
-              {cancelledCount}
-            </p>
+            <div className="mt-2 flex items-end justify-between">
+
+              <p className="text-2xl font-bold text-red-700">
+                {cancelledCount}
+              </p>
+
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+
+            </div>
 
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-4">
 
-            <p className="text-sm text-gray-500">
-              Pagamentos recusados
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+              Recusados
             </p>
 
-            <p className="mt-1 text-3xl font-bold text-gray-900">
+            <p className="mt-2 text-2xl font-bold text-foreground">
               {rejectedCount}
             </p>
 
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-4">
 
-            <p className="text-sm text-gray-500">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
               Valor entregue
             </p>
 
-            <p className="mt-1 text-3xl font-bold text-gray-900">
-              R${" "}
-              {deliveredRevenue
-                .toFixed(2)
-                .replace(
-                  ".",
-                  ","
-                )}
+            <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">
+              {currency(
+                deliveredRevenue
+              )}
             </p>
 
           </div>
 
-        </div>
+        </section>
 
-        {/* =========================
-            ERRO
-            ========================= */}
+        {/* ERRO */}
 
         {errorMessage && (
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4">
+          <div
+            className="mt-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
+            role="alert"
+          >
+            <AlertIcon className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
 
-            <p className="font-semibold text-red-700">
-              Atenção
-            </p>
+            <div>
+              <p className="text-sm font-bold text-red-800">
+                Não foi possível carregar
+              </p>
 
-            <p className="mt-1 text-sm text-red-600">
-              {errorMessage}
-            </p>
-
+              <p className="mt-1 text-sm text-red-700">
+                {errorMessage}
+              </p>
+            </div>
           </div>
         )}
 
-        {/* =========================
-            FILTROS
-            ========================= */}
+        {/* FILTROS */}
 
-        <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <section className="mt-6 rounded-2xl border border-border bg-card p-4">
 
-          <div className="grid gap-4 lg:grid-cols-[1fr_240px]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
 
             <div>
 
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
+              <label
+                htmlFor="history-search"
+                className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
+              >
                 Buscar
               </label>
 
-              <input
-                value={
-                  search
-                }
-                onChange={(
-                  event
-                ) =>
-                  setSearch(
-                    event.target.value
-                  )
-                }
-                placeholder="Pedido, cliente, telefone ou bairro..."
-                className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none transition focus:border-black"
-              />
+              <div className="relative">
+
+                <SearchIcon
+                  className="
+                    pointer-events-none
+                    absolute left-4 top-1/2
+                    h-5 w-5
+                    -translate-y-1/2
+                    text-muted-foreground
+                  "
+                />
+
+                <input
+                  id="history-search"
+                  type="search"
+                  value={
+                    search
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setSearch(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Pedido, cliente, telefone ou bairro..."
+                  className="
+                    h-11 w-full
+                    rounded-xl
+                    border border-input
+                    bg-background
+                    pl-11 pr-4
+                    text-sm text-foreground
+                    outline-none
+                    transition
+                    placeholder:text-muted-foreground
+                    focus:border-primary
+                    focus:ring-2
+                    focus:ring-primary/10
+                  "
+                />
+
+              </div>
 
             </div>
 
             <div>
 
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
+              <label
+                htmlFor="history-filter"
+                className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
+              >
                 Tipo
               </label>
 
               <select
+                id="history-filter"
                 value={
                   filter
                 }
@@ -601,9 +914,19 @@ export default function AdminHistoricoPage() {
                       HistoryFilter
                   )
                 }
-                className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 outline-none transition focus:border-black"
+                className="
+                  h-11 w-full
+                  rounded-xl
+                  border border-input
+                  bg-background px-4
+                  text-sm text-foreground
+                  outline-none
+                  transition
+                  focus:border-primary
+                  focus:ring-2
+                  focus:ring-primary/10
+                "
               >
-
                 <option value="ALL">
                   Todos
                 </option>
@@ -619,63 +942,78 @@ export default function AdminHistoricoPage() {
                 <option value="REJECTED">
                   Pagamento recusado
                 </option>
-
               </select>
 
             </div>
 
           </div>
 
-          <p className="mt-4 text-sm text-gray-500">
-            {filteredOrders.length}{" "}
-            {filteredOrders.length ===
-            1
-              ? "registro encontrado"
-              : "registros encontrados"}
-          </p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+
+            <p className="text-sm text-muted-foreground">
+
+              <strong className="font-bold text-foreground">
+                {filteredOrders.length}
+              </strong>{" "}
+
+              {filteredOrders.length ===
+              1
+                ? "registro encontrado"
+                : "registros encontrados"}
+
+            </p>
+
+            {(search ||
+              filter !==
+                "ALL") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setFilter(
+                    "ALL"
+                  );
+                }}
+                className="text-sm font-bold text-primary transition hover:opacity-70"
+              >
+                Limpar filtros
+              </button>
+            )}
+
+          </div>
 
         </section>
 
-        {/* =========================
-            LISTA
-            ========================= */}
+        {/* LISTA */}
 
         {loading ? (
-
-          <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-
-            <p className="font-semibold text-gray-600">
-              Carregando histórico...
-            </p>
-
-          </div>
+          <HistorySkeleton />
 
         ) : filteredOrders.length ===
           0 ? (
 
-          <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+          <div className="mt-6 rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
 
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-gray-200 bg-gray-50">
-              <div className="h-6 w-5 rounded-sm border-2 border-gray-300" />
+            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <ReceiptIcon />
             </div>
 
-            <h3 className="mt-4 text-xl font-bold text-gray-900">
+            <h2 className="mt-4 text-lg font-bold text-foreground">
               Nenhum registro encontrado
-            </h3>
+            </h2>
 
-            <p className="mt-2 text-gray-500">
-              Pedidos finalizados, cancelados ou recusados aparecerão aqui.
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+              Pedidos entregues, cancelados ou recusados aparecerão aqui.
             </p>
 
           </div>
 
         ) : (
 
-          <div className="mt-8 space-y-4">
+          <section className="mt-6 space-y-3">
 
             {filteredOrders.map(
               (order) => {
-
                 const createdAt =
                   new Date(
                     order.createdAt
@@ -706,58 +1044,56 @@ export default function AdminHistoricoPage() {
                     key={
                       order.id
                     }
-                    className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+                    className="overflow-hidden rounded-2xl border border-border bg-card"
                   >
+
+                    {/* RESUMO */}
 
                     <div className="p-5">
 
                       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 
-                        <div className="flex flex-wrap gap-6">
+                        <div className="flex flex-wrap gap-x-8 gap-y-4">
 
                           <div>
 
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                               Pedido
                             </p>
 
-                            <p className="mt-1 text-2xl font-bold text-gray-900">
+                            <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
                               #{order.id}
                             </p>
 
                           </div>
 
-                          <div>
+                          <div className="min-w-40">
 
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                               Cliente
                             </p>
 
-                            <p className="mt-1 font-bold text-gray-900">
-                              {
-                                order.customerName
-                              }
+                            <p className="mt-1 font-bold text-foreground">
+                              {order.customerName}
                             </p>
 
-                            <p className="text-sm text-gray-500">
-                              {
-                                order.customerPhone
-                              }
+                            <p className="mt-0.5 text-sm text-muted-foreground">
+                              {order.customerPhone}
                             </p>
 
                           </div>
 
                           <div>
 
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                               Data
                             </p>
 
-                            <p className="mt-1 font-semibold text-gray-700">
+                            <p className="mt-1 font-semibold text-foreground">
                               {date}
                             </p>
 
-                            <p className="text-sm text-gray-500">
+                            <p className="mt-0.5 text-sm text-muted-foreground">
                               {time}
                             </p>
 
@@ -765,10 +1101,10 @@ export default function AdminHistoricoPage() {
 
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
 
                           <span
-                            className={`rounded-full px-3 py-1 text-xs font-bold ${statusClass(
+                            className={`rounded-full border px-3 py-1.5 text-xs font-bold ${orderStatusClass(
                               order.status
                             )}`}
                           >
@@ -777,31 +1113,35 @@ export default function AdminHistoricoPage() {
                             )}
                           </span>
 
-                          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
+                          <span
+                            className={`rounded-full border px-3 py-1.5 text-xs font-bold ${paymentStatusClass(
+                              order.paymentStatus
+                            )}`}
+                          >
                             {paymentStatusName(
                               order.paymentStatus
                             )}
                           </span>
 
-                          <p className="min-w-28 text-right text-xl font-bold text-gray-900">
-                            R${" "}
-                            {Number(
-                              order.total
-                            )
-                              .toFixed(
-                                2
-                              )
-                              .replace(
-                                ".",
-                                ","
+                          <div className="ml-0 min-w-28 sm:ml-3 sm:text-right">
+
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                              Total
+                            </p>
+
+                            <p className="mt-1 text-xl font-bold tracking-tight text-foreground">
+                              {currency(
+                                order.total
                               )}
-                          </p>
+                            </p>
+
+                          </div>
 
                         </div>
 
                       </div>
 
-                      <div className="mt-5 flex items-center border-t border-gray-100 pt-4">
+                      <div className="mt-5 flex items-center border-t border-border pt-4">
 
                         <button
                           type="button"
@@ -812,14 +1152,36 @@ export default function AdminHistoricoPage() {
                                 : order.id
                             )
                           }
-                          className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                          aria-expanded={
+                            expanded
+                          }
+                          className="
+                            inline-flex h-9
+                            items-center gap-2
+                            rounded-lg
+                            border border-border
+                            bg-background
+                            px-3.5
+                            text-sm font-bold
+                            text-foreground
+                            transition
+                            hover:bg-muted
+                          "
                         >
                           {expanded
-                            ? "Ocultar detalhes"
-                            : "Ver detalhes"}
+                            ? "Ocultar"
+                            : "Detalhes"}
+
+                          <ChevronIcon
+                            className={`h-4 w-4 transition-transform ${
+                              expanded
+                                ? "rotate-180"
+                                : ""
+                            }`}
+                          />
                         </button>
 
-                        <span className="ml-auto text-sm text-gray-500">
+                        <span className="ml-auto text-sm font-medium text-muted-foreground">
                           {paymentMethodName(
                             order.paymentMethod
                           )}
@@ -829,9 +1191,10 @@ export default function AdminHistoricoPage() {
 
                     </div>
 
-                    {expanded && (
+                    {/* DETALHES */}
 
-                      <div className="border-t border-gray-100 bg-gray-50 p-5">
+                    {expanded && (
+                      <div className="border-t border-border bg-muted/30 p-5">
 
                         <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
 
@@ -839,16 +1202,15 @@ export default function AdminHistoricoPage() {
 
                           <section>
 
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
                               Itens do pedido
                             </p>
 
-                            <div className="mt-3 space-y-3">
+                            <div className="mt-3 space-y-2">
 
                               {order.items.length ===
                               0 ? (
-
-                                <div className="rounded-xl bg-white p-4 text-sm text-gray-500">
+                                <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
                                   Nenhum item encontrado.
                                 </div>
 
@@ -856,19 +1218,18 @@ export default function AdminHistoricoPage() {
 
                                 order.items.map(
                                   (item) => (
-
                                     <div
                                       key={
                                         item.id
                                       }
-                                      className="rounded-xl border border-gray-200 bg-white p-4"
+                                      className="rounded-xl border border-border bg-card p-4"
                                     >
 
                                       <div className="flex justify-between gap-4">
 
                                         <div>
 
-                                          <p className="font-bold text-gray-900">
+                                          <p className="font-bold text-foreground">
                                             {item.quantity}x{" "}
                                             {
                                               item
@@ -877,100 +1238,73 @@ export default function AdminHistoricoPage() {
                                             }
                                           </p>
 
-                                          <p className="mt-1 text-sm text-gray-500">
-                                            R${" "}
-                                            {Number(
+                                          <p className="mt-1 text-sm text-muted-foreground">
+                                            {currency(
                                               item.unitPrice
-                                            )
-                                              .toFixed(
-                                                2
-                                              )
-                                              .replace(
-                                                ".",
-                                                ","
-                                              )}{" "}
+                                            )}{" "}
                                             cada
                                           </p>
 
                                         </div>
 
-                                        <p className="font-bold text-gray-900">
-                                          R${" "}
-                                          {(
+                                        <p className="font-bold text-foreground">
+                                          {currency(
                                             Number(
                                               item.unitPrice
                                             ) *
-                                            item.quantity
-                                          )
-                                            .toFixed(
-                                              2
-                                            )
-                                            .replace(
-                                              ".",
-                                              ","
-                                            )}
+                                              item.quantity
+                                          )}
                                         </p>
 
                                       </div>
 
                                       {item.crustName && (
-
                                         <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
 
-                                          <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
-                                            Borda
-                                          </p>
+                                          <div className="flex flex-wrap items-center justify-between gap-2">
 
-                                          <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                                            <div>
 
-                                            <p className="text-sm font-bold text-amber-900">
-                                              {item.crustName}
-                                            </p>
-
-                                            {item.crustPrice !== null && (
-
-                                              <p className="text-xs font-semibold text-amber-700">
-                                                + R${" "}
-                                                {Number(
-                                                  item.crustPrice
-                                                )
-                                                  .toFixed(
-                                                    2
-                                                  )
-                                                  .replace(
-                                                    ".",
-                                                    ","
-                                                  )}
+                                              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                                                Borda recheada
                                               </p>
 
+                                              <p className="mt-1 text-sm font-bold text-amber-900">
+                                                {item.crustName}
+                                              </p>
+
+                                            </div>
+
+                                            {item.crustPrice !==
+                                              null && (
+                                              <p className="text-xs font-bold text-amber-700">
+                                                +{" "}
+                                                {currency(
+                                                  item.crustPrice
+                                                )}
+                                              </p>
                                             )}
 
                                           </div>
 
                                         </div>
-
                                       )}
 
                                       {item.observation && (
+                                        <div className="mt-3 rounded-lg border border-primary/15 bg-primary/5 p-3">
 
-                                        <div className="mt-3 rounded-lg bg-red-50 p-3">
-
-                                          <p className="text-xs font-bold uppercase text-red-700">
+                                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
                                             Observação
                                           </p>
 
-                                          <p className="mt-1 text-sm text-red-700">
-                                            {
-                                              item.observation
-                                            }
+                                          <p className="mt-1 text-sm leading-6 text-foreground">
+                                            {item.observation}
                                           </p>
 
                                         </div>
-
                                       )}
 
                                     </div>
-
                                   )
                                 )
                               )}
@@ -979,53 +1313,41 @@ export default function AdminHistoricoPage() {
 
                           </section>
 
-                          {/* ENDEREÇO */}
+                          {/* ENTREGA */}
 
                           <section>
 
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
                               Entrega
                             </p>
 
-                            <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4">
+                            <div className="mt-3 rounded-xl border border-border bg-card p-4">
 
-                              <p className="font-semibold text-gray-900">
+                              <p className="font-bold text-foreground">
                                 {order.street},{" "}
                                 {order.number}
                               </p>
 
-                              <p className="mt-1 text-sm text-gray-600">
-                                {
-                                  order.neighborhood
-                                }
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {order.neighborhood}
                               </p>
 
                               {order.complement && (
-                                <p className="mt-1 text-sm text-gray-600">
-                                  {
-                                    order.complement
-                                  }
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  {order.complement}
                                 </p>
                               )}
 
-                              <div className="mt-4 border-t border-gray-100 pt-4">
+                              <div className="mt-4 border-t border-border pt-4">
 
-                                <p className="text-sm text-gray-500">
+                                <p className="text-xs text-muted-foreground">
                                   Taxa de entrega
                                 </p>
 
-                                <p className="mt-1 font-bold text-gray-900">
-                                  R${" "}
-                                  {Number(
+                                <p className="mt-1 font-bold text-foreground">
+                                  {currency(
                                     order.deliveryFee
-                                  )
-                                    .toFixed(
-                                      2
-                                    )
-                                    .replace(
-                                      ".",
-                                      ","
-                                    )}
+                                  )}
                                 </p>
 
                               </div>
@@ -1037,7 +1359,6 @@ export default function AdminHistoricoPage() {
                         </div>
 
                       </div>
-
                     )}
 
                   </article>
@@ -1045,7 +1366,7 @@ export default function AdminHistoricoPage() {
               }
             )}
 
-          </div>
+          </section>
         )}
 
       </div>

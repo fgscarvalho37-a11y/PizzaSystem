@@ -9,6 +9,10 @@ import {
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
+
 type Category = {
   id: number;
   name: string;
@@ -77,7 +81,7 @@ export default function AdminCardapioPage() {
         categoriesResponse,
       ] = await Promise.all([
         adminFetch(
-  "http://localhost:8080/api/products",
+  `${API_URL}/api/products`,
   {
     cache: "no-store",
     credentials: "include",
@@ -85,7 +89,7 @@ export default function AdminCardapioPage() {
 ),
 
         adminFetch(
-          "http://localhost:8080/api/categories",
+          `${API_URL}/api/categories`,
           {
             cache: "no-store",
             credentials: "include",
@@ -257,8 +261,8 @@ export default function AdminCardapioPage() {
 
       const url =
         editingId
-          ? `http://localhost:8080/api/products/${editingId}`
-          : "http://localhost:8080/api/products";
+          ? `${API_URL}/api/products/${editingId}`
+          : `${API_URL}/api/products`;
 
       const method =
         editingId
@@ -328,7 +332,7 @@ export default function AdminCardapioPage() {
 
       const response =
         await adminFetch(
-          `http://localhost:8080/api/products/${product.id}/availability?available=${!product.available}`,
+          `${API_URL}/api/products/${product.id}/availability?available=${!product.available}`,
           {
             method: "PATCH",
             credentials: "include",
@@ -366,25 +370,23 @@ export default function AdminCardapioPage() {
   // =========================
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-background">
 
-      <AdminHeader
-        title="Gerenciar cardápio"
-      />
+      <AdminHeader />
 
-      <div className="mx-auto max-w-6xl p-6">
+      <div className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8">
 
-        <div className="mb-8">
+        <div className="mb-6 border-b border-border pb-6">
 
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
             Cardápio
           </p>
 
-          <h2 className="mt-1 text-3xl font-bold text-gray-900">
+          <h2 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
             Produtos
           </h2>
 
-          <p className="mt-2 max-w-2xl text-gray-600">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
             Cadastre produtos, altere preços, organize por categoria e controle a disponibilidade no site.
           </p>
 
@@ -395,7 +397,7 @@ export default function AdminCardapioPage() {
             ========================= */}
 
         {errorMessage && (
-          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
+          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm">
 
             <p className="font-semibold text-red-700">
               Atenção
@@ -409,13 +411,13 @@ export default function AdminCardapioPage() {
         )}
 
         {successMessage && (
-          <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-4">
+          <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
 
-            <p className="font-semibold text-green-700">
+            <p className="font-semibold text-emerald-700">
               Tudo certo
             </p>
 
-            <p className="mt-1 text-sm text-green-600">
+            <p className="mt-1 text-sm text-emerald-700">
               {successMessage}
             </p>
 
@@ -428,20 +430,20 @@ export default function AdminCardapioPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+          className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]"
         >
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
 
-              <h3 className="text-xl font-bold text-gray-900">
+              <h3 className="font-display text-2xl uppercase tracking-tight text-foreground">
                 {editingId
                   ? "Editar produto"
                   : "Novo produto"}
               </h3>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
                 {editingId
                   ? "Altere os dados do produto selecionado."
                   : "Preencha os dados para adicionar um novo item ao cardápio."}
@@ -455,7 +457,7 @@ export default function AdminCardapioPage() {
                 onClick={
                   clearForm
                 }
-                className="text-sm font-semibold text-red-600 transition hover:text-red-700"
+                className="h-9 rounded-lg border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 transition hover:bg-red-100"
               >
                 Cancelar edição
               </button>
@@ -469,7 +471,7 @@ export default function AdminCardapioPage() {
 
             <div>
 
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                 Nome
               </label>
 
@@ -485,7 +487,7 @@ export default function AdminCardapioPage() {
                     event.target.value
                   )
                 }
-                className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none transition focus:border-black"
+                className="h-12 w-full rounded-xl border border-input px-4 outline-none transition focus:border-border"
                 placeholder="Ex: Pizza de Calabresa"
               />
 
@@ -495,7 +497,7 @@ export default function AdminCardapioPage() {
 
             <div>
 
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                 Categoria
               </label>
 
@@ -511,7 +513,7 @@ export default function AdminCardapioPage() {
                     event.target.value
                   )
                 }
-                className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 outline-none transition focus:border-black"
+                className="h-12 w-full rounded-xl border border-input bg-card px-4 outline-none transition focus:border-border"
               >
                 <option value="">
                   Selecione uma categoria
@@ -535,7 +537,7 @@ export default function AdminCardapioPage() {
 
             <div>
 
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                 Preço
               </label>
 
@@ -554,7 +556,7 @@ export default function AdminCardapioPage() {
                     event.target.value
                   )
                 }
-                className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none transition focus:border-black"
+                className="h-12 w-full rounded-xl border border-input px-4 outline-none transition focus:border-border"
                 placeholder="45.00"
               />
 
@@ -564,7 +566,7 @@ export default function AdminCardapioPage() {
 
             <div>
 
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                 URL da imagem
               </label>
 
@@ -579,7 +581,7 @@ export default function AdminCardapioPage() {
                     event.target.value
                   )
                 }
-                className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none transition focus:border-black"
+                className="h-12 w-full rounded-xl border border-input px-4 outline-none transition focus:border-border"
                 placeholder="https://..."
               />
 
@@ -589,7 +591,7 @@ export default function AdminCardapioPage() {
 
             <div className="md:col-span-2">
 
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                 Descrição / ingredientes
               </label>
 
@@ -605,7 +607,7 @@ export default function AdminCardapioPage() {
                   )
                 }
                 rows={4}
-                className="w-full resize-none rounded-xl border border-gray-300 p-4 outline-none transition focus:border-black"
+                className="w-full resize-none rounded-xl border border-input p-4 outline-none transition focus:border-border"
                 placeholder="Ex: Calabresa, mussarela e cebola"
               />
 
@@ -618,7 +620,7 @@ export default function AdminCardapioPage() {
             disabled={
               saving
             }
-            className="mt-6 rounded-xl bg-black px-6 py-3 font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:shadow-sm disabled:pointer-events-none disabled:opacity-50"
           >
             {saving
               ? "Salvando..."
@@ -633,17 +635,17 @@ export default function AdminCardapioPage() {
             PRODUTOS
             ========================= */}
 
-        <section className="mt-8">
+        <section className="mt-6 rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
 
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h3 className="font-display text-2xl uppercase tracking-tight text-foreground">
                 Produtos cadastrados
               </h3>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {products.length}{" "}
                 {products.length === 1
                   ? "produto cadastrado"
@@ -657,18 +659,49 @@ export default function AdminCardapioPage() {
               onClick={() =>
                 loadData()
               }
-              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted/40"
             >
               Atualizar
             </button>
 
           </div>
 
+          {!loading && products.length > 0 && (
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  Produtos
+                </p>
+                <p className="mt-1 text-2xl font-bold text-foreground">
+                  {products.length}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  Disponíveis
+                </p>
+                <p className="mt-1 text-2xl font-bold text-emerald-700">
+                  {products.filter((product) => product.available).length}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  Categorias em uso
+                </p>
+                <p className="mt-1 text-2xl font-bold text-foreground">
+                  {new Set(products.map((product) => product.category.id)).size}
+                </p>
+              </div>
+            </div>
+          )}
+
           {loading ? (
 
-            <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+            <div className="mt-5 rounded-2xl border border-dashed border-border bg-background p-10 text-center">
 
-              <p className="text-gray-500">
+              <p className="text-muted-foreground">
                 Carregando produtos...
               </p>
 
@@ -676,17 +709,17 @@ export default function AdminCardapioPage() {
 
           ) : products.length === 0 ? (
 
-            <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+            <div className="mt-5 rounded-2xl border border-dashed border-border bg-background p-10 text-center">
 
               <p className="text-4xl">
                 🍕
               </p>
 
-              <h4 className="mt-3 text-lg font-bold text-gray-900">
+              <h4 className="mt-3 text-lg font-bold text-foreground">
                 Nenhum produto cadastrado
               </h4>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Cadastre o primeiro item para começar a montar o cardápio.
               </p>
 
@@ -694,20 +727,20 @@ export default function AdminCardapioPage() {
 
           ) : (
 
-            <div className="mt-5 grid gap-5 md:grid-cols-2">
+            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 
               {products.map(
                 (product) => (
 
                   <article
                     key={product.id}
-                    className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+                    className="group overflow-hidden rounded-[20px] border border-border bg-background transition hover:-translate-y-0.5 hover:border-foreground/10 hover:shadow-md"
                   >
 
                     {/* IMAGEM */}
 
                     {product.imageUrl && (
-                      <div className="aspect-[16/8] overflow-hidden bg-gray-100">
+                      <div className="aspect-[16/9] overflow-hidden bg-muted">
 
                         <img
                           src={
@@ -716,19 +749,19 @@ export default function AdminCardapioPage() {
                           alt={
                             product.name
                           }
-                          className="h-full w-full object-cover"
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]"
                         />
 
                       </div>
                     )}
 
-                    <div className="p-5">
+                    <div className="p-4">
 
                       <div className="flex items-start justify-between gap-4">
 
                         <div>
 
-                          <p className="text-sm font-semibold text-gray-500">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
                             {
                               product
                                 .category
@@ -736,17 +769,17 @@ export default function AdminCardapioPage() {
                             }
                           </p>
 
-                          <h4 className="mt-1 text-xl font-bold text-gray-900">
+                          <h4 className="mt-1 text-lg font-bold tracking-tight text-foreground">
                             {product.name}
                           </h4>
 
                         </div>
 
                         <span
-                          className={`h-fit rounded-full px-3 py-1 text-xs font-bold ${
+                          className={`h-fit rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${
                             product.available
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-red-200 bg-red-50 text-red-700"
                           }`}
                         >
                           {product.available
@@ -757,12 +790,12 @@ export default function AdminCardapioPage() {
                       </div>
 
                       {product.description && (
-                        <p className="mt-3 text-sm leading-6 text-gray-600">
+                        <p className="mt-3 text-sm leading-6 text-muted-foreground">
                           {product.description}
                         </p>
                       )}
 
-                      <p className="mt-4 text-2xl font-bold text-gray-900">
+                      <p className="mt-4 text-xl font-bold tracking-tight text-foreground">
                         R${" "}
                         {Number(
                           product.price
@@ -787,34 +820,41 @@ export default function AdminCardapioPage() {
                             updatingId ===
                             product.id
                           }
-                          className="flex-1 rounded-xl border border-black px-4 py-2.5 font-semibold transition hover:bg-gray-50 disabled:opacity-50"
+                          className="flex-1 rounded-xl border border-border px-4 py-2.5 font-semibold transition hover:bg-muted/40 disabled:opacity-50"
                         >
                           Editar
                         </button>
 
                         <button
                           type="button"
-                          disabled={
-                            updatingId ===
-                            product.id
-                          }
-                          onClick={() =>
-                            toggleAvailability(
-                              product
-                            )
-                          }
-                          className={`flex-1 rounded-xl px-4 py-2.5 font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                            product.available
-                              ? "bg-red-600 hover:bg-red-700"
-                              : "bg-green-600 hover:bg-green-700"
-                          }`}
+                          disabled={updatingId === product.id}
+                          onClick={() => toggleAvailability(product)}
+                          className="flex h-10 flex-1 items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 text-sm font-bold text-foreground transition hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+                          aria-pressed={product.available}
                         >
-                          {updatingId ===
-                          product.id
-                            ? "Atualizando..."
-                            : product.available
-                              ? "Desativar"
-                              : "Ativar"}
+                          <span>
+                            {updatingId === product.id
+                              ? "Atualizando..."
+                              : product.available
+                                ? "Disponível"
+                                : "Indisponível"}
+                          </span>
+
+                          <span
+                            className={`relative h-5 w-9 shrink-0 rounded-full transition ${
+                              product.available
+                                ? "bg-primary"
+                                : "bg-muted-foreground/25"
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-1 h-3 w-3 rounded-full bg-white shadow-sm transition-all ${
+                                product.available
+                                  ? "left-5"
+                                  : "left-1"
+                              }`}
+                            />
+                          </span>
                         </button>
 
                       </div>

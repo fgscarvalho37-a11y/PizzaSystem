@@ -4,6 +4,10 @@ import { FormEvent, useEffect, useState } from "react";
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
+
 type CouponDiscountType =
   | "PERCENTAGE"
   | "FIXED_AMOUNT";
@@ -130,7 +134,7 @@ export default function CouponsAdminPage() {
 
       const response =
   await adminFetch(
-    "http://localhost:8080/api/coupons",
+    `${API_URL}/api/coupons`,
     {
       credentials: "include",
     }
@@ -343,8 +347,8 @@ export default function CouponsAdminPage() {
 
       const url =
         editingId === null
-          ? "http://localhost:8080/api/coupons"
-          : `http://localhost:8080/api/coupons/${editingId}`;
+          ? `${API_URL}/api/coupons`
+          : `${API_URL}/api/coupons/${editingId}`;
 
       const method =
         editingId === null
@@ -448,7 +452,7 @@ export default function CouponsAdminPage() {
 
       const response =
   await adminFetch(
-    `http://localhost:8080/api/coupons/${coupon.id}/active?active=${!coupon.active}`,
+    `${API_URL}/api/coupons/${coupon.id}/active?active=${!coupon.active}`,
     {
       method: "PATCH",
       credentials: "include",
@@ -478,30 +482,30 @@ export default function CouponsAdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100">
-      <AdminHeader title="Cupons" />
+    <main className="min-h-screen bg-background">
+      <AdminHeader />
 
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
+      <div className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8">
+        <div className="grid gap-6 xl:grid-cols-[390px_minmax(0,1fr)]">
 
           {/* =========================
               FORMULÁRIO
               ========================= */}
 
-          <section className="h-fit rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <section className="h-fit rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
                 Promoções
               </p>
 
-              <h2 className="mt-1 text-2xl font-bold text-gray-900">
+              <h2 className="mt-1 font-display text-3xl uppercase tracking-tight text-foreground">
                 {editingId ===
                 null
                   ? "Novo cupom"
                   : "Editar cupom"}
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-gray-500">
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 Configure desconto,
                 valor mínimo,
                 validade e limite
@@ -528,7 +532,7 @@ export default function CouponsAdminPage() {
               className="mt-6 space-y-4"
             >
               <div>
-                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                   Código
                 </label>
 
@@ -552,12 +556,12 @@ export default function CouponsAdminPage() {
                     )
                   }
                   placeholder="Ex: PIZZA10"
-                  className="w-full rounded-xl border border-gray-300 p-3 uppercase outline-none transition focus:border-black"
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3.5 uppercase text-sm font-semibold text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                   Tipo de desconto
                 </label>
 
@@ -579,7 +583,7 @@ export default function CouponsAdminPage() {
                       })
                     )
                   }
-                  className="w-full rounded-xl border border-gray-300 bg-white p-3 outline-none transition focus:border-black"
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 >
                   <option value="PERCENTAGE">
                     Percentual (%)
@@ -592,7 +596,7 @@ export default function CouponsAdminPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                   {form.discountType ===
                   "PERCENTAGE"
                     ? "Percentual de desconto"
@@ -633,12 +637,12 @@ export default function CouponsAdminPage() {
                       ? "10"
                       : "15.00"
                   }
-                  className="w-full rounded-xl border border-gray-300 p-3 outline-none transition focus:border-black"
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                   Valor mínimo do pedido
                 </label>
 
@@ -664,10 +668,10 @@ export default function CouponsAdminPage() {
                     )
                   }
                   placeholder="Ex: 40.00"
-                  className="w-full rounded-xl border border-gray-300 p-3 outline-none transition focus:border-black"
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
 
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Opcional.
                 </p>
               </div>
@@ -675,7 +679,7 @@ export default function CouponsAdminPage() {
               {form.discountType ===
                 "PERCENTAGE" && (
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                     Desconto máximo
                   </label>
 
@@ -701,10 +705,10 @@ export default function CouponsAdminPage() {
                       )
                     }
                     placeholder="Ex: 20.00"
-                    className="w-full rounded-xl border border-gray-300 p-3 outline-none transition focus:border-black"
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
                   />
 
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Opcional. Limita
                     o desconto de um
                     cupom percentual.
@@ -713,7 +717,7 @@ export default function CouponsAdminPage() {
               )}
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                   Limite de usos
                 </label>
 
@@ -739,10 +743,10 @@ export default function CouponsAdminPage() {
                     )
                   }
                   placeholder="Ex: 100"
-                  className="w-full rounded-xl border border-gray-300 p-3 outline-none transition focus:border-black"
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
 
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Deixe vazio para
                   usos ilimitados.
                 </p>
@@ -750,7 +754,7 @@ export default function CouponsAdminPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                     Início da validade
                   </label>
 
@@ -773,12 +777,12 @@ export default function CouponsAdminPage() {
                         })
                       )
                     }
-                    className="w-full rounded-xl border border-gray-300 p-3 outline-none transition focus:border-black"
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                     Fim da validade
                   </label>
 
@@ -801,44 +805,38 @@ export default function CouponsAdminPage() {
                         })
                       )
                     }
-                    className="w-full rounded-xl border border-gray-300 p-3 outline-none transition focus:border-black"
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
                   />
                 </div>
               </div>
 
-              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <input
-                  type="checkbox"
-                  checked={
-                    form.active
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setForm(
-                      (
-                        current
-                      ) => ({
-                        ...current,
-
-                        active:
-                          event.target.checked,
-                      })
-                    )
-                  }
-                />
-
+              <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-border bg-background p-4">
                 <div>
-                  <p className="font-semibold text-gray-800">
+                  <p className="text-sm font-bold text-foreground">
                     Cupom ativo
                   </p>
 
-                  <p className="text-xs text-gray-500">
-                    Quando desativado,
-                    não poderá ser
-                    aplicado no
-                    checkout.
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Quando desativado, não poderá ser aplicado no checkout.
                   </p>
+                </div>
+
+                <div className="relative inline-flex h-7 w-12 shrink-0 items-center">
+                  <input
+                    type="checkbox"
+                    checked={form.active}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        active: event.target.checked,
+                      }))
+                    }
+                    className="peer sr-only"
+                  />
+
+                  <span className="absolute inset-0 rounded-full bg-muted-foreground/25 transition peer-checked:bg-primary" />
+
+                  <span className="absolute left-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
                 </div>
               </label>
 
@@ -847,7 +845,7 @@ export default function CouponsAdminPage() {
                 disabled={
                   saving
                 }
-                className="w-full rounded-xl bg-black px-5 py-3 font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+                className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:shadow-sm disabled:pointer-events-none disabled:opacity-50"
               >
                 {saving
                   ? "Salvando..."
@@ -864,7 +862,7 @@ export default function CouponsAdminPage() {
                   onClick={
                     resetForm
                   }
-                  className="w-full rounded-xl border border-gray-300 bg-white px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
+                  className="w-full rounded-xl border border-input bg-card px-5 py-3 font-semibold text-foreground transition hover:bg-muted/40"
                 >
                   Cancelar edição
                 </button>
@@ -876,18 +874,18 @@ export default function CouponsAdminPage() {
               LISTAGEM
               ========================= */}
 
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
                   Cupons cadastrados
                 </p>
 
-                <h2 className="mt-1 text-2xl font-bold text-gray-900">
+                <h2 className="mt-1 font-display text-3xl uppercase tracking-tight text-foreground">
                   Promoções
                 </h2>
 
-                <p className="mt-2 text-sm text-gray-500">
+                <p className="mt-2 text-sm text-muted-foreground">
                   Acompanhe status,
                   validade e número
                   de utilizações.
@@ -899,19 +897,19 @@ export default function CouponsAdminPage() {
                 onClick={
                   loadCoupons
                 }
-                className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                className="rounded-xl border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted/40"
               >
                 Atualizar
               </button>
             </div>
 
             {loading ? (
-              <div className="mt-8 rounded-xl bg-gray-50 p-6 text-center text-gray-500">
+              <div className="mt-6 rounded-2xl border border-dashed border-border bg-background px-6 py-12 text-center text-sm text-muted-foreground">
                 Carregando cupons...
               </div>
             ) : coupons.length ===
               0 ? (
-              <div className="mt-8 rounded-xl bg-gray-50 p-6 text-center text-gray-500">
+              <div className="mt-6 rounded-2xl border border-dashed border-border bg-background px-6 py-12 text-center text-sm text-muted-foreground">
                 Nenhum cupom
                 cadastrado.
               </div>
@@ -930,12 +928,12 @@ export default function CouponsAdminPage() {
                         key={
                           coupon.id
                         }
-                        className="rounded-2xl border border-gray-200 p-5"
+                        className="rounded-[22px] border border-border bg-background p-5 transition hover:-translate-y-0.5 hover:border-foreground/10 hover:shadow-sm"
                       >
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="text-xl font-bold text-gray-900">
+                              <h3 className="font-display text-2xl uppercase tracking-tight text-foreground">
                                 {
                                   coupon.code
                                 }
@@ -944,8 +942,8 @@ export default function CouponsAdminPage() {
                               <span
                                 className={
                                   coupon.active
-                                    ? "rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700"
-                                    : "rounded-full bg-gray-200 px-3 py-1 text-xs font-bold text-gray-600"
+                                    ? "rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700"
+                                    : "rounded-full border border-border bg-muted px-3 py-1 text-xs font-bold text-muted-foreground"
                                 }
                               >
                                 {coupon.active
@@ -954,7 +952,7 @@ export default function CouponsAdminPage() {
                               </span>
                             </div>
 
-                            <p className="mt-2 text-lg font-semibold text-gray-800">
+                            <p className="mt-2 text-lg font-semibold text-foreground">
                               {coupon.discountType ===
                               "PERCENTAGE"
                                 ? `${Number(
@@ -976,7 +974,7 @@ export default function CouponsAdminPage() {
                                   coupon
                                 )
                               }
-                              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                              className="rounded-lg border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted/40"
                             >
                               Editar
                             </button>
@@ -990,8 +988,8 @@ export default function CouponsAdminPage() {
                               }
                               className={
                                 coupon.active
-                                  ? "rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
-                                  : "rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100"
+                                  ? "h-9 rounded-lg border border-red-200 bg-red-50 px-3.5 text-sm font-bold text-red-700 transition hover:bg-red-100"
+                                  : "h-9 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100"
                               }
                             >
                               {coupon.active
@@ -1002,24 +1000,24 @@ export default function CouponsAdminPage() {
                         </div>
 
                         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                          <div className="rounded-xl bg-gray-50 p-4">
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                          <div className="rounded-xl border border-border bg-card p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
                               Utilizações
                             </p>
 
-                            <p className="mt-1 font-semibold text-gray-800">
+                            <p className="mt-1 font-semibold text-foreground">
                               {
                                 usageText
                               }
                             </p>
                           </div>
 
-                          <div className="rounded-xl bg-gray-50 p-4">
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                          <div className="rounded-xl border border-border bg-card p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
                               Pedido mínimo
                             </p>
 
-                            <p className="mt-1 font-semibold text-gray-800">
+                            <p className="mt-1 font-semibold text-foreground">
                               {coupon.minimumOrderValue !==
                               null
                                 ? money(
@@ -1029,12 +1027,12 @@ export default function CouponsAdminPage() {
                             </p>
                           </div>
 
-                          <div className="rounded-xl bg-gray-50 p-4">
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                          <div className="rounded-xl border border-border bg-card p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
                               Desconto máximo
                             </p>
 
-                            <p className="mt-1 font-semibold text-gray-800">
+                            <p className="mt-1 font-semibold text-foreground">
                               {coupon.maximumDiscountValue !==
                               null
                                 ? money(
@@ -1044,36 +1042,36 @@ export default function CouponsAdminPage() {
                             </p>
                           </div>
 
-                          <div className="rounded-xl bg-gray-50 p-4">
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                          <div className="rounded-xl border border-border bg-card p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
                               Válido a partir
                             </p>
 
-                            <p className="mt-1 text-sm font-semibold text-gray-800">
+                            <p className="mt-1 text-sm font-semibold text-foreground">
                               {formatDateTime(
                                 coupon.validFrom
                               )}
                             </p>
                           </div>
 
-                          <div className="rounded-xl bg-gray-50 p-4">
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                          <div className="rounded-xl border border-border bg-card p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
                               Válido até
                             </p>
 
-                            <p className="mt-1 text-sm font-semibold text-gray-800">
+                            <p className="mt-1 text-sm font-semibold text-foreground">
                               {formatDateTime(
                                 coupon.validUntil
                               )}
                             </p>
                           </div>
 
-                          <div className="rounded-xl bg-gray-50 p-4">
-                            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                          <div className="rounded-xl border border-border bg-card p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
                               Criado em
                             </p>
 
-                            <p className="mt-1 text-sm font-semibold text-gray-800">
+                            <p className="mt-1 text-sm font-semibold text-foreground">
                               {formatDateTime(
                                 coupon.createdAt
                               )}

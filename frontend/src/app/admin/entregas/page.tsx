@@ -9,6 +9,10 @@ import {
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
+
 
 type DeliveryArea = {
   id: number;
@@ -52,7 +56,7 @@ export default function AdminEntregasPage() {
 
       const response =
   await adminFetch(
-    "http://localhost:8080/api/delivery-areas",
+    `${API_URL}/api/delivery-areas`,
     {
       cache: "no-store",
       credentials: "include",
@@ -131,7 +135,7 @@ export default function AdminEntregasPage() {
 
       const response =
   await adminFetch(
-    "http://localhost:8080/api/delivery-areas",
+    `${API_URL}/api/delivery-areas`,
     {
       method: "POST",
 
@@ -203,7 +207,7 @@ export default function AdminEntregasPage() {
 
       const response =
   await adminFetch(
-    `http://localhost:8080/api/delivery-areas/${area.id}/active?active=${!area.active}`,
+    `${API_URL}/api/delivery-areas/${area.id}/active?active=${!area.active}`,
     {
       method: "PATCH",
       credentials: "include",
@@ -279,7 +283,7 @@ export default function AdminEntregasPage() {
 
       const response =
   await adminFetch(
-    `http://localhost:8080/api/delivery-areas/${area.id}`,
+    `${API_URL}/api/delivery-areas/${area.id}`,
     {
       method: "PUT",
 
@@ -331,50 +335,54 @@ export default function AdminEntregasPage() {
   // =========================
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-background">
 
-      <AdminHeader
-        title="Áreas de entrega"
-      />
+      <AdminHeader />
 
       {/* =========================
           CONTEÚDO
           ========================= */}
 
-      <div className="mx-auto max-w-6xl p-6">
+      <div className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8">
 
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 
           <div>
 
-            <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
               Entrega
             </p>
 
-            <h2 className="mt-1 text-3xl font-bold text-gray-900">
+            <h2 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
               Áreas de entrega
             </h2>
 
-            <p className="mt-2 max-w-2xl text-gray-600">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
               Cadastre os bairros atendidos, configure as taxas e controle quais regiões estão disponíveis no checkout.
             </p>
 
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white px-6 py-4 shadow-sm">
+          <div className="min-w-[170px] rounded-2xl border border-border bg-card p-5 shadow-sm">
 
-            <p className="text-sm text-gray-500">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
               Bairros ativos
             </p>
 
-            <p className="mt-1 text-3xl font-bold text-gray-900">
-              {
-                areas.filter(
-                  (area) =>
-                    area.active
-                ).length
-              }
-            </p>
+            <div className="mt-2 flex items-end justify-between">
+
+              <p className="text-3xl font-bold tracking-tight text-foreground">
+                {
+                  areas.filter(
+                    (area) =>
+                      area.active
+                  ).length
+                }
+              </p>
+
+              <span className="mb-1 h-2.5 w-2.5 rounded-full bg-primary" />
+
+            </div>
 
           </div>
 
@@ -422,16 +430,16 @@ export default function AdminEntregasPage() {
           onSubmit={
             handleCreate
           }
-          className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+          className="mb-6 rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]"
         >
 
           <div>
 
-            <h3 className="text-xl font-bold text-gray-900">
+            <h3 className="font-display text-2xl uppercase tracking-tight text-foreground">
               Novo bairro
             </h3>
 
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               O bairro será disponibilizado automaticamente no checkout após o cadastro.
             </p>
 
@@ -441,7 +449,7 @@ export default function AdminEntregasPage() {
 
             <div>
 
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                 Bairro
               </label>
 
@@ -458,14 +466,14 @@ export default function AdminEntregasPage() {
                   )
                 }
                 placeholder="Ex: Centro"
-                className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none transition focus:border-black"
+                className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
               />
 
             </div>
 
             <div>
 
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                 Taxa de entrega
               </label>
 
@@ -485,7 +493,7 @@ export default function AdminEntregasPage() {
                   )
                 }
                 placeholder="0,00"
-                className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none transition focus:border-black"
+                className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
               />
 
             </div>
@@ -497,7 +505,7 @@ export default function AdminEntregasPage() {
                 disabled={
                   submitting
                 }
-                className="h-12 w-full rounded-xl bg-black px-6 font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
+                className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:shadow-sm disabled:pointer-events-none disabled:opacity-50 md:w-auto"
               >
                 {submitting
                   ? "Salvando..."
@@ -514,17 +522,17 @@ export default function AdminEntregasPage() {
             BAIRROS CADASTRADOS
             ========================= */}
 
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
 
-              <h3 className="text-xl font-bold text-gray-900">
+              <h3 className="text-xl font-bold text-foreground">
                 Bairros cadastrados
               </h3>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {areas.length}{" "}
                 {areas.length === 1
                   ? "bairro cadastrado"
@@ -538,7 +546,7 @@ export default function AdminEntregasPage() {
               onClick={() =>
                 loadAreas()
               }
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+              className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted/40"
             >
               Atualizar
             </button>
@@ -547,9 +555,9 @@ export default function AdminEntregasPage() {
 
           {loading ? (
 
-            <div className="mt-6 rounded-xl bg-gray-50 p-6 text-center">
+            <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center">
 
-              <p className="text-gray-500">
+              <p className="text-muted-foreground">
                 Carregando bairros...
               </p>
 
@@ -557,17 +565,17 @@ export default function AdminEntregasPage() {
 
           ) : areas.length === 0 ? (
 
-            <div className="mt-6 rounded-xl bg-gray-50 p-8 text-center">
+            <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center">
 
               <p className="text-4xl">
                 🛵
               </p>
 
-              <h4 className="mt-3 font-bold text-gray-900">
+              <h4 className="mt-3 font-bold text-foreground">
                 Nenhum bairro cadastrado
               </h4>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Cadastre o primeiro bairro para liberar entregas no checkout.
               </p>
 
@@ -582,7 +590,7 @@ export default function AdminEntregasPage() {
 
                   <div
                     key={area.id}
-                    className="grid items-center gap-5 rounded-xl border border-gray-200 p-5 md:grid-cols-[1fr_190px_170px]"
+                    className="grid items-center gap-5 rounded-[20px] border border-border bg-background p-5 transition hover:-translate-y-0.5 hover:border-foreground/10 hover:shadow-sm md:grid-cols-[1fr_190px_150px]"
                   >
 
                     {/* BAIRRO */}
@@ -591,15 +599,15 @@ export default function AdminEntregasPage() {
 
                       <div className="flex flex-wrap items-center gap-2">
 
-                        <p className="text-lg font-bold text-gray-900">
+                        <p className="text-lg font-bold tracking-tight text-foreground">
                           {area.neighborhood}
                         </p>
 
                         <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                          className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${
                             area.active
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-500"
+                              ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border border-border bg-muted text-muted-foreground"
                           }`}
                         >
                           {area.active
@@ -609,7 +617,7 @@ export default function AdminEntregasPage() {
 
                       </div>
 
-                      <p className="mt-1 text-sm text-gray-500">
+                      <p className="mt-1 text-sm text-muted-foreground">
                         {area.active
                           ? "Disponível para seleção no checkout."
                           : "Não aparece para novos pedidos."}
@@ -621,13 +629,13 @@ export default function AdminEntregasPage() {
 
                     <div>
 
-                      <label className="mb-2 block text-sm font-semibold text-gray-700">
+                      <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                         Taxa
                       </label>
 
-                      <div className="flex items-center rounded-lg border border-gray-300 bg-white px-3">
+                      <div className="flex h-11 items-center rounded-xl border border-input bg-card px-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
 
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-muted-foreground">
                           R$
                         </span>
 
@@ -652,7 +660,7 @@ export default function AdminEntregasPage() {
                             updatingId ===
                             area.id
                           }
-                          className="h-10 w-full bg-transparent px-2 outline-none disabled:opacity-50"
+                          className="h-10 w-full bg-transparent px-2 text-sm font-bold text-foreground outline-none disabled:opacity-50"
                         />
 
                       </div>
@@ -665,27 +673,40 @@ export default function AdminEntregasPage() {
 
                       <button
                         type="button"
-                        disabled={
-                          updatingId ===
-                          area.id
-                        }
-                        onClick={() =>
-                          toggleActive(
-                            area
-                          )
-                        }
-                        className={`w-full rounded-xl px-4 py-3 font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                          area.active
-                            ? "bg-red-600 hover:bg-red-700"
-                            : "bg-green-600 hover:bg-green-700"
-                        }`}
+                        disabled={updatingId === area.id}
+                        onClick={() => toggleActive(area)}
+                        className="group flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-card px-3.5 py-3 text-left transition hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+                        aria-pressed={area.active}
                       >
-                        {updatingId ===
-                        area.id
-                          ? "Atualizando..."
-                          : area.active
-                            ? "Desativar bairro"
-                            : "Ativar bairro"}
+                        <div>
+                          <p className="text-xs font-bold text-foreground">
+                            {updatingId === area.id
+                              ? "Atualizando..."
+                              : area.active
+                                ? "Recebendo pedidos"
+                                : "Indisponível"}
+                          </p>
+
+                          <p className="mt-0.5 text-[10px] text-muted-foreground">
+                            Clique para {area.active ? "desativar" : "ativar"}
+                          </p>
+                        </div>
+
+                        <span
+                          className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+                            area.active
+                              ? "bg-primary"
+                              : "bg-muted-foreground/25"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-all ${
+                              area.active
+                                ? "left-6"
+                                : "left-1"
+                            }`}
+                          />
+                        </span>
                       </button>
 
                     </div>
