@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { adminFetch } from "@/lib/adminFetch";
 
 type StoreSettings = {
   id: number;
@@ -76,17 +77,19 @@ export default function ConfiguracoesPage() {
         settingsResponse,
         statusResponse,
       ] = await Promise.all([
-        fetch(
+        adminFetch(
           "http://localhost:8080/api/store",
           {
             cache: "no-store",
+            credentials: "include",
           }
         ),
 
-        fetch(
+        adminFetch(
           "http://localhost:8080/api/store/status",
           {
             cache: "no-store",
+            credentials: "include",
           }
         ),
       ]);
@@ -151,10 +154,11 @@ export default function ConfiguracoesPage() {
   async function refreshStatus() {
     try {
       const response =
-        await fetch(
+        await adminFetch(
           "http://localhost:8080/api/store/status",
           {
             cache: "no-store",
+            credentials: "include",
           }
         );
 
@@ -209,11 +213,13 @@ export default function ConfiguracoesPage() {
         !settings.open;
 
       const response =
-        await fetch(
+        await adminFetch(
           `http://localhost:8080/api/store/open?open=${newStatus}`,
           {
             method:
               "PATCH",
+            credentials:
+              "include",
           }
         );
 
@@ -290,7 +296,7 @@ export default function ConfiguracoesPage() {
       setSaving(true);
 
       const response =
-        await fetch(
+        await adminFetch(
           "http://localhost:8080/api/store",
           {
             method:
@@ -300,6 +306,8 @@ export default function ConfiguracoesPage() {
               "Content-Type":
                 "application/json",
             },
+
+            credentials: "include",
 
             body:
               JSON.stringify({

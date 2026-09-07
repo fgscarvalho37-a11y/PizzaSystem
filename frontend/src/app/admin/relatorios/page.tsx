@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { adminFetch } from "@/lib/adminFetch";
 
 type ReportData = {
   startDate: string;
@@ -118,13 +119,14 @@ export default function AdminRelatoriosPage() {
       setLoading(true);
       setErrorMessage("");
 
-      const response =
-        await fetch(
-          `http://localhost:8080/api/reports?startDate=${start}&endDate=${end}`,
-          {
-            cache: "no-store",
-          }
-        );
+     const response =
+  await adminFetch(
+    `http://localhost:8080/api/reports?startDate=${start}&endDate=${end}`,
+    {
+      cache: "no-store",
+      credentials: "include",
+    }
+  );
 
       if (!response.ok) {
         throw new Error(

@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { adminFetch } from "@/lib/adminFetch";
 
 type Category = {
   id: number;
@@ -75,17 +76,19 @@ export default function AdminCardapioPage() {
         productsResponse,
         categoriesResponse,
       ] = await Promise.all([
-        fetch(
-          "http://localhost:8080/api/products",
-          {
-            cache: "no-store",
-          }
-        ),
+        adminFetch(
+  "http://localhost:8080/api/products",
+  {
+    cache: "no-store",
+    credentials: "include",
+  }
+),
 
-        fetch(
+        adminFetch(
           "http://localhost:8080/api/categories",
           {
             cache: "no-store",
+            credentials: "include",
           }
         ),
       ]);
@@ -263,7 +266,7 @@ export default function AdminCardapioPage() {
           : "POST";
 
       const response =
-        await fetch(
+        await adminFetch(
           url,
           {
             method,
@@ -272,6 +275,8 @@ export default function AdminCardapioPage() {
               "Content-Type":
                 "application/json",
             },
+
+            credentials: "include",
 
             body:
               JSON.stringify(
@@ -322,10 +327,11 @@ export default function AdminCardapioPage() {
       setSuccessMessage("");
 
       const response =
-        await fetch(
+        await adminFetch(
           `http://localhost:8080/api/products/${product.id}/availability?available=${!product.available}`,
           {
             method: "PATCH",
+            credentials: "include",
           }
         );
 

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import AdminHeader from "@/components/AdminHeader";
+import { adminFetch } from "@/lib/adminFetch";
 
 type CouponDiscountType =
   | "PERCENTAGE"
@@ -128,9 +129,12 @@ export default function CouponsAdminPage() {
       setError("");
 
       const response =
-        await fetch(
-          "http://localhost:8080/api/coupons"
-        );
+  await adminFetch(
+    "http://localhost:8080/api/coupons",
+    {
+      credentials: "include",
+    }
+  );
 
       if (!response.ok) {
         throw new Error(
@@ -348,22 +352,24 @@ export default function CouponsAdminPage() {
           : "PUT";
 
       const response =
-        await fetch(
-          url,
-          {
-            method,
+  await adminFetch(
+    url,
+    {
+      method,
 
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
 
-            body:
-              JSON.stringify(
-                payload
-              ),
-          }
-        );
+      credentials: "include",
+
+      body:
+        JSON.stringify(
+          payload
+        ),
+    }
+  );
 
       if (!response.ok) {
         const text =
@@ -441,13 +447,13 @@ export default function CouponsAdminPage() {
       setMessage("");
 
       const response =
-        await fetch(
-          `http://localhost:8080/api/coupons/${coupon.id}/active?active=${!coupon.active}`,
-          {
-            method:
-              "PATCH",
-          }
-        );
+  await adminFetch(
+    `http://localhost:8080/api/coupons/${coupon.id}/active?active=${!coupon.active}`,
+    {
+      method: "PATCH",
+      credentials: "include",
+    }
+  );
 
       if (!response.ok) {
         throw new Error(

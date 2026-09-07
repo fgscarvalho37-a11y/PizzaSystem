@@ -6,6 +6,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { adminFetch } from "@/lib/adminFetch";
 
 type BusinessHours = {
   id?: number;
@@ -85,10 +86,11 @@ export default function AdminHorariosPage() {
       setErrorMessage("");
 
       const response =
-        await fetch(
+        await adminFetch(
           "http://localhost:8080/api/business-hours",
           {
             cache: "no-store",
+            credentials: "include",
           }
         );
 
@@ -208,7 +210,7 @@ export default function AdminHorariosPage() {
       );
 
       const response =
-        await fetch(
+        await adminFetch(
           `http://localhost:8080/api/business-hours/${day}`,
           {
             method:
@@ -218,6 +220,8 @@ export default function AdminHorariosPage() {
               "Content-Type":
                 "application/json",
             },
+
+            credentials: "include",
 
             body:
               JSON.stringify({
@@ -615,4 +619,4 @@ export default function AdminHorariosPage() {
 
     </main>
   );
-}
+} 

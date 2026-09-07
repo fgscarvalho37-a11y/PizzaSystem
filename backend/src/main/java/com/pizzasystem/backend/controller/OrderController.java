@@ -3,12 +3,14 @@ package com.pizzasystem.backend.controller;
 import com.pizzasystem.backend.dto.OrderItemRequest;
 import com.pizzasystem.backend.dto.OrderRequest;
 import com.pizzasystem.backend.entity.Coupon;
+import com.pizzasystem.backend.entity.Crust;
 import com.pizzasystem.backend.entity.DeliveryArea;
 import com.pizzasystem.backend.entity.Order;
 import com.pizzasystem.backend.entity.OrderItem;
 import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentStatus;
 import com.pizzasystem.backend.entity.Product;
+import com.pizzasystem.backend.repository.CrustRepository;
 import com.pizzasystem.backend.repository.DeliveryAreaRepository;
 import com.pizzasystem.backend.repository.OrderItemRepository;
 import com.pizzasystem.backend.repository.OrderRepository;
@@ -35,6 +37,7 @@ public class OrderController {
     private final DeliveryAreaRepository deliveryAreaRepository;
     private final StoreStatusService storeStatusService;
     private final CouponService couponService;
+    private final CrustRepository crustRepository;
 
     public OrderController(
             OrderRepository orderRepository,
@@ -42,7 +45,8 @@ public class OrderController {
             ProductRepository productRepository,
             DeliveryAreaRepository deliveryAreaRepository,
             StoreStatusService storeStatusService,
-            CouponService couponService
+            CouponService couponService,
+            CrustRepository crustRepository
     ) {
         this.orderRepository =
                 orderRepository;
@@ -61,6 +65,9 @@ public class OrderController {
 
         this.couponService =
                 couponService;
+
+        this.crustRepository =
+                crustRepository;
     }
 
     // =========================
@@ -310,14 +317,80 @@ public class OrderController {
                     itemRequest
                             .getQuantity();
 
+            // =========================
+            // PREÇO BASE DO ITEM
+            // =========================
+
+            BigDecimal unitPrice =
+                    product.getPrice();
+
+            String crustName =
+                    null;
+
+            BigDecimal crustPrice =
+                    null;
+
+            // =========================
+            // BORDA
+            // =========================
+
+            if (itemRequest.getCrustId() != null) {
+
+                if (!product.isAllowCrust()) {
+
+                    throw new RuntimeException(
+                            "O produto "
+                                    + product.getName()
+                                    + " não aceita borda recheada"
+                    );
+                }
+
+                Crust crust =
+                        crustRepository
+                                .findById(
+                                        itemRequest
+                                                .getCrustId()
+                                )
+                                .orElseThrow(() ->
+                                        new RuntimeException(
+                                                "Borda não encontrada"
+                                        )
+                                );
+
+                if (!crust.isActive()) {
+
+                    throw new RuntimeException(
+                            "Borda indisponível: "
+                                    + crust.getName()
+                    );
+                }
+
+                crustName =
+                        crust.getName();
+
+                crustPrice =
+                        crust.getPrice();
+
+                unitPrice =
+                        unitPrice.add(
+                                crustPrice
+                        );
+            }
+
+            // =========================
+            // SUBTOTAL DO ITEM
+            // =========================
+
             BigDecimal subtotal =
-                    product
-                            .getPrice()
-                            .multiply(
-                                    BigDecimal.valueOf(
-                                            quantity
-                                    )
-                            );
+                    unitPrice.multiply(
+                            BigDecimal.valueOf(
+                                    quantity
+                            )
+                    );
+
+            // =========================
+            // SALVAR ITEM
+            // =========================
 
             OrderItem item =
                     new OrderItem();
@@ -334,8 +407,23 @@ public class OrderController {
                     quantity
             );
 
+            /*
+             * unitPrice guarda o preço final
+             * unitário do item no momento
+             * do pedido:
+             *
+             * produto + borda, quando houver.
+             */
             item.setUnitPrice(
-                    product.getPrice()
+                    unitPrice
+            );
+
+            item.setCrustName(
+                    crustName
+            );
+
+            item.setCrustPrice(
+                    crustPrice
             );
 
             item.setObservation(

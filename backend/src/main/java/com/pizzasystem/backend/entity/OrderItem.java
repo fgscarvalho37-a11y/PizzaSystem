@@ -9,24 +9,55 @@ import java.math.BigDecimal;
 public class OrderItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(
+            strategy = GenerationType.IDENTITY
+    )
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "order_id", nullable = false)
+    @JoinColumn(
+            name = "order_id",
+            nullable = false
+    )
     private Order order;
 
     @ManyToOne
-    @JoinColumn(name = "product_id", nullable = false)
+    @JoinColumn(
+            name = "product_id",
+            nullable = false
+    )
     private Product product;
 
-    @Column(nullable = false)
+    @Column(
+            nullable = false
+    )
     private Integer quantity;
 
-    @Column(nullable = false)
+    @Column(
+            nullable = false,
+            precision = 12,
+            scale = 2
+    )
     private BigDecimal unitPrice;
 
-    @Column(length = 500)
+    // =========================
+    // BORDA ESCOLHIDA
+    // =========================
+
+    @Column(
+            length = 80
+    )
+    private String crustName;
+
+    @Column(
+            precision = 12,
+            scale = 2
+    )
+    private BigDecimal crustPrice;
+
+    @Column(
+            length = 500
+    )
     private String observation;
 
     public OrderItem() {
@@ -40,39 +71,76 @@ public class OrderItem {
         return order;
     }
 
-    public void setOrder(Order order) {
-        this.order = order;
+    public void setOrder(
+            Order order
+    ) {
+        this.order =
+                order;
     }
 
     public Product getProduct() {
         return product;
     }
 
-    public void setProduct(Product product) {
-        this.product = product;
+    public void setProduct(
+            Product product
+    ) {
+        this.product =
+                product;
     }
 
     public Integer getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
+    public void setQuantity(
+            Integer quantity
+    ) {
+        this.quantity =
+                quantity;
     }
 
     public BigDecimal getUnitPrice() {
         return unitPrice;
     }
 
-    public void setUnitPrice(BigDecimal unitPrice) {
-        this.unitPrice = unitPrice;
+    public void setUnitPrice(
+            BigDecimal unitPrice
+    ) {
+        this.unitPrice =
+                unitPrice;
+    }
+
+    public String getCrustName() {
+        return crustName;
+    }
+
+    public void setCrustName(
+            String crustName
+    ) {
+        this.crustName =
+                crustName;
+    }
+
+    public BigDecimal getCrustPrice() {
+        return crustPrice;
+    }
+
+    public void setCrustPrice(
+            BigDecimal crustPrice
+    ) {
+        this.crustPrice =
+                crustPrice;
     }
 
     public String getObservation() {
         return observation;
     }
 
-    public void setObservation(String observation) {
-        this.observation = observation;
+    public void setObservation(
+            String observation
+    ) {
+        this.observation =
+                observation;
     }
 }

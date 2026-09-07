@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { adminFetch } from "@/lib/adminFetch";
 
 type CashData = {
   date: string;
@@ -178,12 +179,13 @@ export default function AdminCaixaPage() {
     date: string
   ) {
     const response =
-      await fetch(
-        `http://localhost:8080/api/cash-closings/status?date=${date}`,
-        {
-          cache: "no-store",
-        }
-      );
+  await adminFetch(
+    `http://localhost:8080/api/cash-closings/status?date=${date}`,
+    {
+      cache: "no-store",
+      credentials: "include",
+    }
+  );
 
     if (!response.ok) {
       throw new Error(
@@ -216,12 +218,13 @@ export default function AdminCaixaPage() {
     date: string
   ) {
     const response =
-      await fetch(
-        `http://localhost:8080/api/cash-closings?date=${date}`,
-        {
-          cache: "no-store",
-        }
-      );
+  await adminFetch(
+    `http://localhost:8080/api/cash-closings?date=${date}`,
+    {
+      cache: "no-store",
+      credentials: "include",
+    }
+  );
 
     if (!response.ok) {
       throw new Error(
@@ -249,12 +252,13 @@ export default function AdminCaixaPage() {
       setSuccessMessage("");
 
       const response =
-        await fetch(
-          `http://localhost:8080/api/cash?date=${date}`,
-          {
-            cache: "no-store",
-          }
-        );
+  await adminFetch(
+    `http://localhost:8080/api/cash?date=${date}`,
+    {
+      cache: "no-store",
+      credentials: "include",
+    }
+  );
 
       if (!response.ok) {
         throw new Error(
@@ -359,12 +363,13 @@ export default function AdminCaixaPage() {
       setSuccessMessage("");
 
       const response =
-        await fetch(
-          `http://localhost:8080/api/cash-closings?date=${cash.date}`,
-          {
-            method: "POST",
-          }
-        );
+  await adminFetch(
+    `http://localhost:8080/api/cash-closings?date=${cash.date}`,
+    {
+      method: "POST",
+      credentials: "include",
+    }
+  );
 
       if (!response.ok) {
         let message =

@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(
+        origins = "http://localhost:3000",
+        allowCredentials = "true"
+)
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
@@ -22,95 +25,231 @@ public class ProductController {
             ProductRepository productRepository,
             CategoryRepository categoryRepository
     ) {
-        this.productRepository = productRepository;
-        this.categoryRepository = categoryRepository;
+        this.productRepository =
+                productRepository;
+
+        this.categoryRepository =
+                categoryRepository;
     }
 
+    // =========================
     // LISTAR TODOS
+    // =========================
+
     @GetMapping
     public List<Product> listAll() {
-        return productRepository.findAll();
+
+        return productRepository
+                .findAll();
     }
 
+    // =========================
     // LISTAR DISPONÍVEIS
+    // =========================
+
     @GetMapping("/available")
     public List<Product> listAvailable() {
-        return productRepository.findByAvailableTrue();
+
+        return productRepository
+                .findByAvailableTrue();
     }
 
+    // =========================
     // LISTAR POR CATEGORIA
+    // =========================
+
     @GetMapping("/category/{categoryId}")
     public List<Product> listByCategory(
             @PathVariable Long categoryId
     ) {
-        return productRepository.findByCategoryId(categoryId);
+
+        return productRepository
+                .findByCategoryId(
+                        categoryId
+                );
     }
 
+    // =========================
     // CADASTRAR
+    // =========================
+
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Product create(@RequestBody Product product) {
+    @ResponseStatus(
+            HttpStatus.CREATED
+    )
+    public Product create(
+            @RequestBody Product product
+    ) {
 
-        Long categoryId = product.getCategory().getId();
+        if (product.getCategory() == null
+                || product.getCategory().getId() == null) {
 
-        Category category = categoryRepository
-                .findById(categoryId)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Categoria não encontrada"
-                        ));
+            throw new RuntimeException(
+                    "Categoria é obrigatória"
+            );
+        }
 
-        product.setCategory(category);
+        Long categoryId =
+                product
+                        .getCategory()
+                        .getId();
 
-        return productRepository.save(product);
+        Category category =
+                categoryRepository
+                        .findById(
+                                categoryId
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Categoria não encontrada"
+                                )
+                        );
+
+        product.setCategory(
+                category
+        );
+
+        return productRepository
+                .save(
+                        product
+                );
     }
 
+    // =========================
     // EDITAR PRODUTO
+    // =========================
+
     @PutMapping("/{id}")
     public Product update(
             @PathVariable Long id,
             @RequestBody Product data
     ) {
 
-        Product product = productRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Produto não encontrado"
-                        ));
+        Product product =
+                productRepository
+                        .findById(
+                                id
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Produto não encontrado"
+                                )
+                        );
 
-        Category category = categoryRepository
-                .findById(data.getCategory().getId())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Categoria não encontrada"
-                        ));
+        if (data.getCategory() == null
+                || data.getCategory().getId() == null) {
 
-        product.setName(data.getName());
-        product.setDescription(data.getDescription());
-        product.setImageUrl(data.getImageUrl());
-        product.setPrice(data.getPrice());
-        product.setAvailable(data.isAvailable());
-        product.setCategory(category);
+            throw new RuntimeException(
+                    "Categoria é obrigatória"
+            );
+        }
 
-        return productRepository.save(product);
+        Category category =
+                categoryRepository
+                        .findById(
+                                data
+                                        .getCategory()
+                                        .getId()
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Categoria não encontrada"
+                                )
+                        );
+
+        product.setName(
+                data.getName()
+        );
+
+        product.setDescription(
+                data.getDescription()
+        );
+
+        product.setImageUrl(
+                data.getImageUrl()
+        );
+
+        product.setPrice(
+                data.getPrice()
+        );
+
+        product.setAvailable(
+                data.isAvailable()
+        );
+
+        product.setAllowCrust(
+                data.isAllowCrust()
+        );
+
+        product.setCategory(
+                category
+        );
+
+        return productRepository
+                .save(
+                        product
+                );
     }
 
-    // ATIVAR / DESATIVAR
+    // =========================
+    // ATIVAR / DESATIVAR PRODUTO
+    // =========================
+
     @PatchMapping("/{id}/availability")
     public Product changeAvailability(
             @PathVariable Long id,
             @RequestParam boolean available
     ) {
 
-        Product product = productRepository
-                .findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Produto não encontrado"
-                        ));
+        Product product =
+                productRepository
+                        .findById(
+                                id
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Produto não encontrado"
+                                )
+                        );
 
-        product.setAvailable(available);
+        product.setAvailable(
+                available
+        );
 
-        return productRepository.save(product);
+        return productRepository
+                .save(
+                        product
+                );
+    }
+
+    // =========================
+    // ATIVAR / DESATIVAR BORDA
+    // =========================
+
+    @PatchMapping("/{id}/allow-crust")
+    public Product changeAllowCrust(
+            @PathVariable Long id,
+            @RequestParam boolean allowCrust
+    ) {
+
+        Product product =
+                productRepository
+                        .findById(
+                                id
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Produto não encontrado"
+                                )
+                        );
+
+        product.setAllowCrust(
+                allowCrust
+        );
+
+        return productRepository
+                .save(
+                        product
+                );
     }
 }

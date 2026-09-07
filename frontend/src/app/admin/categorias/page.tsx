@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { adminFetch } from "@/lib/adminFetch";
 
 type Category = {
   id: number;
@@ -58,10 +59,11 @@ export default function AdminCategoriasPage() {
       setErrorMessage("");
 
       const response =
-        await fetch(
+        await adminFetch(
           "http://localhost:8080/api/categories",
           {
             cache: "no-store",
+            credentials: "include",
           }
         );
 
@@ -158,7 +160,7 @@ export default function AdminCategoriasPage() {
           : "POST";
 
       const response =
-        await fetch(
+        await adminFetch(
           url,
           {
             method,
@@ -167,6 +169,8 @@ export default function AdminCategoriasPage() {
               "Content-Type":
                 "application/json",
             },
+
+            credentials: "include",
 
             body:
               JSON.stringify({

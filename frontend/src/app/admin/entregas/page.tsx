@@ -6,7 +6,9 @@ import {
   useState,
 } from "react";
 
-import Link from "next/link";
+import AdminHeader from "@/components/AdminHeader";
+import { adminFetch } from "@/lib/adminFetch";
+
 
 type DeliveryArea = {
   id: number;
@@ -49,12 +51,13 @@ export default function AdminEntregasPage() {
       setErrorMessage("");
 
       const response =
-        await fetch(
-          "http://localhost:8080/api/delivery-areas",
-          {
-            cache: "no-store",
-          }
-        );
+  await adminFetch(
+    "http://localhost:8080/api/delivery-areas",
+    {
+      cache: "no-store",
+      credentials: "include",
+    }
+  );
 
       if (!response.ok) {
         throw new Error(
@@ -127,26 +130,28 @@ export default function AdminEntregasPage() {
       setSubmitting(true);
 
       const response =
-        await fetch(
-          "http://localhost:8080/api/delivery-areas",
-          {
-            method: "POST",
+  await adminFetch(
+    "http://localhost:8080/api/delivery-areas",
+    {
+      method: "POST",
 
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
 
-            body: JSON.stringify({
-              neighborhood:
-                neighborhood.trim(),
+      credentials: "include",
 
-              fee: parsedFee,
+      body: JSON.stringify({
+        neighborhood:
+          neighborhood.trim(),
 
-              active: true,
-            }),
-          }
-        );
+        fee: parsedFee,
+
+        active: true,
+      }),
+    }
+  );
 
       if (!response.ok) {
         const text =
@@ -197,12 +202,13 @@ export default function AdminEntregasPage() {
       setSuccessMessage("");
 
       const response =
-        await fetch(
-          `http://localhost:8080/api/delivery-areas/${area.id}/active?active=${!area.active}`,
-          {
-            method: "PATCH",
-          }
-        );
+  await adminFetch(
+    `http://localhost:8080/api/delivery-areas/${area.id}/active?active=${!area.active}`,
+    {
+      method: "PATCH",
+      credentials: "include",
+    }
+  );
 
       if (!response.ok) {
         throw new Error(
@@ -272,29 +278,30 @@ export default function AdminEntregasPage() {
       setSuccessMessage("");
 
       const response =
-        await fetch(
-          `http://localhost:8080/api/delivery-areas/${area.id}`,
-          {
-            method: "PUT",
+  await adminFetch(
+    `http://localhost:8080/api/delivery-areas/${area.id}`,
+    {
+      method: "PUT",
 
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
 
-            body: JSON.stringify({
-              neighborhood:
-                area.neighborhood,
+      credentials: "include",
 
-              fee:
-                parsedFee,
+      body: JSON.stringify({
+        neighborhood:
+          area.neighborhood,
 
-              active:
-                area.active,
-            }),
-          }
-        );
+        fee:
+          parsedFee,
 
+        active:
+          area.active,
+      }),
+    }
+  );
       if (!response.ok) {
         throw new Error(
           "Erro ao atualizar taxa"
@@ -326,98 +333,9 @@ export default function AdminEntregasPage() {
   return (
     <main className="min-h-screen bg-gray-100">
 
-      {/* =========================
-          HEADER
-          ========================= */}
-
-      <header className="border-b bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-5">
-
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-
-            <div>
-
-              <Link
-                href="/admin"
-                className="text-sm font-semibold text-gray-500 transition hover:text-black"
-              >
-                ← Painel administrativo
-              </Link>
-
-              <h1 className="mt-2 text-2xl font-bold text-gray-900">
-                PizzaSystem
-              </h1>
-
-              <p className="text-sm text-gray-500">
-                Áreas de entrega
-              </p>
-
-            </div>
-
-            <nav className="flex flex-wrap gap-2">
-
-              <Link
-                href="/admin"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Painel
-              </Link>
-
-              <Link
-                href="/admin/cozinha"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Cozinha
-              </Link>
-
-              <Link
-                href="/admin/entregas"
-                className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white"
-              >
-                Entregas
-              </Link>
-
-              <Link
-                href="/admin/cardapio"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Cardápio
-              </Link>
-
-              <Link
-                href="/admin/categorias"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Categorias
-              </Link>
-
-              <Link
-                href="/admin/horarios"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Horários
-              </Link>
-
-              <Link
-                href="/admin/configuracoes"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Configurações
-              </Link>
-
-              <Link
-                href="/cardapio"
-                className="rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100"
-              >
-                Ver site
-              </Link>
-
-            </nav>
-
-          </div>
-
-        </div>
-      </header>
+      <AdminHeader
+        title="Áreas de entrega"
+      />
 
       {/* =========================
           CONTEÚDO

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import AdminHeader from "@/components/AdminHeader";
+import { adminFetch } from "@/lib/adminFetch";
 
 type OrderStatus =
   | "PENDING_PAYMENT"
@@ -29,6 +30,8 @@ type OrderItem = {
   quantity: number;
   unitPrice: number;
   observation: string | null;
+  crustName: string | null;
+  crustPrice: number | null;
   product: Product;
 };
 
@@ -185,13 +188,14 @@ export default function CozinhaPage() {
     try {
       setErrorMessage("");
 
-      const response =
-        await fetch(
-          "http://localhost:8080/api/orders",
-          {
-            cache: "no-store",
-          }
-        );
+     const response =
+  await adminFetch(
+    "http://localhost:8080/api/orders",
+    {
+      cache: "no-store",
+      credentials: "include",
+    }
+  );
 
       if (!response.ok) {
         throw new Error(
@@ -217,13 +221,15 @@ export default function CozinhaPage() {
           activeOrders.map(
             async (order) => {
               const itemsResponse =
-                await fetch(
-                  `http://localhost:8080/api/orders/${order.id}/items`,
-                  {
-                    cache:
-                      "no-store",
-                  }
-                );
+  await adminFetch(
+    `http://localhost:8080/api/orders/${order.id}/items`,
+    {
+      cache:
+        "no-store",
+      credentials:
+        "include",
+    }
+  );
 
               let items:
                 OrderItem[] = [];
@@ -291,12 +297,13 @@ export default function CozinhaPage() {
       setErrorMessage("");
 
       const response =
-        await fetch(
-          `http://localhost:8080/api/orders/${order.id}/status?status=${next}`,
-          {
-            method: "PATCH",
-          }
-        );
+  await adminFetch(
+    `http://localhost:8080/api/orders/${order.id}/status?status=${next}`,
+    {
+      method: "PATCH",
+      credentials: "include",
+    }
+  );
 
       if (!response.ok) {
         throw new Error(
@@ -341,99 +348,9 @@ export default function CozinhaPage() {
   return (
     <main className="min-h-screen bg-gray-100">
 
-      {/* =========================
-          HEADER
-          ========================= */}
-
-      <header className="border-b bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-5">
-
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-
-            <div>
-              <Link
-                href="/admin"
-                className="text-sm font-semibold text-gray-500 transition hover:text-black"
-              >
-                ← Painel administrativo
-              </Link>
-
-              <h1 className="mt-2 text-2xl font-bold text-gray-900">
-                PizzaSystem
-              </h1>
-
-              <p className="text-sm text-gray-500">
-                Painel da cozinha
-              </p>
-            </div>
-
-            {/* =========================
-                MENU ADMIN COMPLETO
-                ========================= */}
-
-            <nav className="flex flex-wrap gap-2">
-
-              <Link
-                href="/admin"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Painel
-              </Link>
-
-              <Link
-                href="/admin/cozinha"
-                className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white"
-              >
-                Cozinha
-              </Link>
-
-              <Link
-                href="/admin/entregas"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Entregas
-              </Link>
-
-              <Link
-                href="/admin/cardapio"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Cardápio
-              </Link>
-
-              <Link
-                href="/admin/categorias"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Categorias
-              </Link>
-
-              <Link
-                href="/admin/horarios"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Horários
-              </Link>
-
-              <Link
-                href="/admin/configuracoes"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Configurações
-              </Link>
-
-              <Link
-                href="/cardapio"
-                className="rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100"
-              >
-                Ver site
-              </Link>
-
-            </nav>
-
-          </div>
-        </div>
-      </header>
+      <AdminHeader
+        title="Cozinha"
+      />
 
       {/* =========================
           CONTEÚDO
@@ -505,9 +422,9 @@ export default function CozinhaPage() {
 
           <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-12 text-center shadow-sm">
 
-            <p className="text-5xl">
-              🍕
-            </p>
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-gray-200 bg-gray-50">
+              <span className="h-5 w-5 rounded-full border-4 border-gray-300" />
+            </div>
 
             <h3 className="mt-4 text-xl font-bold text-gray-900">
               Nenhum pedido na cozinha
@@ -585,7 +502,7 @@ export default function CozinhaPage() {
                           </span>
 
                           <p className="mt-2 text-sm font-semibold text-green-600">
-                            ✓ Pagamento aprovado
+                            Pagamento aprovado
                           </p>
 
                         </div>
@@ -663,6 +580,34 @@ export default function CozinhaPage() {
                                             .name
                                         }
                                       </p>
+
+                                      {item.crustName && (
+                                        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                          <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
+                                            Borda
+                                          </p>
+
+                                          <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                                            <p className="text-sm font-bold text-amber-900">
+                                              {item.crustName}
+                                            </p>
+
+                                            {item.crustPrice !== null && (
+                                              <p className="text-xs font-semibold text-amber-700">
+                                                + R${" "}
+                                                {Number(
+                                                  item.crustPrice
+                                                )
+                                                  .toFixed(2)
+                                                  .replace(
+                                                    ".",
+                                                    ","
+                                                  )}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
 
                                       {item.observation && (
 

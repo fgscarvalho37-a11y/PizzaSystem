@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { adminFetch } from "@/lib/adminFetch";
 
 type OrderStatus =
   | "PENDING_PAYMENT"
@@ -39,6 +40,8 @@ type OrderItem = {
   quantity: number;
   unitPrice: number;
   observation: string | null;
+  crustName: string | null;
+  crustPrice: number | null;
   product: Product;
 };
 
@@ -205,12 +208,13 @@ export default function AdminHistoricoPage() {
       setErrorMessage("");
 
       const response =
-        await fetch(
-          "http://localhost:8080/api/orders",
-          {
-            cache: "no-store",
-          }
-        );
+  await adminFetch(
+    "http://localhost:8080/api/orders",
+    {
+      cache: "no-store",
+      credentials: "include",
+    }
+  );
 
       if (!response.ok) {
         throw new Error(
@@ -248,13 +252,15 @@ export default function AdminHistoricoPage() {
             async (order) => {
               try {
                 const itemsResponse =
-                  await fetch(
-                    `http://localhost:8080/api/orders/${order.id}/items`,
-                    {
-                      cache:
-                        "no-store",
-                    }
-                  );
+  await adminFetch(
+    `http://localhost:8080/api/orders/${order.id}/items`,
+    {
+      cache:
+        "no-store",
+      credentials:
+        "include",
+    }
+  );
 
                 if (
                   !itemsResponse.ok
@@ -649,9 +655,9 @@ export default function AdminHistoricoPage() {
 
           <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
 
-            <p className="text-5xl">
-              🧾
-            </p>
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-gray-200 bg-gray-50">
+              <div className="h-6 w-5 rounded-sm border-2 border-gray-300" />
+            </div>
 
             <h3 className="mt-4 text-xl font-bold text-gray-900">
               Nenhum registro encontrado
@@ -906,6 +912,44 @@ export default function AdminHistoricoPage() {
                                         </p>
 
                                       </div>
+
+                                      {item.crustName && (
+
+                                        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+
+                                          <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
+                                            Borda
+                                          </p>
+
+                                          <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+
+                                            <p className="text-sm font-bold text-amber-900">
+                                              {item.crustName}
+                                            </p>
+
+                                            {item.crustPrice !== null && (
+
+                                              <p className="text-xs font-semibold text-amber-700">
+                                                + R${" "}
+                                                {Number(
+                                                  item.crustPrice
+                                                )
+                                                  .toFixed(
+                                                    2
+                                                  )
+                                                  .replace(
+                                                    ".",
+                                                    ","
+                                                  )}
+                                              </p>
+
+                                            )}
+
+                                          </div>
+
+                                        </div>
+
+                                      )}
 
                                       {item.observation && (
 
