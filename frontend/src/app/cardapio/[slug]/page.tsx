@@ -6,7 +6,15 @@ import {
   useState,
 } from "react";
 
-import { useRouter } from "next/navigation";
+import {
+  useParams,
+  useRouter,
+} from "next/navigation";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:8080";
+
 
 type Category = {
   id: number;
@@ -237,6 +245,14 @@ export default function CardapioPage() {
   const router =
     useRouter();
 
+  const params =
+    useParams<{
+      slug: string;
+    }>();
+
+  const storeSlug =
+    params.slug;
+
   const [
     products,
     setProducts,
@@ -387,7 +403,9 @@ export default function CardapioPage() {
         ] =
           await Promise.all([
             fetch(
-              "http://localhost:8080/api/products/available",
+              `${API_URL}/api/products/available?store=${encodeURIComponent(
+                storeSlug
+              )}`,
               {
                 cache:
                   "no-store",
@@ -395,7 +413,9 @@ export default function CardapioPage() {
             ),
 
             fetch(
-              "http://localhost:8080/api/store/status",
+              `${API_URL}/api/store/status?store=${encodeURIComponent(
+                  storeSlug
+                )}`,
               {
                 cache:
                   "no-store",
@@ -403,7 +423,9 @@ export default function CardapioPage() {
             ),
 
             fetch(
-              "http://localhost:8080/api/crusts/active",
+              `${API_URL}/api/crusts/active?store=${encodeURIComponent(
+                storeSlug
+              )}`,
               {
                 cache:
                   "no-store",
@@ -491,7 +513,9 @@ export default function CardapioPage() {
           try {
             const response =
               await fetch(
-                "http://localhost:8080/api/store/status",
+                `${API_URL}/api/store/status?store=${encodeURIComponent(
+                  storeSlug
+                )}`,
                 {
                   cache:
                     "no-store",
@@ -531,7 +555,7 @@ export default function CardapioPage() {
         interval
       );
     };
-  }, []);
+  }, [storeSlug]);
 
   // =========================
   // BLOQUEAR FUNDO DO DRAWER

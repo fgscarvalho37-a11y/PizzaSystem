@@ -1,6 +1,7 @@
 package com.pizzasystem.backend.service;
 
 import com.pizzasystem.backend.entity.Crust;
+import com.pizzasystem.backend.entity.Store;
 import com.pizzasystem.backend.repository.CrustRepository;
 
 import org.springframework.stereotype.Service;
@@ -13,84 +14,149 @@ import java.util.List;
 @Service
 public class CrustService {
 
-    private final CrustRepository crustRepository;
+    private final CrustRepository
+            crustRepository;
+
+    private final CurrentStoreService
+            currentStoreService;
+
+    private final PublicStoreService
+            publicStoreService;
 
     public CrustService(
-            CrustRepository crustRepository
+            CrustRepository crustRepository,
+            CurrentStoreService currentStoreService,
+            PublicStoreService publicStoreService
     ) {
+
         this.crustRepository =
                 crustRepository;
+
+        this.currentStoreService =
+                currentStoreService;
+
+        this.publicStoreService =
+                publicStoreService;
     }
 
     // =========================
-    // LISTAR TODAS
+    // ADMIN - LISTAR TODAS
     // =========================
 
+    @Transactional(readOnly = true)
     public List<Crust> listAll() {
 
-        return crustRepository
-                .findAllByOrderBySortOrderAscNameAsc();
-    }
-
-    // =========================
-    // LISTAR ATIVAS
-    // =========================
-
-    public List<Crust> listActive() {
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
 
         return crustRepository
-                .findByActiveTrueOrderBySortOrderAscNameAsc();
-    }
-
-    // =========================
-    // BUSCAR POR ID
-    // =========================
-
-    public Crust findById(
-            Long id
-    ) {
-
-        return crustRepository
-                .findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Borda não encontrada."
-                        )
+                .findByStoreIdOrderBySortOrderAscNameAsc(
+                        storeId
                 );
     }
 
     // =========================
-    // CRIAR
+    // PÚBLICO - LISTAR ATIVAS
+    // =========================
+
+    @Transactional(readOnly = true)
+    public List<Crust> listActive(
+            String storeSlug
+    ) {
+
+        Long storeId =
+                publicStoreService
+                        .getStoreIdBySlug(
+                                storeSlug
+                        );
+
+        return crustRepository
+                .findByStoreIdAndActiveTrueOrderBySortOrderAscNameAsc(
+                        storeId
+                );
+    }
+
+    // =========================
+    // ADMIN - BUSCAR POR ID
+    // =========================
+
+    @Transactional(readOnly = true)
+    public Crust findById(
+            Long id
+    ) {
+
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
+        return findByIdAndStore(
+                id,
+                storeId
+        );
+    }
+
+    // =========================
+    // ADMIN - CRIAR
     // =========================
 
     @Transactional
     public Crust create(
-            Crust crust
+            Crust request
     ) {
 
+        Store store =
+                currentStoreService
+                        .getCurrentStore();
+
         validate(
-                crust,
-                null
+                request,
+                null,
+                store.getId()
         );
+
+        Crust crust =
+                new Crust();
 
         crust.setName(
                 normalizeName(
-                        crust.getName()
+                        request.getName()
                 )
         );
 
         crust.setPrice(
                 normalizeMoney(
-                        crust.getPrice()
+                        request.getPrice()
                 )
         );
 
+        crust.setActive(
+                request.isActive()
+        );
+
+        crust.setSortOrder(
+                request.getSortOrder()
+        );
+
+        /*
+         * A Store sempre vem da sessão
+         * do administrador.
+         *
+         * Nunca confiamos em store_id
+         * enviado pelo frontend.
+         */
+        crust.setStore(
+                store
+        );
+
         return crustRepository
-                .save(crust);
+                .save(
+                        crust
+                );
     }
 
     // =========================
-    // ATUALIZAR
+    // ADMIN - ATUALIZAR
     // =========================
 
     @Transactional
@@ -99,12 +165,20 @@ public class CrustService {
             Crust request
     ) {
 
+        Store store =
+                currentStoreService
+                        .getCurrentStore();
+
         Crust crust =
-                findById(id);
+                findByIdAndStore(
+                        id,
+                        store.getId()
+                );
 
         validate(
                 request,
-                id
+                id,
+                store.getId()
         );
 
         crust.setName(
@@ -127,12 +201,22 @@ public class CrustService {
                 request.getSortOrder()
         );
 
+        /*
+         * Garante que uma alteração nunca
+         * mova a borda para outra Store.
+         */
+        crust.setStore(
+                store
+        );
+
         return crustRepository
-                .save(crust);
+                .save(
+                        crust
+                );
     }
 
     // =========================
-    // ATIVAR / DESATIVAR
+    // ADMIN - ATIVAR/DESATIVAR
     // =========================
 
     @Transactional
@@ -141,15 +225,45 @@ public class CrustService {
             boolean active
     ) {
 
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
         Crust crust =
-                findById(id);
+                findByIdAndStore(
+                        id,
+                        storeId
+                );
 
         crust.setActive(
                 active
         );
 
         return crustRepository
-                .save(crust);
+                .save(
+                        crust
+                );
+    }
+
+    // =========================
+    // BUSCAR ID + STORE
+    // =========================
+
+    private Crust findByIdAndStore(
+            Long id,
+            Long storeId
+    ) {
+
+        return crustRepository
+                .findByIdAndStoreId(
+                        id,
+                        storeId
+                )
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Borda não encontrada."
+                        )
+                );
     }
 
     // =========================
@@ -158,7 +272,8 @@ public class CrustService {
 
     private void validate(
             Crust crust,
-            Long editingId
+            Long editingId,
+            Long storeId
     ) {
 
         if (crust == null) {
@@ -169,8 +284,7 @@ public class CrustService {
         }
 
         if (crust.getName() == null
-                || crust.getName()
-                .isBlank()) {
+                || crust.getName().isBlank()) {
 
             throw new RuntimeException(
                     "Informe o nome da borda."
@@ -207,8 +321,9 @@ public class CrustService {
                 );
 
         crustRepository
-                .findByNameIgnoreCase(
-                        normalizedName
+                .findByNameIgnoreCaseAndStoreId(
+                        normalizedName,
+                        storeId
                 )
                 .ifPresent(
                         existing -> {

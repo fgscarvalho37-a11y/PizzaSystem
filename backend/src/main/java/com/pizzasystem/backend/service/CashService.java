@@ -4,15 +4,18 @@ import com.pizzasystem.backend.entity.Order;
 import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentMethod;
 import com.pizzasystem.backend.entity.PaymentStatus;
+
 import com.pizzasystem.backend.repository.OrderRepository;
 
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,13 +23,22 @@ import java.util.Map;
 @Service
 public class CashService {
 
-    private final OrderRepository orderRepository;
+    private final OrderRepository
+            orderRepository;
+
+    private final CurrentStoreService
+            currentStoreService;
 
     public CashService(
-            OrderRepository orderRepository
+            OrderRepository orderRepository,
+            CurrentStoreService currentStoreService
     ) {
+
         this.orderRepository =
                 orderRepository;
+
+        this.currentStoreService =
+                currentStoreService;
     }
 
     // =========================
@@ -38,10 +50,23 @@ public class CashService {
     ) {
 
         if (date == null) {
+
             throw new RuntimeException(
                     "Data do caixa não informada"
             );
         }
+
+        // =========================
+        // STORE DO ADMIN
+        // =========================
+
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
+        // =========================
+        // PERÍODO
+        // =========================
 
         LocalDateTime start =
                 date.atStartOfDay();
@@ -51,9 +76,15 @@ public class CashService {
                         LocalTime.MAX
                 );
 
+        // =========================
+        // PEDIDOS APROVADOS
+        // SOMENTE DA STORE
+        // =========================
+
         List<Order> approvedOrders =
                 orderRepository
-                        .findByPaymentStatusAndCreatedAtBetweenOrderByCreatedAtDesc(
+                        .findByStoreIdAndPaymentStatusAndCreatedAtBetweenOrderByCreatedAtDesc(
+                                storeId,
                                 PaymentStatus.APPROVED,
                                 start,
                                 end
@@ -64,7 +95,8 @@ public class CashService {
         // =========================
 
         BigDecimal totalRevenue =
-                approvedOrders.stream()
+                approvedOrders
+                        .stream()
                         .map(
                                 Order::getTotal
                         )
@@ -82,7 +114,8 @@ public class CashService {
         // =========================
 
         BigDecimal deliveryFees =
-                approvedOrders.stream()
+                approvedOrders
+                        .stream()
                         .map(
                                 Order::getDeliveryFee
                         )
@@ -140,11 +173,12 @@ public class CashService {
 
         for (
                 PaymentMethod method :
-                PaymentMethod.values()
+                        PaymentMethod.values()
         ) {
 
             long count =
-                    approvedOrders.stream()
+                    approvedOrders
+                            .stream()
                             .filter(
                                     order ->
                                             order.getPaymentMethod()
@@ -153,7 +187,8 @@ public class CashService {
                             .count();
 
             BigDecimal revenue =
-                    approvedOrders.stream()
+                    approvedOrders
+                            .stream()
                             .filter(
                                     order ->
                                             order.getPaymentMethod()
@@ -187,7 +222,8 @@ public class CashService {
         // =========================
 
         long deliveredOrders =
-                approvedOrders.stream()
+                approvedOrders
+                        .stream()
                         .filter(
                                 order ->
                                         order.getStatus()
@@ -200,7 +236,8 @@ public class CashService {
         // =========================
 
         long activeOrders =
-                approvedOrders.stream()
+                approvedOrders
+                        .stream()
                         .filter(
                                 order ->
                                         order.getStatus()
@@ -222,7 +259,8 @@ public class CashService {
         // =========================
 
         long cancelledOrders =
-                approvedOrders.stream()
+                approvedOrders
+                        .stream()
                         .filter(
                                 order ->
                                         order.getStatus()

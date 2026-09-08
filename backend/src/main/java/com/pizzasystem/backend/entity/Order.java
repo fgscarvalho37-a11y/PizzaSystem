@@ -1,5 +1,7 @@
 package com.pizzasystem.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -13,6 +15,10 @@ import java.util.UUID;
                 @Index(
                         name = "idx_orders_public_access_token",
                         columnList = "public_access_token"
+                ),
+                @Index(
+                        name = "idx_orders_store_id",
+                        columnList = "store_id"
                 )
         }
 )
@@ -23,6 +29,27 @@ public class Order {
             strategy = GenerationType.IDENTITY
     )
     private Long id;
+
+    // =========================
+    // LOJA / TENANT
+    // =========================
+
+    /*
+     * Temporariamente nullable porque existem
+     * pedidos antigos no banco sem store_id.
+     *
+     * Depois da migração, todo novo pedido
+     * deverá obrigatoriamente pertencer
+     * a uma Store.
+     */
+    @JsonIgnore
+    @ManyToOne(
+            fetch = FetchType.LAZY
+    )
+    @JoinColumn(
+            name = "store_id"
+    )
+    private Store store;
 
     // =========================
     // TOKEN PÚBLICO DO PEDIDO
@@ -145,6 +172,17 @@ public class Order {
 
     public Long getId() {
         return id;
+    }
+
+    public Store getStore() {
+        return store;
+    }
+
+    public void setStore(
+            Store store
+    ) {
+        this.store =
+                store;
     }
 
     public String getPublicAccessToken() {

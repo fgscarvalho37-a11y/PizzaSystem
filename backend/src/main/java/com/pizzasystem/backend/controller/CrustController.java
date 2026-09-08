@@ -8,26 +8,23 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(
-        origins = "http://localhost:3000",
-        allowCredentials = "true"
-)
 @RestController
 @RequestMapping("/api/crusts")
 public class CrustController {
 
-    private final CrustService crustService;
+    private final CrustService
+            crustService;
 
     public CrustController(
             CrustService crustService
     ) {
+
         this.crustService =
                 crustService;
     }
 
     // =========================
-    // LISTAR TODAS
-    // ADMIN
+    // ADMIN - LISTAR TODAS
     // =========================
 
     @GetMapping
@@ -38,20 +35,22 @@ public class CrustController {
     }
 
     // =========================
-    // LISTAR ATIVAS
-    // SITE PÚBLICO
+    // PÚBLICO - LISTAR ATIVAS
     // =========================
 
     @GetMapping("/active")
-    public List<Crust> listActive() {
+    public List<Crust> listActive(
+            @RequestParam String store
+    ) {
 
         return crustService
-                .listActive();
+                .listActive(
+                        store
+                );
     }
 
     // =========================
-    // BUSCAR POR ID
-    // ADMIN
+    // ADMIN - BUSCAR POR ID
     // =========================
 
     @GetMapping("/{id}")
@@ -60,12 +59,13 @@ public class CrustController {
     ) {
 
         return crustService
-                .findById(id);
+                .findById(
+                        id
+                );
     }
 
     // =========================
-    // CRIAR
-    // ADMIN
+    // ADMIN - CRIAR
     // =========================
 
     @PostMapping
@@ -77,12 +77,13 @@ public class CrustController {
     ) {
 
         return crustService
-                .create(crust);
+                .create(
+                        crust
+                );
     }
 
     // =========================
-    // ATUALIZAR
-    // ADMIN
+    // ADMIN - ATUALIZAR
     // =========================
 
     @PutMapping("/{id}")
@@ -99,8 +100,7 @@ public class CrustController {
     }
 
     // =========================
-    // ATIVAR / DESATIVAR
-    // ADMIN
+    // ADMIN - ATIVAR/DESATIVAR
     // =========================
 
     @PatchMapping("/{id}/active")

@@ -1,5 +1,7 @@
 package com.pizzasystem.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -10,8 +12,17 @@ import java.time.LocalDateTime;
         name = "coupons",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_coupon_code",
-                        columnNames = "code"
+                        name = "uk_coupon_store_code",
+                        columnNames = {
+                                "store_id",
+                                "code"
+                        }
+                )
+        },
+        indexes = {
+                @Index(
+                        name = "idx_coupons_store_id",
+                        columnList = "store_id"
                 )
         }
 )
@@ -23,12 +34,48 @@ public class Coupon {
     )
     private Long id;
 
+    // =========================
+    // LOJA / TENANT
+    // =========================
+
+    /*
+     * Temporariamente nullable para
+     * conseguirmos migrar os cupons
+     * antigos para a Store existente.
+     */
+    @JsonIgnore
+    @ManyToOne(
+            fetch = FetchType.LAZY
+    )
+    @JoinColumn(
+            name = "store_id"
+    )
+    private Store store;
+
+    // =========================
+    // CÓDIGO
+    // =========================
+
+    /*
+     * O código não é mais único
+     * globalmente.
+     *
+     * Duas lojas diferentes podem ter:
+     *
+     * PROMO10
+     *
+     * A combinação store_id + code
+     * é que precisa ser única.
+     */
     @Column(
             nullable = false,
-            unique = true,
             length = 50
     )
     private String code;
+
+    // =========================
+    // DESCONTO
+    // =========================
 
     @Enumerated(
             EnumType.STRING
@@ -58,24 +105,35 @@ public class Coupon {
     )
     private BigDecimal maximumDiscountValue;
 
-    @Column(
-            nullable = false
-    )
-    private boolean active = true;
+    // =========================
+    // STATUS
+    // =========================
 
-    @Column
+    @Column(nullable = false)
+    private boolean active =
+            true;
+
+    // =========================
+    // VALIDADE
+    // =========================
+
     private LocalDateTime validFrom;
 
-    @Column
     private LocalDateTime validUntil;
 
-    @Column
+    // =========================
+    // LIMITE DE USO
+    // =========================
+
     private Integer usageLimit;
 
-    @Column(
-            nullable = false
-    )
-    private Integer usageCount = 0;
+    @Column(nullable = false)
+    private Integer usageCount =
+            0;
+
+    // =========================
+    // DATAS
+    // =========================
 
     @Column(
             nullable = false,
@@ -83,10 +141,11 @@ public class Coupon {
     )
     private LocalDateTime createdAt;
 
-    @Column(
-            nullable = false
-    )
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    public Coupon() {
+    }
 
     // =========================
     // CICLO DE VIDA
@@ -98,11 +157,17 @@ public class Coupon {
         LocalDateTime now =
                 LocalDateTime.now();
 
-        createdAt = now;
-        updatedAt = now;
+        if (createdAt == null) {
+            createdAt =
+                    now;
+        }
+
+        updatedAt =
+                now;
 
         if (usageCount == null) {
-            usageCount = 0;
+            usageCount =
+                    0;
         }
     }
 
@@ -114,7 +179,7 @@ public class Coupon {
     }
 
     // =========================
-    // GETTERS E SETTERS
+    // GETTERS / SETTERS
     // =========================
 
     public Long getId() {
@@ -124,7 +189,19 @@ public class Coupon {
     public void setId(
             Long id
     ) {
-        this.id = id;
+        this.id =
+                id;
+    }
+
+    public Store getStore() {
+        return store;
+    }
+
+    public void setStore(
+            Store store
+    ) {
+        this.store =
+                store;
     }
 
     public String getCode() {
@@ -134,7 +211,8 @@ public class Coupon {
     public void setCode(
             String code
     ) {
-        this.code = code;
+        this.code =
+                code;
     }
 
     public CouponDiscountType getDiscountType() {
@@ -188,7 +266,8 @@ public class Coupon {
     public void setActive(
             boolean active
     ) {
-        this.active = active;
+        this.active =
+                active;
     }
 
     public LocalDateTime getValidFrom() {

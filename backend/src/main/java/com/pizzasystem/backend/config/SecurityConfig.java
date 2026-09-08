@@ -111,17 +111,15 @@ public class SecurityConfig {
                                 )
 
                                 // =========================
-                                // PAGAMENTOS / WEBHOOK
+                                // PAGAMENTOS
                                 // =========================
 
                                 /*
-                                 * Os endpoints de pagamento
-                                 * precisam receber chamadas
-                                 * externas, incluindo webhook
-                                 * do Mercado Pago.
+                                 * Os endpoints públicos de pagamento
+                                 * precisam receber chamadas do checkout.
                                  *
-                                 * Vamos auditar esses endpoints
-                                 * individualmente no controller.
+                                 * O acesso ao pedido continua protegido
+                                 * pelo publicAccessToken.
                                  */
                                 .ignoringRequestMatchers(
                                         "/api/payments/**"
@@ -169,12 +167,11 @@ public class SecurityConfig {
                                 // =========================
 
                                 /*
-                                 * Precisa ser público para que
-                                 * o frontend consiga descobrir
-                                 * se a sessão existe.
+                                 * Precisa ser público para o frontend
+                                 * descobrir se existe sessão.
                                  *
-                                 * Sem sessão válida, o próprio
-                                 * controller retorna 401.
+                                 * Sem sessão válida, o controller
+                                 * responde 401.
                                  */
                                 .requestMatchers(
                                         HttpMethod.GET,
@@ -196,18 +193,34 @@ public class SecurityConfig {
                                 // LOGOUT
                                 // =========================
 
-                                /*
-                                 * Logout só faz sentido para
-                                 * uma sessão autenticada.
-                                 *
-                                 * Diferente do login, ele não
-                                 * fica mais liberado por /**.
-                                 */
                                 .requestMatchers(
                                         HttpMethod.POST,
                                         "/api/auth/logout"
                                 )
                                 .authenticated()
+
+                                // =========================
+                                // API PÚBLICA SAAS
+                                // =========================
+
+                                /*
+                                 * Endpoints públicos resolvidos
+                                 * pelo slug da pizzaria.
+                                 *
+                                 * Exemplos:
+                                 *
+                                 * /api/public/stores/misterio-do-sabor
+                                 *
+                                 * /api/public/stores/
+                                 * misterio-do-sabor/menu
+                                 *
+                                 * Apenas GET fica público.
+                                 */
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/public/**"
+                                )
+                                .permitAll()
 
                                 // =========================
                                 // PRODUTOS PÚBLICOS
@@ -220,15 +233,7 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // CATEGORIAS PÚBLICAS
-                                // =========================
 
-                                .requestMatchers(
-                                        HttpMethod.GET,
-                                        "/api/categories/**"
-                                )
-                                .permitAll()
 
                                 // =========================
                                 // ÁREAS DE ENTREGA PÚBLICAS
@@ -247,6 +252,26 @@ public class SecurityConfig {
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/store/status"
+                                )
+                                .permitAll()
+
+                                // =========================
+                                // PERFIL PÚBLICO DA LOJA
+                                // =========================
+
+                                /*
+                                 * Nome, logo, capa, cores,
+                                 * headline, faixa e informações
+                                 * públicas do estabelecimento.
+                                 *
+                                 * Apenas GET é público.
+                                 *
+                                 * PUT /api/store/profile continua
+                                 * protegido pela regra ADMIN.
+                                 */
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/store/profile"
                                 )
                                 .permitAll()
 
@@ -284,6 +309,11 @@ public class SecurityConfig {
                                 // ACOMPANHAMENTO DO PEDIDO
                                 // =========================
 
+                                /*
+                                 * Esses endpoints são públicos,
+                                 * mas o OrderController exige
+                                 * publicAccessToken para clientes.
+                                 */
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/orders/*"
@@ -300,6 +330,12 @@ public class SecurityConfig {
                                 // PAGAMENTOS
                                 // =========================
 
+                                /*
+                                 * Fluxo público do cliente.
+                                 *
+                                 * O PaymentController valida
+                                 * orderId + publicAccessToken.
+                                 */
                                 .requestMatchers(
                                         "/api/payments/**"
                                 )
@@ -309,6 +345,22 @@ public class SecurityConfig {
                                 // RESTANTE = ADMIN
                                 // =========================
 
+                                /*
+                                 * Qualquer endpoint não listado
+                                 * acima exige ROLE_ADMIN.
+                                 *
+                                 * Continua protegendo:
+                                 *
+                                 * PUT /api/store/profile
+                                 * PUT /api/store
+                                 * PATCH /api/store/open
+                                 * administração do cardápio
+                                 * relatórios
+                                 * caixa
+                                 * cupons
+                                 * configurações
+                                 * pedidos administrativos
+                                 */
                                 .anyRequest()
                                 .hasRole(
                                         "ADMIN"

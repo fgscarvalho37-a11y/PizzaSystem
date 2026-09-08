@@ -1,5 +1,7 @@
 package com.pizzasystem.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -17,7 +19,9 @@ import java.time.LocalDateTime;
 public class AdminUser {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(
+            strategy = GenerationType.IDENTITY
+    )
     private Long id;
 
     @Column(
@@ -27,26 +31,59 @@ public class AdminUser {
     )
     private String email;
 
+    @JsonIgnore
     @Column(
             nullable = false,
             length = 255
     )
     private String passwordHash;
 
-    @Column(nullable = false)
+    @Column(
+            nullable = false
+    )
     private boolean active = true;
 
-    @Column(nullable = false)
+    // =========================
+    // LOJA / TENANT
+    // =========================
+
+    /*
+     * Temporariamente nullable.
+     *
+     * O administrador atual já existe
+     * no banco sem store_id.
+     *
+     * Depois da migração, todo admin
+     * deverá pertencer a uma Store.
+     */
+    @ManyToOne(
+            fetch = FetchType.LAZY
+    )
+    @JoinColumn(
+            name = "store_id"
+    )
+    private Store store;
+
+    @Column(
+            nullable = false
+    )
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    @Column(
+            nullable = false
+    )
     private LocalDateTime updatedAt;
 
     public AdminUser() {
     }
 
+    // =========================
+    // JPA
+    // =========================
+
     @PrePersist
     public void prePersist() {
+
         LocalDateTime now =
                 LocalDateTime.now();
 
@@ -61,9 +98,14 @@ public class AdminUser {
 
     @PreUpdate
     public void preUpdate() {
+
         updatedAt =
                 LocalDateTime.now();
     }
+
+    // =========================
+    // GETTERS / SETTERS
+    // =========================
 
     public Long getId() {
         return id;
@@ -100,6 +142,17 @@ public class AdminUser {
     ) {
         this.active =
                 active;
+    }
+
+    public Store getStore() {
+        return store;
+    }
+
+    public void setStore(
+            Store store
+    ) {
+        this.store =
+                store;
     }
 
     public LocalDateTime getCreatedAt() {

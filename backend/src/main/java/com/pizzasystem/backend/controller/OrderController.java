@@ -2,6 +2,7 @@ package com.pizzasystem.backend.controller;
 
 import com.pizzasystem.backend.dto.OrderItemRequest;
 import com.pizzasystem.backend.dto.OrderRequest;
+
 import com.pizzasystem.backend.entity.Coupon;
 import com.pizzasystem.backend.entity.Crust;
 import com.pizzasystem.backend.entity.DeliveryArea;
@@ -10,19 +11,28 @@ import com.pizzasystem.backend.entity.OrderItem;
 import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentStatus;
 import com.pizzasystem.backend.entity.Product;
+import com.pizzasystem.backend.entity.Store;
+
 import com.pizzasystem.backend.repository.CrustRepository;
 import com.pizzasystem.backend.repository.DeliveryAreaRepository;
 import com.pizzasystem.backend.repository.OrderItemRepository;
 import com.pizzasystem.backend.repository.OrderRepository;
 import com.pizzasystem.backend.repository.ProductRepository;
+
 import com.pizzasystem.backend.service.CouponService;
+import com.pizzasystem.backend.service.CurrentStoreService;
+import com.pizzasystem.backend.service.PublicStoreService;
 import com.pizzasystem.backend.service.StoreStatusService;
 
 import org.springframework.http.HttpStatus;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.bind.annotation.*;
+
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -40,6 +50,8 @@ public class OrderController {
     private final StoreStatusService storeStatusService;
     private final CouponService couponService;
     private final CrustRepository crustRepository;
+    private final PublicStoreService publicStoreService;
+    private final CurrentStoreService currentStoreService;
 
     public OrderController(
             OrderRepository orderRepository,
@@ -48,29 +60,19 @@ public class OrderController {
             DeliveryAreaRepository deliveryAreaRepository,
             StoreStatusService storeStatusService,
             CouponService couponService,
-            CrustRepository crustRepository
+            CrustRepository crustRepository,
+            PublicStoreService publicStoreService,
+            CurrentStoreService currentStoreService
     ) {
-
-        this.orderRepository =
-                orderRepository;
-
-        this.orderItemRepository =
-                orderItemRepository;
-
-        this.productRepository =
-                productRepository;
-
-        this.deliveryAreaRepository =
-                deliveryAreaRepository;
-
-        this.storeStatusService =
-                storeStatusService;
-
-        this.couponService =
-                couponService;
-
-        this.crustRepository =
-                crustRepository;
+        this.orderRepository = orderRepository;
+        this.orderItemRepository = orderItemRepository;
+        this.productRepository = productRepository;
+        this.deliveryAreaRepository = deliveryAreaRepository;
+        this.storeStatusService = storeStatusService;
+        this.couponService = couponService;
+        this.crustRepository = crustRepository;
+        this.publicStoreService = publicStoreService;
+        this.currentStoreService = currentStoreService;
     }
 
     // =========================
@@ -78,30 +80,28 @@ public class OrderController {
     // =========================
 
     @GetMapping
+    @Transactional(readOnly = true)
     public List<Order> listAll() {
 
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
         return orderRepository
-                .findAllByOrderByCreatedAtDesc();
+                .findByStoreIdOrderByCreatedAtDesc(
+                        storeId
+                );
     }
 
     // =========================
     // BUSCAR POR ID
-    //
-    // ADMIN:
-    // token não é necessário.
-    //
-    // CLIENTE:
-    // precisa apresentar o token público
-    // recebido na criação do pedido.
     // =========================
 
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public Order findById(
             @PathVariable Long id,
-            @RequestParam(
-                    required = false
-            )
-            String token
+            @RequestParam(required = false) String token
     ) {
 
         return getOrderForAccess(
@@ -115,12 +115,18 @@ public class OrderController {
     // =========================
 
     @GetMapping("/status/{status}")
+    @Transactional(readOnly = true)
     public List<Order> listByStatus(
             @PathVariable OrderStatus status
     ) {
 
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
         return orderRepository
-                .findByStatusOrderByCreatedAtDesc(
+                .findByStoreIdAndStatusOrderByCreatedAtDesc(
+                        storeId,
                         status
                 );
     }
@@ -136,20 +142,36 @@ public class OrderController {
             @RequestBody OrderRequest request
     ) {
 
-        // =========================
-        // LOJA ABERTA
-        // =========================
+        if (request.getStoreSlug() == null
+                || request.getStoreSlug().isBlank()) {
 
-        if (!storeStatusService.canReceiveOrders()) {
+            throw new RuntimeException(
+                    "Loja não informada"
+            );
+        }
+
+        Store store =
+                publicStoreService
+                        .getBySlug(
+                                request
+                                        .getStoreSlug()
+                                        .trim()
+                        );
+
+        if (!store.isActive()) {
+
+            throw new RuntimeException(
+                    "Esta loja não está disponível"
+            );
+        }
+
+        if (!storeStatusService
+                .canReceiveOrders(store)) {
 
             throw new RuntimeException(
                     "A pizzaria não está recebendo pedidos neste momento"
             );
         }
-
-        // =========================
-        // VALIDAÇÕES BÁSICAS
-        // =========================
 
         if (request.getCustomerName() == null
                 || request.getCustomerName().isBlank()) {
@@ -190,13 +212,10 @@ public class OrderController {
             );
         }
 
-        // =========================
-        // ÁREA DE ENTREGA
-        // =========================
-
         DeliveryArea deliveryArea =
                 deliveryAreaRepository
-                        .findByNeighborhoodIgnoreCaseAndActiveTrue(
+                        .findByStoreIdAndNeighborhoodIgnoreCaseAndActiveTrue(
+                                store.getId(),
                                 request
                                         .getNeighborhood()
                                         .trim()
@@ -210,12 +229,14 @@ public class OrderController {
         BigDecimal deliveryFee =
                 deliveryArea.getFee();
 
-        // =========================
-        // CRIAR PEDIDO BASE
-        // =========================
+        if (deliveryFee == null) {
+            deliveryFee = BigDecimal.ZERO;
+        }
 
         Order order =
                 new Order();
+
+        order.setStore(store);
 
         order.setCustomerName(
                 request
@@ -238,8 +259,7 @@ public class OrderController {
         );
 
         order.setNeighborhood(
-                deliveryArea
-                        .getNeighborhood()
+                deliveryArea.getNeighborhood()
         );
 
         order.setComplement(
@@ -258,9 +278,7 @@ public class OrderController {
                 BigDecimal.ZERO
         );
 
-        order.setCouponCode(
-                null
-        );
+        order.setCouponCode(null);
 
         order.setCouponUsageRegistered(
                 false
@@ -278,32 +296,22 @@ public class OrderController {
                 request.getPaymentMethod()
         );
 
-        /*
-         * Neste save o @PrePersist de Order
-         * gera publicAccessToken automaticamente.
-         */
         order =
                 orderRepository.save(
                         order
                 );
 
-        // =========================
-        // CALCULAR PRODUTOS
-        // =========================
-
         BigDecimal productsTotal =
                 BigDecimal.ZERO;
 
-        for (
-                OrderItemRequest itemRequest :
-                        request.getItems()
-        ) {
+        for (OrderItemRequest itemRequest
+                : request.getItems()) {
 
             Product product =
                     productRepository
-                            .findById(
-                                    itemRequest
-                                            .getProductId()
+                            .findByIdAndStoreId(
+                                    itemRequest.getProductId(),
+                                    store.getId()
                             )
                             .orElseThrow(() ->
                                     new RuntimeException(
@@ -329,25 +337,24 @@ public class OrderController {
             }
 
             int quantity =
-                    itemRequest
-                            .getQuantity();
-
-            // =========================
-            // PREÇO BASE DO ITEM
-            // =========================
+                    itemRequest.getQuantity();
 
             BigDecimal unitPrice =
                     product.getPrice();
+
+            if (unitPrice == null) {
+
+                throw new RuntimeException(
+                        "Produto sem preço cadastrado: "
+                                + product.getName()
+                );
+            }
 
             String crustName =
                     null;
 
             BigDecimal crustPrice =
                     null;
-
-            // =========================
-            // BORDA
-            // =========================
 
             if (itemRequest.getCrustId() != null) {
 
@@ -362,9 +369,9 @@ public class OrderController {
 
                 Crust crust =
                         crustRepository
-                                .findById(
-                                        itemRequest
-                                                .getCrustId()
+                                .findByIdAndStoreId(
+                                        itemRequest.getCrustId(),
+                                        store.getId()
                                 )
                                 .orElseThrow(() ->
                                         new RuntimeException(
@@ -386,15 +393,16 @@ public class OrderController {
                 crustPrice =
                         crust.getPrice();
 
+                if (crustPrice == null) {
+                    crustPrice =
+                            BigDecimal.ZERO;
+                }
+
                 unitPrice =
                         unitPrice.add(
                                 crustPrice
                         );
             }
-
-            // =========================
-            // SUBTOTAL DO ITEM
-            // =========================
 
             BigDecimal subtotal =
                     unitPrice.multiply(
@@ -402,10 +410,6 @@ public class OrderController {
                                     quantity
                             )
                     );
-
-            // =========================
-            // SALVAR ITEM
-            // =========================
 
             OrderItem item =
                     new OrderItem();
@@ -422,13 +426,6 @@ public class OrderController {
                     quantity
             );
 
-            /*
-             * unitPrice guarda o preço final
-             * unitário do item no momento
-             * do pedido:
-             *
-             * produto + borda, quando houver.
-             */
             item.setUnitPrice(
                     unitPrice
             );
@@ -442,8 +439,7 @@ public class OrderController {
             );
 
             item.setObservation(
-                    itemRequest
-                            .getObservation()
+                    itemRequest.getObservation()
             );
 
             orderItemRepository.save(
@@ -456,18 +452,10 @@ public class OrderController {
                     );
         }
 
-        // =========================
-        // TOTAL ANTES DO CUPOM
-        // =========================
-
         BigDecimal orderValueBeforeDiscount =
                 productsTotal.add(
                         deliveryFee
                 );
-
-        // =========================
-        // CUPOM
-        // =========================
 
         BigDecimal discountAmount =
                 BigDecimal.ZERO;
@@ -481,6 +469,7 @@ public class OrderController {
             Coupon coupon =
                     couponService
                             .validateForOrder(
+                                    store,
                                     couponCode,
                                     orderValueBeforeDiscount
                             );
@@ -500,10 +489,6 @@ public class OrderController {
                     discountAmount
             );
         }
-
-        // =========================
-        // TOTAL FINAL
-        // =========================
 
         BigDecimal finalTotal =
                 orderValueBeforeDiscount
@@ -529,13 +514,6 @@ public class OrderController {
                 finalTotal
         );
 
-        /*
-         * O uso do cupom NÃO é registrado aqui.
-         *
-         * O usageCount será incrementado somente
-         * quando o pagamento for APPROVED.
-         */
-
         return orderRepository.save(
                 order
         );
@@ -543,21 +521,13 @@ public class OrderController {
 
     // =========================
     // ITENS DO PEDIDO
-    //
-    // ADMIN:
-    // token não é necessário.
-    //
-    // CLIENTE:
-    // precisa apresentar o token público.
     // =========================
 
     @GetMapping("/{id}/items")
+    @Transactional(readOnly = true)
     public List<OrderItem> listItems(
             @PathVariable Long id,
-            @RequestParam(
-                    required = false
-            )
-            String token
+            @RequestParam(required = false) String token
     ) {
 
         getOrderForAccess(
@@ -576,18 +546,24 @@ public class OrderController {
     // =========================
 
     @PatchMapping("/{id}/status")
+    @Transactional
     public Order changeStatus(
             @PathVariable Long id,
             @RequestParam OrderStatus status
     ) {
 
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
         Order order =
                 orderRepository
-                        .findById(id)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Pedido não encontrado"
-                                )
+                        .findByIdAndStoreId(
+                                id,
+                                storeId
+                        )
+                        .orElseThrow(
+                                this::orderNotFound
                         );
 
         order.setStatus(
@@ -608,39 +584,28 @@ public class OrderController {
             String token
     ) {
 
-        /*
-         * Administrador autenticado continua podendo
-         * acessar os pedidos normalmente pelo ID.
-         */
         if (isAdminAuthenticated()) {
 
+            Long storeId =
+                    currentStoreService
+                            .getCurrentStoreId();
+
             return orderRepository
-                    .findById(id)
+                    .findByIdAndStoreId(
+                            id,
+                            storeId
+                    )
                     .orElseThrow(
                             this::orderNotFound
                     );
         }
 
-        /*
-         * Para o acesso público, o ID sozinho não
-         * funciona mais.
-         */
         if (token == null
                 || token.isBlank()) {
 
             throw orderNotFound();
         }
 
-        /*
-         * Retornamos o mesmo 404 para:
-         *
-         * - pedido inexistente
-         * - token ausente
-         * - token incorreto
-         *
-         * Assim não confirmamos para terceiros que
-         * determinado ID de pedido realmente existe.
-         */
         return orderRepository
                 .findByIdAndPublicAccessToken(
                         id,
@@ -650,10 +615,6 @@ public class OrderController {
                         this::orderNotFound
                 );
     }
-
-    // =========================
-    // ADMIN AUTENTICADO?
-    // =========================
 
     private boolean isAdminAuthenticated() {
 
@@ -678,10 +639,6 @@ public class OrderController {
                                 )
                 );
     }
-
-    // =========================
-    // 404 GENÉRICO
-    // =========================
 
     private ResponseStatusException orderNotFound() {
 

@@ -4,15 +4,18 @@ import com.pizzasystem.backend.entity.Order;
 import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentMethod;
 import com.pizzasystem.backend.entity.PaymentStatus;
+
 import com.pizzasystem.backend.repository.OrderRepository;
 
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,12 +23,22 @@ import java.util.Map;
 @Service
 public class ReportService {
 
-    private final OrderRepository orderRepository;
+    private final OrderRepository
+            orderRepository;
+
+    private final CurrentStoreService
+            currentStoreService;
 
     public ReportService(
-            OrderRepository orderRepository
+            OrderRepository orderRepository,
+            CurrentStoreService currentStoreService
     ) {
-        this.orderRepository = orderRepository;
+
+        this.orderRepository =
+                orderRepository;
+
+        this.currentStoreService =
+                currentStoreService;
     }
 
     // =========================
@@ -37,27 +50,58 @@ public class ReportService {
             LocalDate endDate
     ) {
 
-        if (startDate == null || endDate == null) {
+        // =========================
+        // VALIDAR DATAS
+        // =========================
+
+        if (startDate == null
+                || endDate == null) {
+
             throw new RuntimeException(
                     "Data inicial e final são obrigatórias"
             );
         }
 
-        if (endDate.isBefore(startDate)) {
+        if (endDate.isBefore(
+                startDate
+        )) {
+
             throw new RuntimeException(
                     "A data final não pode ser anterior à data inicial"
             );
         }
 
+        // =========================
+        // STORE DO ADMIN
+        // =========================
+
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
+        // =========================
+        // PERÍODO
+        // =========================
+
         LocalDateTime start =
-                startDate.atStartOfDay();
+                startDate
+                        .atStartOfDay();
 
         LocalDateTime end =
-                endDate.atTime(LocalTime.MAX);
+                endDate
+                        .atTime(
+                                LocalTime.MAX
+                        );
+
+        // =========================
+        // PEDIDOS APROVADOS
+        // SOMENTE DA STORE
+        // =========================
 
         List<Order> approvedOrders =
                 orderRepository
-                        .findByPaymentStatusAndCreatedAtBetweenOrderByCreatedAtDesc(
+                        .findByStoreIdAndPaymentStatusAndCreatedAtBetweenOrderByCreatedAtDesc(
+                                storeId,
                                 PaymentStatus.APPROVED,
                                 start,
                                 end
@@ -68,21 +112,30 @@ public class ReportService {
         // =========================
 
         BigDecimal revenue =
-                approvedOrders.stream()
-                        .map(Order::getTotal)
-                        .filter(total -> total != null)
+                approvedOrders
+                        .stream()
+                        .map(
+                                Order::getTotal
+                        )
+                        .filter(
+                                total ->
+                                        total != null
+                        )
                         .reduce(
                                 BigDecimal.ZERO,
                                 BigDecimal::add
                         );
 
         long orderCount =
-                approvedOrders.size();
+                approvedOrders
+                        .size();
 
         BigDecimal averageTicket =
                 orderCount > 0
                         ? revenue.divide(
-                                BigDecimal.valueOf(orderCount),
+                                BigDecimal.valueOf(
+                                        orderCount
+                                ),
                                 2,
                                 RoundingMode.HALF_UP
                         )
@@ -92,29 +145,44 @@ public class ReportService {
         // FORMAS DE PAGAMENTO
         // =========================
 
-        Map<String, Long> ordersByPaymentMethod =
+        Map<String, Long>
+                ordersByPaymentMethod =
                 new LinkedHashMap<>();
 
-        Map<String, BigDecimal> revenueByPaymentMethod =
+        Map<String, BigDecimal>
+                revenueByPaymentMethod =
                 new LinkedHashMap<>();
 
-        for (PaymentMethod method :
-                PaymentMethod.values()) {
+        for (
+                PaymentMethod method :
+                        PaymentMethod.values()
+        ) {
 
             long count =
-                    approvedOrders.stream()
-                            .filter(order ->
-                                    order.getPaymentMethod() == method
+                    approvedOrders
+                            .stream()
+                            .filter(
+                                    order ->
+                                            order.getPaymentMethod()
+                                                    == method
                             )
                             .count();
 
             BigDecimal methodRevenue =
-                    approvedOrders.stream()
-                            .filter(order ->
-                                    order.getPaymentMethod() == method
+                    approvedOrders
+                            .stream()
+                            .filter(
+                                    order ->
+                                            order.getPaymentMethod()
+                                                    == method
                             )
-                            .map(Order::getTotal)
-                            .filter(total -> total != null)
+                            .map(
+                                    Order::getTotal
+                            )
+                            .filter(
+                                    total ->
+                                            total != null
+                            )
                             .reduce(
                                     BigDecimal.ZERO,
                                     BigDecimal::add
@@ -135,16 +203,22 @@ public class ReportService {
         // STATUS DOS PEDIDOS
         // =========================
 
-        Map<String, Long> ordersByStatus =
+        Map<String, Long>
+                ordersByStatus =
                 new LinkedHashMap<>();
 
-        for (OrderStatus status :
-                OrderStatus.values()) {
+        for (
+                OrderStatus status :
+                        OrderStatus.values()
+        ) {
 
             long count =
-                    approvedOrders.stream()
-                            .filter(order ->
-                                    order.getStatus() == status
+                    approvedOrders
+                            .stream()
+                            .filter(
+                                    order ->
+                                            order.getStatus()
+                                                    == status
                             )
                             .count();
 

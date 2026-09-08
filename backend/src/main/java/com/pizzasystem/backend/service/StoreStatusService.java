@@ -3,12 +3,12 @@ package com.pizzasystem.backend.service;
 import com.pizzasystem.backend.dto.StoreStatusResponse;
 import com.pizzasystem.backend.entity.BusinessHours;
 import com.pizzasystem.backend.entity.PaymentStatus;
-import com.pizzasystem.backend.entity.StoreSettings;
+import com.pizzasystem.backend.entity.Store;
 import com.pizzasystem.backend.repository.BusinessHoursRepository;
 import com.pizzasystem.backend.repository.OrderRepository;
-import com.pizzasystem.backend.repository.StoreSettingsRepository;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -21,68 +21,89 @@ import java.util.Optional;
 @Service
 public class StoreStatusService {
 
-    private final StoreSettingsRepository storeSettingsRepository;
-    private final BusinessHoursRepository businessHoursRepository;
-    private final OrderRepository orderRepository;
+    private final BusinessHoursRepository
+            businessHoursRepository;
+
+    private final OrderRepository
+            orderRepository;
+
+    private final PublicStoreService
+            publicStoreService;
 
     private static final ZoneId STORE_ZONE =
-            ZoneId.of("America/Sao_Paulo");
+            ZoneId.of(
+                    "America/Sao_Paulo"
+            );
 
     public StoreStatusService(
-            StoreSettingsRepository storeSettingsRepository,
             BusinessHoursRepository businessHoursRepository,
-            OrderRepository orderRepository
+            OrderRepository orderRepository,
+            PublicStoreService publicStoreService
     ) {
-        this.storeSettingsRepository =
-                storeSettingsRepository;
 
         this.businessHoursRepository =
                 businessHoursRepository;
 
         this.orderRepository =
                 orderRepository;
+
+        this.publicStoreService =
+                publicStoreService;
     }
 
     // =========================
-    // STATUS DA LOJA
+    // STATUS PELO SLUG
     // =========================
 
-    public StoreStatusResponse getStatus() {
+    @Transactional(readOnly = true)
+    public StoreStatusResponse getStatus(
+            String storeSlug
+    ) {
 
-        StoreSettings settings =
-                storeSettingsRepository
-                        .findById(1L)
-                        .orElseGet(() -> {
+        Store store =
+                publicStoreService
+                        .getBySlug(
+                                storeSlug
+                        );
 
-                            StoreSettings newSettings =
-                                    new StoreSettings();
+        return getStatus(
+                store
+        );
+    }
 
-                            newSettings.setId(1L);
+    // =========================
+    // STATUS PELA STORE
+    // =========================
 
-                            newSettings.setOpen(
-                                    false
-                            );
+    @Transactional(readOnly = true)
+    public StoreStatusResponse getStatus(
+            Store store
+    ) {
 
-                            return storeSettingsRepository
-                                    .save(
-                                            newSettings
-                                    );
-                        });
+        if (store == null
+                || store.getId() == null) {
+
+            throw new RuntimeException(
+                    "Loja inválida."
+            );
+        }
 
         long ordersToday =
-                countOrdersToday();
+                countOrdersToday(
+                        store.getId()
+                );
 
         Integer dailyLimit =
-                settings.getDailyOrderLimit();
+                store.getDailyOrderLimit();
 
         // =========================
         // FECHAMENTO MANUAL
         // =========================
 
-        if (!settings.isOpen()) {
+        if (!store.isOpen()) {
 
             return new StoreStatusResponse(
-                    settings.getStoreName(),
+                    store.getName(),
                     false,
                     false,
                     "Pedidos fechados manualmente",
@@ -100,7 +121,7 @@ public class StoreStatusService {
                 && ordersToday >= dailyLimit) {
 
             return new StoreStatusResponse(
-                    settings.getStoreName(),
+                    store.getName(),
                     true,
                     false,
                     "Limite diário de pedidos atingido",
@@ -126,6 +147,7 @@ public class StoreStatusService {
 
         boolean insideBusinessHours =
                 isInsideBusinessHours(
+                        store.getId(),
                         today,
                         currentTime
                 );
@@ -133,7 +155,7 @@ public class StoreStatusService {
         if (!insideBusinessHours) {
 
             return new StoreStatusResponse(
-                    settings.getStoreName(),
+                    store.getName(),
                     true,
                     false,
                     "Fora do horário de funcionamento",
@@ -143,11 +165,11 @@ public class StoreStatusService {
         }
 
         // =========================
-        // ABERTO
+        // RECEBENDO PEDIDOS
         // =========================
 
         return new StoreStatusResponse(
-                settings.getStoreName(),
+                store.getName(),
                 true,
                 true,
                 "Recebendo pedidos",
@@ -157,20 +179,40 @@ public class StoreStatusService {
     }
 
     // =========================
-    // PODE RECEBER PEDIDOS
+    // PODE RECEBER - SLUG
     // =========================
 
-    public boolean canReceiveOrders() {
+    @Transactional(readOnly = true)
+    public boolean canReceiveOrders(
+            String storeSlug
+    ) {
 
-        return getStatus()
-                .open();
+        return getStatus(
+                storeSlug
+        ).open();
+    }
+
+    // =========================
+    // PODE RECEBER - STORE
+    // =========================
+
+    @Transactional(readOnly = true)
+    public boolean canReceiveOrders(
+            Store store
+    ) {
+
+        return getStatus(
+                store
+        ).open();
     }
 
     // =========================
     // CONTAR PEDIDOS DO DIA
     // =========================
 
-    private long countOrdersToday() {
+    private long countOrdersToday(
+            Long storeId
+    ) {
 
         LocalDate today =
                 LocalDate.now(
@@ -185,23 +227,9 @@ public class StoreStatusService {
                         .plusDays(1)
                         .atStartOfDay();
 
-        /*
-         * IMPORTANTE:
-         *
-         * Agora o limite diário conta somente
-         * pedidos com pagamento APROVADO.
-         *
-         * Isso evita que:
-         *
-         * - pedido abandonado
-         * - pagamento recusado
-         * - pagamento pendente
-         * - tentativa de cartão que falhou
-         *
-         * consumam uma vaga do limite diário.
-         */
         return orderRepository
-                .countByPaymentStatusAndCreatedAtBetween(
+                .countByStoreIdAndPaymentStatusAndCreatedAtBetween(
+                        storeId,
                         PaymentStatus.APPROVED,
                         start,
                         end
@@ -213,6 +241,7 @@ public class StoreStatusService {
     // =========================
 
     private boolean isInsideBusinessHours(
+            Long storeId,
             DayOfWeek today,
             LocalTime currentTime
     ) {
@@ -220,12 +249,13 @@ public class StoreStatusService {
         Optional<BusinessHours>
                 todayHoursOptional =
                 businessHoursRepository
-                        .findByDayOfWeek(
+                        .findByStoreIdAndDayOfWeek(
+                                storeId,
                                 today
                         );
 
         // =========================
-        // HORÁRIO DO DIA ATUAL
+        // HORÁRIO DE HOJE
         // =========================
 
         if (todayHoursOptional.isPresent()) {
@@ -245,10 +275,8 @@ public class StoreStatusService {
                         todayHours
                                 .getClosingTime();
 
-                /*
-                 * Mesmo horário de abertura
-                 * e fechamento = 24 horas.
-                 */
+                // MESMO HORÁRIO = 24 HORAS
+
                 if (opening.equals(
                         closing
                 )) {
@@ -256,11 +284,9 @@ public class StoreStatusService {
                     return true;
                 }
 
-                /*
-                 * Exemplo:
-                 *
-                 * 18:00 até 23:00
-                 */
+                // HORÁRIO NORMAL
+                // EX: 18:00 -> 23:00
+
                 if (opening.isBefore(
                         closing
                 )) {
@@ -269,20 +295,16 @@ public class StoreStatusService {
                             opening
                     )
                             && currentTime.isBefore(
-                                    closing
-                            )) {
+                            closing
+                    )) {
 
                         return true;
                     }
                 }
 
-                /*
-                 * Horário atravessa meia-noite.
-                 *
-                 * Exemplo:
-                 *
-                 * 18:00 até 02:00
-                 */
+                // ATRAVESSA MEIA-NOITE
+                // EX: 18:00 -> 02:00
+
                 if (opening.isAfter(
                         closing
                 )) {
@@ -301,27 +323,14 @@ public class StoreStatusService {
         // HORÁRIO DO DIA ANTERIOR
         // =========================
 
-        /*
-         * Essa parte cobre horários que
-         * atravessam a meia-noite.
-         *
-         * Exemplo:
-         *
-         * Sexta:
-         * 18:00 até 02:00
-         *
-         * À 01:00 de sábado,
-         * ainda estamos dentro do
-         * horário de sexta-feira.
-         */
-
         DayOfWeek yesterday =
                 today.minus(1);
 
         Optional<BusinessHours>
                 yesterdayHoursOptional =
                 businessHoursRepository
-                        .findByDayOfWeek(
+                        .findByStoreIdAndDayOfWeek(
+                                storeId,
                                 yesterday
                         );
 
@@ -346,8 +355,8 @@ public class StoreStatusService {
                         closing
                 )
                         && currentTime.isBefore(
-                                closing
-                        )) {
+                        closing
+                )) {
 
                     return true;
                 }

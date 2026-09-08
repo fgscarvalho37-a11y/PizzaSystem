@@ -2,75 +2,130 @@ package com.pizzasystem.backend.controller;
 
 import com.pizzasystem.backend.entity.Category;
 import com.pizzasystem.backend.entity.Product;
+import com.pizzasystem.backend.entity.Store;
+
 import com.pizzasystem.backend.repository.CategoryRepository;
 import com.pizzasystem.backend.repository.ProductRepository;
+
+import com.pizzasystem.backend.service.CurrentStoreService;
+import com.pizzasystem.backend.service.PublicStoreService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
-@CrossOrigin(
-        origins = "http://localhost:3000",
-        allowCredentials = "true"
-)
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
 
-    private final ProductRepository productRepository;
-    private final CategoryRepository categoryRepository;
+    private final ProductRepository
+            productRepository;
+
+    private final CategoryRepository
+            categoryRepository;
+
+    private final CurrentStoreService
+            currentStoreService;
+
+    private final PublicStoreService
+            publicStoreService;
 
     public ProductController(
             ProductRepository productRepository,
-            CategoryRepository categoryRepository
+            CategoryRepository categoryRepository,
+            CurrentStoreService currentStoreService,
+            PublicStoreService publicStoreService
     ) {
+
         this.productRepository =
                 productRepository;
 
         this.categoryRepository =
                 categoryRepository;
+
+        this.currentStoreService =
+                currentStoreService;
+
+        this.publicStoreService =
+                publicStoreService;
     }
 
     // =========================
-    // LISTAR TODOS
+    // ADMIN - LISTAR TODOS
     // =========================
 
     @GetMapping
     public List<Product> listAll() {
 
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
         return productRepository
-                .findAll();
+                .findByStoreIdOrderByIdAsc(
+                        storeId
+                );
     }
 
     // =========================
-    // LISTAR DISPONÍVEIS
+    // PÚBLICO - PRODUTOS DISPONÍVEIS
     // =========================
 
     @GetMapping("/available")
-    public List<Product> listAvailable() {
+    public List<Product> listAvailable(
+            @RequestParam String store
+    ) {
+
+        Long storeId =
+                publicStoreService
+                        .getStoreIdBySlug(
+                                store
+                        );
 
         return productRepository
-                .findByAvailableTrue();
+                .findByStoreIdAndAvailableTrueOrderByIdAsc(
+                        storeId
+                );
     }
 
     // =========================
-    // LISTAR POR CATEGORIA
+    // PÚBLICO - POR CATEGORIA
     // =========================
 
     @GetMapping("/category/{categoryId}")
     public List<Product> listByCategory(
-            @PathVariable Long categoryId
+            @PathVariable Long categoryId,
+            @RequestParam String store
     ) {
 
+        Long storeId =
+                publicStoreService
+                        .getStoreIdBySlug(
+                                store
+                        );
+
+        categoryRepository
+                .findByIdAndStoreId(
+                        categoryId,
+                        storeId
+                )
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Categoria não encontrada"
+                        )
+                );
+
         return productRepository
-                .findByCategoryId(
+                .findByStoreIdAndCategoryIdAndAvailableTrueOrderByIdAsc(
+                        storeId,
                         categoryId
                 );
     }
 
     // =========================
-    // CADASTRAR
+    // ADMIN - CADASTRAR
     // =========================
 
     @PostMapping
@@ -78,95 +133,40 @@ public class ProductController {
             HttpStatus.CREATED
     )
     public Product create(
-            @RequestBody Product product
-    ) {
-
-        if (product.getCategory() == null
-                || product.getCategory().getId() == null) {
-
-            throw new RuntimeException(
-                    "Categoria é obrigatória"
-            );
-        }
-
-        Long categoryId =
-                product
-                        .getCategory()
-                        .getId();
-
-        Category category =
-                categoryRepository
-                        .findById(
-                                categoryId
-                        )
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Categoria não encontrada"
-                                )
-                        );
-
-        product.setCategory(
-                category
-        );
-
-        return productRepository
-                .save(
-                        product
-                );
-    }
-
-    // =========================
-    // EDITAR PRODUTO
-    // =========================
-
-    @PutMapping("/{id}")
-    public Product update(
-            @PathVariable Long id,
             @RequestBody Product data
     ) {
 
-        Product product =
-                productRepository
-                        .findById(
-                                id
-                        )
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Produto não encontrado"
-                                )
-                        );
-
-        if (data.getCategory() == null
-                || data.getCategory().getId() == null) {
-
-            throw new RuntimeException(
-                    "Categoria é obrigatória"
-            );
-        }
+        Store store =
+                currentStoreService
+                        .getCurrentStore();
 
         Category category =
-                categoryRepository
-                        .findById(
-                                data
-                                        .getCategory()
-                                        .getId()
-                        )
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Categoria não encontrada"
-                                )
-                        );
+                getAdminCategory(
+                        data,
+                        store
+                );
+
+        validateProduct(
+                data
+        );
+
+        Product product =
+                new Product();
 
         product.setName(
-                data.getName()
+                data.getName().trim()
         );
 
         product.setDescription(
-                data.getDescription()
+                normalizeNullable(
+                        data.getDescription()
+                )
         );
 
         product.setImageUrl(
-                data.getImageUrl()
+                normalizeNullable(
+                        data.getImageUrl()
+                )
         );
 
         product.setPrice(
@@ -185,6 +185,10 @@ public class ProductController {
                 category
         );
 
+        product.setStore(
+                store
+        );
+
         return productRepository
                 .save(
                         product
@@ -192,7 +196,89 @@ public class ProductController {
     }
 
     // =========================
-    // ATIVAR / DESATIVAR PRODUTO
+    // ADMIN - EDITAR
+    // =========================
+
+    @PutMapping("/{id}")
+    public Product update(
+            @PathVariable Long id,
+            @RequestBody Product data
+    ) {
+
+        Store store =
+                currentStoreService
+                        .getCurrentStore();
+
+        Product product =
+                productRepository
+                        .findByIdAndStoreId(
+                                id,
+                                store.getId()
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Produto não encontrado"
+                                )
+                        );
+
+        Category category =
+                getAdminCategory(
+                        data,
+                        store
+                );
+
+        validateProduct(
+                data
+        );
+
+        product.setName(
+                data.getName().trim()
+        );
+
+        product.setDescription(
+                normalizeNullable(
+                        data.getDescription()
+                )
+        );
+
+        product.setImageUrl(
+                normalizeNullable(
+                        data.getImageUrl()
+                )
+        );
+
+        product.setPrice(
+                data.getPrice()
+        );
+
+        product.setAvailable(
+                data.isAvailable()
+        );
+
+        product.setAllowCrust(
+                data.isAllowCrust()
+        );
+
+        product.setCategory(
+                category
+        );
+
+        /*
+         * Mesmo que alguém manipule o JSON,
+         * a Store nunca vem do frontend.
+         */
+        product.setStore(
+                store
+        );
+
+        return productRepository
+                .save(
+                        product
+                );
+    }
+
+    // =========================
+    // ADMIN - DISPONIBILIDADE
     // =========================
 
     @PatchMapping("/{id}/availability")
@@ -201,10 +287,15 @@ public class ProductController {
             @RequestParam boolean available
     ) {
 
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
         Product product =
                 productRepository
-                        .findById(
-                                id
+                        .findByIdAndStoreId(
+                                id,
+                                storeId
                         )
                         .orElseThrow(() ->
                                 new RuntimeException(
@@ -223,7 +314,7 @@ public class ProductController {
     }
 
     // =========================
-    // ATIVAR / DESATIVAR BORDA
+    // ADMIN - BORDA
     // =========================
 
     @PatchMapping("/{id}/allow-crust")
@@ -232,10 +323,15 @@ public class ProductController {
             @RequestParam boolean allowCrust
     ) {
 
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
         Product product =
                 productRepository
-                        .findById(
-                                id
+                        .findByIdAndStoreId(
+                                id,
+                                storeId
                         )
                         .orElseThrow(() ->
                                 new RuntimeException(
@@ -251,5 +347,84 @@ public class ProductController {
                 .save(
                         product
                 );
+    }
+
+    // =========================
+    // CATEGORIA DO ADMIN
+    // =========================
+
+    private Category getAdminCategory(
+            Product data,
+            Store store
+    ) {
+
+        if (data.getCategory() == null
+                || data.getCategory().getId() == null) {
+
+            throw new IllegalArgumentException(
+                    "Categoria é obrigatória."
+            );
+        }
+
+        return categoryRepository
+                .findByIdAndStoreId(
+                        data.getCategory().getId(),
+                        store.getId()
+                )
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Categoria não encontrada"
+                        )
+                );
+    }
+
+    // =========================
+    // VALIDAR
+    // =========================
+
+    private void validateProduct(
+            Product product
+    ) {
+
+        if (product.getName() == null
+                || product.getName().isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Nome do produto é obrigatório."
+            );
+        }
+
+        BigDecimal price =
+                product.getPrice();
+
+        if (price == null
+                || price.compareTo(
+                        BigDecimal.ZERO
+                ) < 0) {
+
+            throw new IllegalArgumentException(
+                    "Preço do produto inválido."
+            );
+        }
+    }
+
+    // =========================
+    // STRING OPCIONAL
+    // =========================
+
+    private String normalizeNullable(
+            String value
+    ) {
+
+        if (value == null) {
+            return null;
+        }
+
+        String normalized =
+                value.trim();
+
+        return normalized.isBlank()
+                ? null
+                : normalized;
     }
 }

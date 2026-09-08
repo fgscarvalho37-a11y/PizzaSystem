@@ -711,9 +711,23 @@ export default function AdminCardapioPage() {
 
             <div className="mt-5 rounded-2xl border border-dashed border-border bg-background p-10 text-center">
 
-              <p className="text-4xl">
-                🍕
-              </p>
+              <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-border bg-card text-muted-foreground">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-6 w-6"
+    aria-hidden="true"
+  >
+    <path d="M4 19 12 3l8 16H4Z" />
+    <circle cx="11" cy="10" r="1" />
+    <circle cx="15" cy="14" r="1" />
+    <path d="M6.5 16.5h11" />
+  </svg>
+</div>
 
               <h4 className="mt-3 text-lg font-bold text-foreground">
                 Nenhum produto cadastrado

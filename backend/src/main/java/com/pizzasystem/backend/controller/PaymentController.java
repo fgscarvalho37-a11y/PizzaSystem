@@ -4,21 +4,29 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.pizzasystem.backend.dto.CardPaymentRequest;
+
 import com.pizzasystem.backend.entity.Order;
 import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentMethod;
 import com.pizzasystem.backend.entity.PaymentStatus;
+import com.pizzasystem.backend.entity.Store;
+
 import com.pizzasystem.backend.repository.OrderRepository;
+
 import com.pizzasystem.backend.service.CouponService;
+import com.pizzasystem.backend.service.CurrentStoreService;
 import com.pizzasystem.backend.service.MercadoPagoService;
 import com.pizzasystem.backend.service.MercadoPagoService.MercadoPagoResult;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.web.bind.annotation.*;
+
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
@@ -28,16 +36,28 @@ import java.util.Map;
 @RequestMapping("/api/payments")
 public class PaymentController {
 
-    private final OrderRepository orderRepository;
-    private final MercadoPagoService mercadoPagoService;
-    private final CouponService couponService;
-    private final ObjectMapper objectMapper;
+    private final OrderRepository
+            orderRepository;
+
+    private final MercadoPagoService
+            mercadoPagoService;
+
+    private final CouponService
+            couponService;
+
+    private final CurrentStoreService
+            currentStoreService;
+
+    private final ObjectMapper
+            objectMapper;
 
     public PaymentController(
             OrderRepository orderRepository,
             MercadoPagoService mercadoPagoService,
-            CouponService couponService
+            CouponService couponService,
+            CurrentStoreService currentStoreService
     ) {
+
         this.orderRepository =
                 orderRepository;
 
@@ -46,6 +66,9 @@ public class PaymentController {
 
         this.couponService =
                 couponService;
+
+        this.currentStoreService =
+                currentStoreService;
 
         this.objectMapper =
                 new ObjectMapper();
@@ -79,24 +102,48 @@ public class PaymentController {
             );
         }
 
+        // =========================
+        // PEDIDO JÁ PAGO
+        // =========================
+
+        if (order.getPaymentStatus()
+                == PaymentStatus.APPROVED) {
+
+            return errorResponse(
+                    HttpStatus.CONFLICT,
+                    "Este pedido já foi pago."
+            );
+        }
+
+        // =========================
+        // PIX JÁ GERADO
+        // =========================
+
         if (order.getPaymentExternalId() != null
-                && !order.getPaymentExternalId().isBlank()) {
+                && !order.getPaymentExternalId()
+                .isBlank()) {
 
             String existingOrder =
-                    mercadoPagoService.getOrder(
-                            order.getPaymentExternalId()
-                    );
+                    mercadoPagoService
+                            .getOrder(
+                                    order.getPaymentExternalId()
+                            );
 
             return jsonResponse(
                     existingOrder
             );
         }
 
+        // =========================
+        // CRIAR PIX
+        // =========================
+
         MercadoPagoResult result =
-                mercadoPagoService.createPixOrder(
-                        order.getId(),
-                        order.getTotal()
-                );
+                mercadoPagoService
+                        .createPixOrder(
+                                order.getId(),
+                                order.getTotal()
+                        );
 
         if (result.getStatusCode() >= 400) {
 
@@ -157,7 +204,8 @@ public class PaymentController {
                 );
 
         if (order.getPaymentExternalId() == null
-                || order.getPaymentExternalId().isBlank()) {
+                || order.getPaymentExternalId()
+                .isBlank()) {
 
             return errorResponse(
                     HttpStatus.BAD_REQUEST,
@@ -166,9 +214,10 @@ public class PaymentController {
         }
 
         return jsonResponse(
-                mercadoPagoService.getOrder(
-                        order.getPaymentExternalId()
-                )
+                mercadoPagoService
+                        .getOrder(
+                                order.getPaymentExternalId()
+                        )
         );
     }
 
@@ -215,7 +264,8 @@ public class PaymentController {
 
         boolean hasExternalPayment =
                 order.getPaymentExternalId() != null
-                        && !order.getPaymentExternalId().isBlank();
+                        && !order.getPaymentExternalId()
+                        .isBlank();
 
         boolean rejected =
                 order.getPaymentStatus()
@@ -283,24 +333,23 @@ public class PaymentController {
                     "debelo";
         }
 
-        /*
-         * Se a tentativa anterior foi recusada,
-         * a nova transação poderá substituir
-         * paymentExternalId normalmente.
-         */
+        // =========================
+        // CRIAR PAGAMENTO
+        // =========================
 
         MercadoPagoResult result =
-                mercadoPagoService.createCardOrder(
-                        order.getId(),
-                        order.getTotal(),
-                        request.getToken(),
-                        paymentMethodId,
-                        debit,
-                        installments,
-                        request.getEmail(),
-                        request.getIdentificationType(),
-                        request.getIdentificationNumber()
-                );
+                mercadoPagoService
+                        .createCardOrder(
+                                order.getId(),
+                                order.getTotal(),
+                                request.getToken(),
+                                paymentMethodId,
+                                debit,
+                                installments,
+                                request.getEmail(),
+                                request.getIdentificationType(),
+                                request.getIdentificationNumber()
+                        );
 
         JsonNode json =
                 objectMapper.readTree(
@@ -379,7 +428,9 @@ public class PaymentController {
                     .contentType(
                             MediaType.APPLICATION_JSON
                     )
-                    .body(response);
+                    .body(
+                            response
+                    );
         }
 
         // =========================
@@ -427,9 +478,10 @@ public class PaymentController {
         if (order.getPaymentStatus()
                 == PaymentStatus.APPROVED) {
 
-            couponService.registerUsageForOrder(
-                    order
-            );
+            couponService
+                    .registerUsageForOrder(
+                            order
+                    );
         }
 
         return jsonResponse(
@@ -457,7 +509,8 @@ public class PaymentController {
                 );
 
         if (order.getPaymentExternalId() == null
-                || order.getPaymentExternalId().isBlank()) {
+                || order.getPaymentExternalId()
+                .isBlank()) {
 
             return errorResponse(
                     HttpStatus.BAD_REQUEST,
@@ -466,9 +519,10 @@ public class PaymentController {
         }
 
         return jsonResponse(
-                mercadoPagoService.getOrder(
-                        order.getPaymentExternalId()
-                )
+                mercadoPagoService
+                        .getOrder(
+                                order.getPaymentExternalId()
+                        )
         );
     }
 
@@ -482,21 +536,38 @@ public class PaymentController {
     ) {
 
         /*
-         * O painel administrativo continua podendo
-         * consultar pagamentos pelo ID do pedido.
+         * ADMIN
+         *
+         * Um administrador autenticado só
+         * pode acessar pagamentos de pedidos
+         * pertencentes à própria Store.
          */
         if (isAdminAuthenticated()) {
 
+            Store currentStore =
+                    currentStoreService
+                            .getCurrentStore();
+
             return orderRepository
-                    .findById(orderId)
+                    .findById(
+                            orderId
+                    )
+                    .filter(order ->
+                            belongsToStore(
+                                    order,
+                                    currentStore
+                            )
+                    )
                     .orElseThrow(
                             this::orderNotFound
                     );
         }
 
         /*
-         * No fluxo público, conhecer apenas o ID
-         * sequencial do pedido não autoriza acesso.
+         * CLIENTE
+         *
+         * Conhecer apenas o ID sequencial
+         * do pedido não autoriza acesso.
          */
         if (token == null
                 || token.isBlank()) {
@@ -513,6 +584,40 @@ public class PaymentController {
                         this::orderNotFound
                 );
     }
+
+    // =========================
+    // PEDIDO PERTENCE À STORE?
+    // =========================
+
+    private boolean belongsToStore(
+            Order order,
+            Store store
+    ) {
+
+        if (order == null
+                || store == null
+                || store.getId() == null) {
+
+            return false;
+        }
+
+        if (order.getStore() == null
+                || order.getStore()
+                .getId() == null) {
+
+            return false;
+        }
+
+        return order.getStore()
+                .getId()
+                .equals(
+                        store.getId()
+                );
+    }
+
+    // =========================
+    // ADMIN AUTENTICADO?
+    // =========================
 
     private boolean isAdminAuthenticated() {
 
@@ -538,6 +643,10 @@ public class PaymentController {
                 );
     }
 
+    // =========================
+    // PEDIDO NÃO ENCONTRADO
+    // =========================
+
     private ResponseStatusException orderNotFound() {
 
         return new ResponseStatusException(
@@ -546,12 +655,25 @@ public class PaymentController {
         );
     }
 
+    // =========================
+    // VALIDAR CARTÃO
+    // =========================
+
     private ResponseEntity<?> validateCardRequest(
             CardPaymentRequest request
     ) {
 
+        if (request == null) {
+
+            return errorResponse(
+                    HttpStatus.BAD_REQUEST,
+                    "Dados do cartão não informados."
+            );
+        }
+
         if (request.getToken() == null
-                || request.getToken().isBlank()) {
+                || request.getToken()
+                .isBlank()) {
 
             return errorResponse(
                     HttpStatus.BAD_REQUEST,
@@ -560,7 +682,8 @@ public class PaymentController {
         }
 
         if (request.getPaymentMethodId() == null
-                || request.getPaymentMethodId().isBlank()) {
+                || request.getPaymentMethodId()
+                .isBlank()) {
 
             return errorResponse(
                     HttpStatus.BAD_REQUEST,
@@ -569,7 +692,8 @@ public class PaymentController {
         }
 
         if (request.getEmail() == null
-                || request.getEmail().isBlank()) {
+                || request.getEmail()
+                .isBlank()) {
 
             return errorResponse(
                     HttpStatus.BAD_REQUEST,
@@ -579,6 +703,10 @@ public class PaymentController {
 
         return null;
     }
+
+    // =========================
+    // ATUALIZAR STATUS
+    // =========================
 
     private void updateOrderPaymentStatus(
             Order order,
@@ -667,6 +795,10 @@ public class PaymentController {
         );
     }
 
+    // =========================
+    // TRADUZIR RECUSA
+    // =========================
+
     private String translateCardRejection(
             String statusDetail
     ) {
@@ -709,6 +841,10 @@ public class PaymentController {
         };
     }
 
+    // =========================
+    // RESPOSTA JSON
+    // =========================
+
     private ResponseEntity<String> jsonResponse(
             String body
     ) {
@@ -718,10 +854,17 @@ public class PaymentController {
                 .contentType(
                         MediaType.APPLICATION_JSON
                 )
-                .body(body);
+                .body(
+                        body
+                );
     }
 
-    private ResponseEntity<Map<String, Object>> errorResponse(
+    // =========================
+    // RESPOSTA DE ERRO
+    // =========================
+
+    private ResponseEntity<Map<String, Object>>
+    errorResponse(
             HttpStatus status,
             String message
     ) {
@@ -740,10 +883,14 @@ public class PaymentController {
         );
 
         return ResponseEntity
-                .status(status)
+                .status(
+                        status
+                )
                 .contentType(
                         MediaType.APPLICATION_JSON
                 )
-                .body(response);
+                .body(
+                        response
+                );
     }
 }

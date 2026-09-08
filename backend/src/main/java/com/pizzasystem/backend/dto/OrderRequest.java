@@ -6,9 +6,30 @@ import java.util.List;
 
 public class OrderRequest {
 
+    // =========================
+    // LOJA / TENANT
+    // =========================
+
+    /*
+     * Slug público da loja responsável
+     * por receber este pedido.
+     *
+     * Exemplo:
+     * misterio-do-sabor
+     */
+    private String storeSlug;
+
+    // =========================
+    // CLIENTE
+    // =========================
+
     private String customerName;
 
     private String customerPhone;
+
+    // =========================
+    // ENTREGA
+    // =========================
 
     private String street;
 
@@ -18,11 +39,38 @@ public class OrderRequest {
 
     private String complement;
 
+    // =========================
+    // PAGAMENTO
+    // =========================
+
     private PaymentMethod paymentMethod;
+
+    // =========================
+    // CUPOM
+    // =========================
 
     private String couponCode;
 
+    // =========================
+    // ITENS
+    // =========================
+
     private List<OrderItemRequest> items;
+
+    // =========================
+    // GETTERS / SETTERS
+    // =========================
+
+    public String getStoreSlug() {
+        return storeSlug;
+    }
+
+    public void setStoreSlug(
+            String storeSlug
+    ) {
+        this.storeSlug =
+                storeSlug;
+    }
 
     public String getCustomerName() {
         return customerName;

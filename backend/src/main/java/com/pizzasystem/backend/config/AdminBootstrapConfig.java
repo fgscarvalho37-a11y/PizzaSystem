@@ -1,6 +1,11 @@
 package com.pizzasystem.backend.config;
 
+import com.pizzasystem.backend.entity.AdminUser;
+import com.pizzasystem.backend.entity.Store;
+
 import com.pizzasystem.backend.repository.AdminUserRepository;
+import com.pizzasystem.backend.repository.StoreRepository;
+
 import com.pizzasystem.backend.service.AdminAuthService;
 
 import org.slf4j.Logger;
@@ -10,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
 @Configuration
 public class AdminBootstrapConfig {
@@ -23,8 +29,10 @@ public class AdminBootstrapConfig {
             12;
 
     @Bean
+    @Order(2)
     public CommandLineRunner createInitialAdmin(
             AdminUserRepository adminUserRepository,
+            StoreRepository storeRepository,
             AdminAuthService adminAuthService,
 
             @Value("${pizzasystem.admin.email:}")
@@ -50,12 +58,27 @@ public class AdminBootstrapConfig {
             }
 
             // =========================
+            // STORE INICIAL
+            // =========================
+
+            Store store =
+                    storeRepository
+                            .findFirstByOrderByIdAsc()
+                            .orElseThrow(() ->
+                                    new IllegalStateException(
+                                            "Não existe Store cadastrada para vincular o administrador."
+                                    )
+                            );
+
+            // =========================
             // NORMALIZAR CREDENCIAIS
             // =========================
 
             String normalizedEmail =
                     adminEmail != null
-                            ? adminEmail.trim().toLowerCase()
+                            ? adminEmail
+                            .trim()
+                            .toLowerCase()
                             : "";
 
             String password =
@@ -81,37 +104,54 @@ public class AdminBootstrapConfig {
             }
 
             // =========================
-            // VALIDAÇÃO BÁSICA
+            // VALIDAÇÃO
             // =========================
 
-            if (!normalizedEmail.contains("@")) {
+            if (!normalizedEmail.contains(
+                    "@"
+            )) {
 
                 throw new IllegalStateException(
                         "PIZZASYSTEM_ADMIN_EMAIL inválido."
                 );
             }
 
-            if (password.length() < MIN_PASSWORD_LENGTH) {
+            if (password.length()
+                    < MIN_PASSWORD_LENGTH) {
 
                 throw new IllegalStateException(
-                        "PIZZASYSTEM_ADMIN_PASSWORD deve ter " +
-                        "pelo menos " +
-                        MIN_PASSWORD_LENGTH +
-                        " caracteres."
+                        "PIZZASYSTEM_ADMIN_PASSWORD deve ter pelo menos "
+                                + MIN_PASSWORD_LENGTH
+                                + " caracteres."
                 );
             }
 
             // =========================
-            // CRIAR PRIMEIRO ADMIN
+            // CRIAR ADMIN
             // =========================
 
-            adminAuthService.createAdmin(
-                    normalizedEmail,
-                    password
+            AdminUser admin =
+                    adminAuthService
+                            .createAdmin(
+                                    normalizedEmail,
+                                    password
+                            );
+
+            // =========================
+            // VINCULAR À STORE
+            // =========================
+
+            admin.setStore(
+                    store
+            );
+
+            adminUserRepository.save(
+                    admin
             );
 
             logger.info(
-                    "Primeiro administrador criado com sucesso."
+                    "Primeiro administrador criado e vinculado à Store ID={}.",
+                    store.getId()
             );
         };
     }

@@ -1,5 +1,7 @@
 package com.pizzasystem.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -43,12 +45,29 @@ public class Product {
     )
     private boolean allowCrust = false;
 
+    // =========================
+    // CATEGORIA
+    // =========================
+
     @ManyToOne
     @JoinColumn(
             name = "category_id",
             nullable = false
     )
     private Category category;
+
+    // =========================
+    // LOJA / TENANT
+    // =========================
+
+    @JsonIgnore
+    @ManyToOne(
+            fetch = FetchType.LAZY
+    )
+    @JoinColumn(
+            name = "store_id"
+    )
+    private Store store;
 
     public Product() {
     }
@@ -132,5 +151,16 @@ public class Product {
     ) {
         this.category =
                 category;
+    }
+
+    public Store getStore() {
+        return store;
+    }
+
+    public void setStore(
+            Store store
+    ) {
+        this.store =
+                store;
     }
 }

@@ -1,5 +1,7 @@
 package com.pizzasystem.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -9,7 +11,11 @@ import java.math.BigDecimal;
         name = "crusts",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        columnNames = "name"
+                        name = "uk_crusts_store_name",
+                        columnNames = {
+                                "store_id",
+                                "name"
+                        }
                 )
         }
 )
@@ -43,6 +49,29 @@ public class Crust {
             nullable = false
     )
     private int sortOrder = 0;
+
+    // =========================
+    // LOJA / TENANT
+    // =========================
+
+    /*
+     * Temporariamente nullable.
+     *
+     * As bordas que já existem no banco
+     * ainda não possuem store_id.
+     *
+     * Depois da migração, toda borda
+     * pertencerá obrigatoriamente
+     * a uma Store.
+     */
+    @JsonIgnore
+    @ManyToOne(
+            fetch = FetchType.LAZY
+    )
+    @JoinColumn(
+            name = "store_id"
+    )
+    private Store store;
 
     public Crust() {
     }
@@ -93,5 +122,16 @@ public class Crust {
     ) {
         this.sortOrder =
                 sortOrder;
+    }
+
+    public Store getStore() {
+        return store;
+    }
+
+    public void setStore(
+            Store store
+    ) {
+        this.store =
+                store;
     }
 }

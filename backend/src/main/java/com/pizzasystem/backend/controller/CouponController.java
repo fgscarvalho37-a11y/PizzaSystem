@@ -1,32 +1,45 @@
 package com.pizzasystem.backend.controller;
 
 import com.pizzasystem.backend.entity.Coupon;
+import com.pizzasystem.backend.entity.Store;
+
 import com.pizzasystem.backend.service.CouponService;
+import com.pizzasystem.backend.service.PublicStoreService;
 
 import org.springframework.http.HttpStatus;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/coupons")
 public class CouponController {
 
-    private final CouponService couponService;
+    private final CouponService
+            couponService;
+
+    private final PublicStoreService
+            publicStoreService;
 
     public CouponController(
-            CouponService couponService
+            CouponService couponService,
+            PublicStoreService publicStoreService
     ) {
+
         this.couponService =
                 couponService;
+
+        this.publicStoreService =
+                publicStoreService;
     }
 
     // =========================
-    // LISTAR TODOS
+    // ADMIN - LISTAR TODOS
     // =========================
 
     @GetMapping
@@ -37,7 +50,7 @@ public class CouponController {
     }
 
     // =========================
-    // BUSCAR POR ID
+    // ADMIN - BUSCAR POR ID
     // =========================
 
     @GetMapping("/{id}")
@@ -46,11 +59,13 @@ public class CouponController {
     ) {
 
         return couponService
-                .findById(id);
+                .findById(
+                        id
+                );
     }
 
     // =========================
-    // CRIAR
+    // ADMIN - CRIAR
     // =========================
 
     @PostMapping
@@ -60,11 +75,13 @@ public class CouponController {
     ) {
 
         return couponService
-                .create(coupon);
+                .create(
+                        coupon
+                );
     }
 
     // =========================
-    // ATUALIZAR
+    // ADMIN - ATUALIZAR
     // =========================
 
     @PutMapping("/{id}")
@@ -81,7 +98,7 @@ public class CouponController {
     }
 
     // =========================
-    // ATIVAR / DESATIVAR
+    // ADMIN - ATIVAR / DESATIVAR
     // =========================
 
     @PatchMapping("/{id}/active")
@@ -98,21 +115,49 @@ public class CouponController {
     }
 
     // =========================
-    // VALIDAR NO CHECKOUT
+    // PÚBLICO - VALIDAR CUPOM
     // =========================
 
+    /*
+     * Exemplo:
+     *
+     * GET /api/coupons/validate
+     * ?store=misterio-do-sabor
+     * &code=PIZZA10
+     * &orderValue=51.00
+     */
     @GetMapping("/validate")
     public Map<String, Object> validateCoupon(
+            @RequestParam String store,
             @RequestParam String code,
             @RequestParam BigDecimal orderValue
     ) {
 
+        // =========================
+        // RESOLVER STORE
+        // =========================
+
+        Store currentStore =
+                publicStoreService
+                        .getBySlug(
+                                store
+                        );
+
+        // =========================
+        // VALIDAR CUPOM DA STORE
+        // =========================
+
         Coupon coupon =
                 couponService
                         .validateForOrder(
+                                currentStore,
                                 code,
                                 orderValue
                         );
+
+        // =========================
+        // CALCULAR DESCONTO
+        // =========================
 
         BigDecimal discount =
                 couponService
@@ -122,9 +167,22 @@ public class CouponController {
                         );
 
         BigDecimal finalValue =
-                orderValue.subtract(
-                        discount
-                );
+                orderValue
+                        .subtract(
+                                discount
+                        );
+
+        if (finalValue.compareTo(
+                BigDecimal.ZERO
+        ) < 0) {
+
+            finalValue =
+                    BigDecimal.ZERO;
+        }
+
+        // =========================
+        // RESPONSE
+        // =========================
 
         Map<String, Object> response =
                 new LinkedHashMap<>();

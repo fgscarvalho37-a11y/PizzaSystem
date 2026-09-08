@@ -13,6 +13,10 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:8080";
 
+const STORE_SLUG =
+  process.env.NEXT_PUBLIC_STORE_SLUG ??
+  "misterio-do-sabor";
+
 type Product = {
   id: number;
   name: string;
@@ -176,11 +180,15 @@ export default function CheckoutPage() {
           statusResponse,
         ] = await Promise.all([
           fetch(
-            `${API_URL}/api/delivery-areas/active`
+            `${API_URL}/api/delivery-areas/active?store=${encodeURIComponent(
+              STORE_SLUG
+            )}`
           ),
 
           fetch(
-            `${API_URL}/api/store/status`
+            `${API_URL}/api/store/status?store=${encodeURIComponent(
+              STORE_SLUG
+            )}`
           ),
         ]);
 
@@ -219,7 +227,9 @@ export default function CheckoutPage() {
     const interval =
       setInterval(() => {
         fetch(
-          `${API_URL}/api/store/status`
+          `${API_URL}/api/store/status?store=${encodeURIComponent(
+              STORE_SLUG
+            )}`
         )
           .then((response) => {
             if (!response.ok) {
@@ -457,6 +467,8 @@ export default function CheckoutPage() {
             totalBeforeDiscount.toFixed(
               2
             )
+          )}&store=${encodeURIComponent(
+            STORE_SLUG
           )}`
         );
 
@@ -625,6 +637,7 @@ export default function CheckoutPage() {
       setSubmitting(true);
 
       const payload = {
+        storeSlug: STORE_SLUG,
         customerName,
         customerPhone,
         street,

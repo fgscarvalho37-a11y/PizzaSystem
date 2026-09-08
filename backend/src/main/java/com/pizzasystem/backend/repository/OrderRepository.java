@@ -13,8 +13,57 @@ import java.util.Optional;
 public interface OrderRepository
         extends JpaRepository<Order, Long> {
 
+    Optional<Order> findByIdAndStoreId(
+            Long id,
+            Long storeId
+    );
+
+    List<Order> findByStoreIdAndStatus(
+            Long storeId,
+            OrderStatus status
+    );
+
+    List<Order> findByStoreIdAndStatusOrderByCreatedAtDesc(
+            Long storeId,
+            OrderStatus status
+    );
+
+    List<Order> findByStoreIdOrderByCreatedAtDesc(
+            Long storeId
+    );
+
+    long countByStoreIdAndCreatedAtBetween(
+            Long storeId,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    long countByStoreIdAndPaymentStatusAndCreatedAtBetween(
+            Long storeId,
+            PaymentStatus paymentStatus,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    List<Order>
+    findByStoreIdAndPaymentStatusAndCreatedAtBetweenOrderByCreatedAtDesc(
+            Long storeId,
+            PaymentStatus paymentStatus,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    Optional<Order> findByPaymentExternalId(
+            String paymentExternalId
+    );
+
+    Optional<Order> findByIdAndPublicAccessToken(
+            Long id,
+            String publicAccessToken
+    );
+
     // =========================
-    // PEDIDOS POR STATUS
+    // LEGADOS TEMPORÁRIOS
     // =========================
 
     List<Order> findByStatus(
@@ -25,24 +74,12 @@ public interface OrderRepository
             OrderStatus status
     );
 
-    // =========================
-    // TODOS OS PEDIDOS
-    // =========================
-
     List<Order> findAllByOrderByCreatedAtDesc();
-
-    // =========================
-    // CONTAGEM GERAL POR PERÍODO
-    // =========================
 
     long countByCreatedAtBetween(
             LocalDateTime start,
             LocalDateTime end
     );
-
-    // =========================
-    // CONTAGEM POR PAGAMENTO
-    // =========================
 
     long countByPaymentStatusAndCreatedAtBetween(
             PaymentStatus paymentStatus,
@@ -50,44 +87,10 @@ public interface OrderRepository
             LocalDateTime end
     );
 
-    // =========================
-    // PEDIDOS APROVADOS POR PERÍODO
-    // =========================
-
-    /*
-     * Usado pelos relatórios.
-     *
-     * Retorna os pedidos com determinado
-     * status de pagamento dentro do período,
-     * ordenados do mais recente para o mais antigo.
-     *
-     * Com isso conseguimos calcular:
-     *
-     * - faturamento
-     * - quantidade de pedidos
-     * - ticket médio
-     * - vendas por forma de pagamento
-     * - vendas por status do pedido
-     */
-    List<Order> findByPaymentStatusAndCreatedAtBetweenOrderByCreatedAtDesc(
+    List<Order>
+    findByPaymentStatusAndCreatedAtBetweenOrderByCreatedAtDesc(
             PaymentStatus paymentStatus,
             LocalDateTime start,
             LocalDateTime end
     );
-
-    // =========================
-    // PAGAMENTO EXTERNO
-    // =========================
-
-    Optional<Order> findByPaymentExternalId(
-            String paymentExternalId
-    );
-    // =========================
-// ACESSO PÚBLICO SEGURO
-// =========================
-
-Optional<Order> findByIdAndPublicAccessToken(
-        Long id,
-        String publicAccessToken
-);
 }
