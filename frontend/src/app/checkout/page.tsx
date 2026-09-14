@@ -13,9 +13,6 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:8080";
 
-const STORE_SLUG =
-  process.env.NEXT_PUBLIC_STORE_SLUG ??
-  "misterio-do-sabor";
 
 type Product = {
   id: number;
@@ -71,6 +68,29 @@ type CouponValidationResponse = {
 
 export default function CheckoutPage() {
   const router = useRouter();
+
+  const [storeSlug, setStoreSlug] =
+    useState("");
+
+  const [storeResolved, setStoreResolved] =
+    useState(false);
+
+  useEffect(() => {
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    setStoreSlug(
+      params.get("store")?.trim() ?? ""
+    );
+
+    setStoreResolved(true);
+  }, []);
+
+  const cartKey = storeSlug
+    ? `pizzasystem-cart:${storeSlug}`
+    : "";
 
   const [cart, setCart] =
     useState<CartItem[]>([]);
@@ -137,9 +157,20 @@ export default function CheckoutPage() {
   // =========================
 
   useEffect(() => {
+    if (!storeResolved) {
+      return;
+    }
+
+    if (!storeSlug || !cartKey) {
+      setLoaded(true);
+      return;
+    }
+
+    setLoaded(false);
+
     const savedCart =
       localStorage.getItem(
-        "pizzasystem-cart"
+        cartKey
       );
 
     if (savedCart) {
@@ -166,13 +197,17 @@ export default function CheckoutPage() {
     }
 
     setLoaded(true);
-  }, []);
+  }, [storeSlug, cartKey, storeResolved]);
 
   // =========================
   // DADOS DA LOJA
   // =========================
 
   useEffect(() => {
+    if (!storeResolved || !storeSlug) {
+      return;
+    }
+
     async function loadData() {
       try {
         const [
@@ -181,13 +216,13 @@ export default function CheckoutPage() {
         ] = await Promise.all([
           fetch(
             `${API_URL}/api/delivery-areas/active?store=${encodeURIComponent(
-              STORE_SLUG
+              storeSlug
             )}`
           ),
 
           fetch(
             `${API_URL}/api/store/status?store=${encodeURIComponent(
-              STORE_SLUG
+              storeSlug
             )}`
           ),
         ]);
@@ -228,7 +263,7 @@ export default function CheckoutPage() {
       setInterval(() => {
         fetch(
           `${API_URL}/api/store/status?store=${encodeURIComponent(
-              STORE_SLUG
+              storeSlug
             )}`
         )
           .then((response) => {
@@ -256,7 +291,7 @@ export default function CheckoutPage() {
 
     return () =>
       clearInterval(interval);
-  }, []);
+  }, [storeSlug, storeResolved]);
 
   // =========================
   // OBSERVAÇÃO
@@ -279,7 +314,7 @@ export default function CheckoutPage() {
         );
 
       localStorage.setItem(
-        "pizzasystem-cart",
+        cartKey,
         JSON.stringify(
           updatedCart
         )
@@ -310,7 +345,7 @@ export default function CheckoutPage() {
           );
 
       localStorage.setItem(
-        "pizzasystem-cart",
+        cartKey,
         JSON.stringify(
           updatedCart
         )
@@ -331,7 +366,7 @@ export default function CheckoutPage() {
         );
 
       localStorage.setItem(
-        "pizzasystem-cart",
+        cartKey,
         JSON.stringify(
           updatedCart
         )
@@ -468,7 +503,7 @@ export default function CheckoutPage() {
               2
             )
           )}&store=${encodeURIComponent(
-            STORE_SLUG
+            storeSlug
           )}`
         );
 
@@ -637,7 +672,7 @@ export default function CheckoutPage() {
       setSubmitting(true);
 
       const payload = {
-        storeSlug: STORE_SLUG,
+        storeSlug: storeSlug,
         customerName,
         customerPhone,
         street,
@@ -674,6 +709,8 @@ export default function CheckoutPage() {
           `${API_URL}/api/orders`,
           {
             method: "POST",
+
+            credentials: "include",
 
             headers: {
               "Content-Type":
@@ -784,11 +821,11 @@ export default function CheckoutPage() {
         }
 
         localStorage.removeItem(
-          "pizzasystem-cart"
+          cartKey
         );
 
         router.push(
-          `/pagamento/${order.id}?token=${encodedToken}`
+          `/pagamento/${order.id}?token=${encodedToken}&store=${encodeURIComponent(storeSlug)}`
         );
 
         return;
@@ -803,22 +840,22 @@ export default function CheckoutPage() {
         "CREDIT_CARD"
       ) {
         localStorage.removeItem(
-          "pizzasystem-cart"
+          cartKey
         );
 
         router.push(
-          `/pagamento/cartao/${order.id}?token=${encodedToken}`
+          `/pagamento/cartao/${order.id}?token=${encodedToken}&store=${encodeURIComponent(storeSlug)}`
         );
 
         return;
       }
 
       localStorage.removeItem(
-        "pizzasystem-cart"
+        cartKey
       );
 
       router.push(
-        `/pedido/${order.id}?token=${encodedToken}`
+        `/pedido/${order.id}?token=${encodedToken}&store=${encodeURIComponent(storeSlug)}`
       );
     } catch (error) {
       console.error(error);
@@ -837,10 +874,29 @@ export default function CheckoutPage() {
   }
 
   // =========================
+  // STORE INVÁLIDA
+  // =========================
+
+  if (storeResolved && !storeSlug) {
+    return (
+      <main className="min-h-screen bg-background px-4 py-16 text-foreground">
+        <div className="mx-auto max-w-xl rounded-2xl bg-card p-8 text-center ring-1 ring-black/5">
+          <h1 className="font-display text-3xl tracking-tight">
+            Loja não informada
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Abra o checkout a partir do cardápio da loja.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  // =========================
   // CARREGANDO
   // =========================
 
-  if (!loaded) {
+  if (!storeResolved || !loaded) {
     return (
       <main className="min-h-screen bg-background pb-16 text-foreground">
         <header className="border-b border-border bg-background/85 backdrop-blur-md">
@@ -882,7 +938,7 @@ export default function CheckoutPage() {
               type="button"
               onClick={() =>
                 router.push(
-                  "/cardapio"
+                  `/cardapio/${encodeURIComponent(storeSlug)}`
                 )
               }
               className="flex items-center gap-2.5"
@@ -919,7 +975,7 @@ export default function CheckoutPage() {
               type="button"
               onClick={() =>
                 router.push(
-                  "/cardapio"
+                  `/cardapio/${encodeURIComponent(storeSlug)}`
                 )
               }
               className="mt-5 inline-block rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-[0_4px_0_0] shadow-foreground/30 transition-transform active:scale-95"
@@ -976,7 +1032,7 @@ export default function CheckoutPage() {
             type="button"
             onClick={() =>
               router.push(
-                "/cardapio"
+                `/cardapio/${encodeURIComponent(storeSlug)}`
               )
             }
             className="flex items-center gap-2.5"
@@ -999,7 +1055,7 @@ export default function CheckoutPage() {
               type="button"
               onClick={() =>
                 router.push(
-                  "/cardapio"
+                  `/cardapio/${encodeURIComponent(storeSlug)}`
                 )
               }
               className="hidden transition-colors hover:text-foreground sm:block"
@@ -1111,7 +1167,7 @@ export default function CheckoutPage() {
                   type="button"
                   onClick={() =>
                     router.push(
-                      "/cardapio"
+                      `/cardapio/${encodeURIComponent(storeSlug)}`
                     )
                   }
                   className="font-mono-brand text-[11px] uppercase tracking-wider text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
@@ -1641,7 +1697,7 @@ export default function CheckoutPage() {
                 type="button"
                 onClick={() =>
                   router.push(
-                    "/cardapio"
+                    `/cardapio/${encodeURIComponent(storeSlug)}`
                   )
                 }
                 className="mt-3 block w-full text-center font-mono-brand text-xs text-cream/60 transition-colors hover:text-cream"

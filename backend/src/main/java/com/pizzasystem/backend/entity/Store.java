@@ -2,6 +2,7 @@ package com.pizzasystem.backend.entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -32,16 +33,6 @@ public class Store {
     )
     private String name;
 
-    /*
-     * Identificador público da pizzaria.
-     *
-     * Exemplo:
-     *
-     * pizzaria-do-joao
-     *
-     * Futuramente:
-     * pizzasystem.com/pizzaria-do-joao
-     */
     @Column(
             nullable = false,
             unique = true,
@@ -67,19 +58,9 @@ public class Store {
     // CONTEÚDO DO CARDÁPIO
     // =========================
 
-    /*
-     * Texto principal que aparece
-     * no topo do cardápio.
-     */
     @Column(length = 180)
     private String headline;
 
-    /*
-     * Faixa/mensagem animada.
-     *
-     * Exemplo:
-     * "Entrega grátis acima de R$ 80"
-     */
     @Column(length = 250)
     private String marqueeMessage;
 
@@ -112,25 +93,83 @@ public class Store {
     // FIDELIDADE
     // =========================
 
-    /*
-     * Cada pizzaria decide se quer
-     * participar do sistema de fidelidade.
-     */
     @Column(nullable = false)
     private boolean loyaltyEnabled =
             false;
 
     /*
-     * Quantidade de selos necessários
-     * para ganhar a recompensa.
+     * Nome histórico mantido.
      *
-     * Exemplo: 10 compras = 1 recompensa.
+     * Funciona como meta de pontos/selos
+     * necessária para liberar a recompensa.
      */
     private Integer loyaltyStampGoal =
             10;
 
     @Column(length = 180)
     private String loyaltyRewardDescription;
+
+    /*
+     * Como o cliente ganha pontos:
+     *
+     * PER_ORDER
+     * PER_AMOUNT
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(
+            nullable = false,
+            length = 30
+    )
+    private LoyaltyEarningType loyaltyEarningType =
+            LoyaltyEarningType.PER_ORDER;
+
+    /*
+     * Usado em PER_ORDER.
+     *
+     * Exemplo:
+     * 1 pedido aprovado = 1 ponto.
+     */
+    @Column(nullable = false)
+    private Integer loyaltyPointsPerOrder =
+            1;
+
+    /*
+     * Usado em PER_AMOUNT.
+     *
+     * Exemplo:
+     * a cada R$ 20,00.
+     */
+    @Column(
+            precision = 12,
+            scale = 2
+    )
+    private BigDecimal loyaltyAmountStep =
+            BigDecimal.valueOf(
+                    20
+            );
+
+    /*
+     * Quantos pontos são ganhos
+     * a cada faixa de valor.
+     *
+     * Exemplo:
+     * R$ 20 = 1 ponto.
+     */
+    @Column(nullable = false)
+    private Integer loyaltyPointsPerAmountStep =
+            1;
+
+    /*
+     * Pedido precisa atingir esse
+     * valor para participar.
+     *
+     * null = sem mínimo.
+     */
+    @Column(
+            precision = 12,
+            scale = 2
+    )
+    private BigDecimal loyaltyMinimumOrderValue;
 
     // =========================
     // SAAS / ASSINATURA
@@ -144,15 +183,6 @@ public class Store {
     private String plan =
             "STARTER";
 
-    /*
-     * Futuramente podemos usar:
-     *
-     * TRIAL
-     * ACTIVE
-     * PAST_DUE
-     * CANCELLED
-     * SUSPENDED
-     */
     @Column(nullable = false)
     private String subscriptionStatus =
             "TRIAL";
@@ -174,6 +204,7 @@ public class Store {
 
     @PreUpdate
     private void updateTimestamp() {
+
         updatedAt =
                 LocalDateTime.now();
     }
@@ -371,6 +402,61 @@ public class Store {
     ) {
         this.loyaltyRewardDescription =
                 loyaltyRewardDescription;
+    }
+
+    public LoyaltyEarningType getLoyaltyEarningType() {
+        return loyaltyEarningType;
+    }
+
+    public void setLoyaltyEarningType(
+            LoyaltyEarningType loyaltyEarningType
+    ) {
+        this.loyaltyEarningType =
+                loyaltyEarningType;
+    }
+
+    public Integer getLoyaltyPointsPerOrder() {
+        return loyaltyPointsPerOrder;
+    }
+
+    public void setLoyaltyPointsPerOrder(
+            Integer loyaltyPointsPerOrder
+    ) {
+        this.loyaltyPointsPerOrder =
+                loyaltyPointsPerOrder;
+    }
+
+    public BigDecimal getLoyaltyAmountStep() {
+        return loyaltyAmountStep;
+    }
+
+    public void setLoyaltyAmountStep(
+            BigDecimal loyaltyAmountStep
+    ) {
+        this.loyaltyAmountStep =
+                loyaltyAmountStep;
+    }
+
+    public Integer getLoyaltyPointsPerAmountStep() {
+        return loyaltyPointsPerAmountStep;
+    }
+
+    public void setLoyaltyPointsPerAmountStep(
+            Integer loyaltyPointsPerAmountStep
+    ) {
+        this.loyaltyPointsPerAmountStep =
+                loyaltyPointsPerAmountStep;
+    }
+
+    public BigDecimal getLoyaltyMinimumOrderValue() {
+        return loyaltyMinimumOrderValue;
+    }
+
+    public void setLoyaltyMinimumOrderValue(
+            BigDecimal loyaltyMinimumOrderValue
+    ) {
+        this.loyaltyMinimumOrderValue =
+                loyaltyMinimumOrderValue;
     }
 
     public boolean isActive() {

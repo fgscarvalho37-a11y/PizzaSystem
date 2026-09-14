@@ -19,6 +19,10 @@ import java.util.UUID;
                 @Index(
                         name = "idx_orders_store_id",
                         columnList = "store_id"
+                ),
+                @Index(
+                        name = "idx_orders_customer_id",
+                        columnList = "customer_id"
                 )
         }
 )
@@ -34,14 +38,6 @@ public class Order {
     // LOJA / TENANT
     // =========================
 
-    /*
-     * Temporariamente nullable porque existem
-     * pedidos antigos no banco sem store_id.
-     *
-     * Depois da migração, todo novo pedido
-     * deverá obrigatoriamente pertencer
-     * a uma Store.
-     */
     @JsonIgnore
     @ManyToOne(
             fetch = FetchType.LAZY
@@ -52,18 +48,22 @@ public class Order {
     private Store store;
 
     // =========================
+    // CONTA DO CLIENTE
+    // =========================
+
+    @JsonIgnore
+    @ManyToOne(
+            fetch = FetchType.LAZY
+    )
+    @JoinColumn(
+            name = "customer_id"
+    )
+    private Customer customer;
+
+    // =========================
     // TOKEN PÚBLICO DO PEDIDO
     // =========================
 
-    /*
-     * Usado pelas páginas públicas para que saber
-     * apenas o ID sequencial do pedido não seja
-     * suficiente para acessá-lo.
-     *
-     * nullable permanece true temporariamente por
-     * compatibilidade com pedidos antigos existentes
-     * no banco.
-     */
     @Column(
             name = "public_access_token",
             unique = true,
@@ -72,7 +72,7 @@ public class Order {
     private String publicAccessToken;
 
     // =========================
-    // CLIENTE
+    // CLIENTE - SNAPSHOT
     // =========================
 
     @Column(nullable = false)
@@ -113,6 +113,18 @@ public class Order {
 
     @Column(nullable = false)
     private boolean couponUsageRegistered =
+            false;
+
+    // =========================
+    // FIDELIDADE
+    // =========================
+
+    /*
+     * Impede que o mesmo pedido
+     * gere pontos/selos mais de uma vez.
+     */
+    @Column(nullable = false)
+    private boolean loyaltyRegistered =
             false;
 
     // =========================
@@ -185,16 +197,20 @@ public class Order {
                 store;
     }
 
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(
+            Customer customer
+    ) {
+        this.customer =
+                customer;
+    }
+
     public String getPublicAccessToken() {
         return publicAccessToken;
     }
-
-    /*
-     * Não criamos setter público para o token.
-     *
-     * Depois de gerado, ele não deve ser alterado
-     * por DTO, controller ou formulário.
-     */
 
     public String getCustomerName() {
         return customerName;
@@ -315,6 +331,17 @@ public class Order {
     ) {
         this.couponUsageRegistered =
                 couponUsageRegistered;
+    }
+
+    public boolean isLoyaltyRegistered() {
+        return loyaltyRegistered;
+    }
+
+    public void setLoyaltyRegistered(
+            boolean loyaltyRegistered
+    ) {
+        this.loyaltyRegistered =
+                loyaltyRegistered;
     }
 
     public OrderStatus getStatus() {

@@ -13,6 +13,10 @@ import java.util.Optional;
 public interface OrderRepository
         extends JpaRepository<Order, Long> {
 
+    // =========================
+    // STORE / TENANT
+    // =========================
+
     Optional<Order> findByIdAndStoreId(
             Long id,
             Long storeId
@@ -31,6 +35,25 @@ public interface OrderRepository
     List<Order> findByStoreIdOrderByCreatedAtDesc(
             Long storeId
     );
+
+    // =========================
+    // CLIENTE
+    // =========================
+
+    /*
+     * Histórico de pedidos de uma conta
+     * de cliente, independente da loja.
+     *
+     * Cada Order continua trazendo a Store
+     * à qual pertence.
+     */
+    List<Order> findByCustomerIdOrderByCreatedAtDesc(
+            Long customerId
+    );
+
+    // =========================
+    // CONTAGENS / RELATÓRIOS STORE
+    // =========================
 
     long countByStoreIdAndCreatedAtBetween(
             Long storeId,
@@ -53,9 +76,17 @@ public interface OrderRepository
             LocalDateTime end
     );
 
+    // =========================
+    // PAGAMENTO
+    // =========================
+
     Optional<Order> findByPaymentExternalId(
             String paymentExternalId
     );
+
+    // =========================
+    // ACESSO PÚBLICO
+    // =========================
 
     Optional<Order> findByIdAndPublicAccessToken(
             Long id,

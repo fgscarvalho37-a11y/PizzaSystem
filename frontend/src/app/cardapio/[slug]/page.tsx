@@ -60,6 +60,17 @@ type ToastState = {
   message: string;
 } | null;
 
+type CustomerSession = {
+  authenticated: boolean;
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  profileImageUrl?: string | null;
+  emailVerified?: boolean;
+  googleConnected?: boolean;
+};
+
 function formatMoney(value: number) {
   return new Intl.NumberFormat(
     "pt-BR",
@@ -241,6 +252,28 @@ function CheckIcon({
   );
 }
 
+function AccountIcon({
+  className = "h-5 w-5",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </svg>
+  );
+}
+
 export default function CardapioPage() {
   const router =
     useRouter();
@@ -252,6 +285,9 @@ export default function CardapioPage() {
 
   const storeSlug =
     params.slug;
+
+  const cartKey =
+    `pizzasystem-cart:${storeSlug}`;
 
   const [
     products,
@@ -336,6 +372,86 @@ export default function CardapioPage() {
     setSelectedCrust,
   ] = useState<Crust | null>(null);
 
+  const [
+    customer,
+    setCustomer,
+  ] = useState<CustomerSession | null>(
+    null
+  );
+
+  const [
+    customerSessionLoaded,
+    setCustomerSessionLoaded,
+  ] = useState(false);
+
+  // =========================
+  // SESSÃO DO CLIENTE
+  // =========================
+
+  useEffect(() => {
+    let mounted =
+      true;
+
+    async function loadCustomerSession() {
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/api/customer-auth/me`,
+            {
+              method: "GET",
+              credentials: "include",
+              cache: "no-store",
+            }
+          );
+
+        if (!mounted) {
+          return;
+        }
+
+        if (!response.ok) {
+          setCustomer(null);
+          return;
+        }
+
+        const data:
+          CustomerSession =
+          await response.json();
+
+        if (
+          data?.authenticated
+        ) {
+          setCustomer(data);
+        } else {
+          setCustomer(null);
+        }
+
+      } catch (error) {
+        console.error(
+          "Erro ao verificar conta do cliente:",
+          error
+        );
+
+        if (mounted) {
+          setCustomer(null);
+        }
+
+      } finally {
+        if (mounted) {
+          setCustomerSessionLoaded(
+            true
+          );
+        }
+      }
+    }
+
+    void loadCustomerSession();
+
+    return () => {
+      mounted =
+        false;
+    };
+  }, []);
+
   // =========================
   // CARRINHO LOCAL
   // =========================
@@ -343,7 +459,7 @@ export default function CardapioPage() {
   useEffect(() => {
     const savedCart =
       localStorage.getItem(
-        "pizzasystem-cart"
+        cartKey
       );
 
     if (savedCart) {
@@ -374,7 +490,7 @@ export default function CardapioPage() {
 
       } catch {
         localStorage.removeItem(
-          "pizzasystem-cart"
+          cartKey
         );
       }
     }
@@ -382,7 +498,7 @@ export default function CardapioPage() {
     setCartLoaded(
       true
     );
-  }, []);
+  }, [cartKey]);
 
   // =========================
   // DADOS DO CARDÁPIO
@@ -724,7 +840,7 @@ export default function CardapioPage() {
     );
 
     localStorage.setItem(
-      "pizzasystem-cart",
+      cartKey,
       JSON.stringify(
         updatedCart
       )
@@ -900,14 +1016,16 @@ export default function CardapioPage() {
     }
 
     localStorage.setItem(
-      "pizzasystem-cart",
+      cartKey,
       JSON.stringify(
         cart
       )
     );
 
     router.push(
-      "/checkout"
+      `/checkout?store=${encodeURIComponent(
+        storeSlug
+      )}`
     );
   }
 
@@ -1103,6 +1221,18 @@ export default function CardapioPage() {
       .toUpperCase() ||
     "P";
 
+  const customerFirstName =
+    customer?.name
+      ?.trim()
+      .split(/\s+/)[0] ||
+    "";
+
+  const customerInitial =
+    customerFirstName
+      .charAt(0)
+      .toUpperCase() ||
+    "?";
+
   // =========================
   // TELA
   // =========================
@@ -1147,32 +1277,77 @@ export default function CardapioPage() {
             </span>
           </button>
 
-          <button
-            type="button"
-            onClick={() =>
-              setCartOpen(
-                true
-              )
-            }
-            className="flex items-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-sm font-bold text-cream transition-transform active:scale-95"
-          >
-            <ShoppingBagIcon className="h-4 w-4" />
+          <div className="flex shrink-0 items-center gap-2">
 
-            <span className="hidden sm:inline">
-              Pedido
-            </span>
-
-            <span
-              key={totalItems}
-              className={`grid h-6 min-w-6 place-items-center rounded-full bg-primary px-1.5 font-mono-brand text-[11px] text-primary-foreground ${
-                totalItems > 0
-                  ? "animate-badge"
-                  : ""
-              }`}
+            <button
+              type="button"
+              onClick={() =>
+                router.push(
+                  `/conta?store=${encodeURIComponent(
+                    storeSlug
+                  )}`
+                )
+              }
+              className="flex min-h-10 items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-bold transition-colors hover:border-foreground/30 hover:bg-secondary sm:px-4"
+              aria-label={
+                customer
+                  ? "Abrir minha conta"
+                  : "Entrar ou criar conta"
+              }
             >
-              {totalItems}
-            </span>
-          </button>
+              {customer?.profileImageUrl ? (
+                <img
+                  src={
+                    customer.profileImageUrl
+                  }
+                  alt=""
+                  className="h-6 w-6 rounded-full object-cover"
+                />
+              ) : customer ? (
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-primary font-mono-brand text-[10px] font-bold text-primary-foreground">
+                  {customerInitial}
+                </span>
+              ) : (
+                <AccountIcon className="h-4 w-4" />
+              )}
+
+              <span className="max-w-24 truncate">
+                {!customerSessionLoaded
+                  ? "Conta"
+                  : customer
+                    ? customerFirstName
+                    : "Entrar"}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setCartOpen(
+                  true
+                )
+              }
+              className="flex items-center gap-2 rounded-full bg-foreground px-3 py-2.5 text-sm font-bold text-cream transition-transform active:scale-95 sm:px-4"
+            >
+              <ShoppingBagIcon className="h-4 w-4" />
+
+              <span className="hidden sm:inline">
+                Pedido
+              </span>
+
+              <span
+                key={totalItems}
+                className={`grid h-6 min-w-6 place-items-center rounded-full bg-primary px-1.5 font-mono-brand text-[11px] text-primary-foreground ${
+                  totalItems > 0
+                    ? "animate-badge"
+                    : ""
+                }`}
+              >
+                {totalItems}
+              </span>
+            </button>
+
+          </div>
 
         </div>
 

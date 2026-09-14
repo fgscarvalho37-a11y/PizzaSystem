@@ -15,6 +15,7 @@ import com.pizzasystem.backend.repository.OrderRepository;
 
 import com.pizzasystem.backend.service.CouponService;
 import com.pizzasystem.backend.service.CurrentStoreService;
+import com.pizzasystem.backend.service.LoyaltyService;
 import com.pizzasystem.backend.service.MercadoPagoService;
 import com.pizzasystem.backend.service.MercadoPagoService.MercadoPagoResult;
 
@@ -45,6 +46,9 @@ public class PaymentController {
     private final CouponService
             couponService;
 
+    private final LoyaltyService
+            loyaltyService;
+
     private final CurrentStoreService
             currentStoreService;
 
@@ -55,6 +59,7 @@ public class PaymentController {
             OrderRepository orderRepository,
             MercadoPagoService mercadoPagoService,
             CouponService couponService,
+            LoyaltyService loyaltyService,
             CurrentStoreService currentStoreService
     ) {
 
@@ -66,6 +71,9 @@ public class PaymentController {
 
         this.couponService =
                 couponService;
+
+        this.loyaltyService =
+                loyaltyService;
 
         this.currentStoreService =
                 currentStoreService;
@@ -482,6 +490,11 @@ public class PaymentController {
                     .registerUsageForOrder(
                             order
                     );
+
+            loyaltyService
+                    .registerForOrder(
+                            order
+                    );
         }
 
         return jsonResponse(
@@ -526,6 +539,135 @@ public class PaymentController {
         );
     }
 
+// =========================
+// DEV - SINCRONIZAR PAGAMENTO
+// =========================
+
+@PostMapping(
+        value = "/dev/sync/{orderId}",
+        produces = MediaType.APPLICATION_JSON_VALUE
+)
+public ResponseEntity<?> syncPaymentDev(
+        @PathVariable Long orderId
+) throws Exception {
+
+    /*
+     * Endpoint temporário para desenvolvimento.
+     *
+     * Só funciona com administrador autenticado
+     * e respeita a Store do administrador.
+     */
+
+    if (!isAdminAuthenticated()) {
+
+        return errorResponse(
+                HttpStatus.UNAUTHORIZED,
+                "Administrador não autenticado."
+        );
+    }
+
+    Order order =
+            getOrderForAccess(
+                    orderId,
+                    null
+            );
+
+    if (order.getPaymentExternalId() == null
+            || order.getPaymentExternalId()
+            .isBlank()) {
+
+        return errorResponse(
+                HttpStatus.BAD_REQUEST,
+                "Pedido ainda não possui pagamento no Mercado Pago."
+        );
+    }
+
+    String mercadoPagoResponse =
+            mercadoPagoService.getOrder(
+                    order.getPaymentExternalId()
+            );
+
+    JsonNode json =
+            objectMapper.readTree(
+                    mercadoPagoResponse
+            );
+
+    PaymentStatus previousPaymentStatus =
+            order.getPaymentStatus();
+
+    updateOrderPaymentStatus(
+            order,
+            json
+    );
+
+    order =
+            orderRepository.save(
+                    order
+            );
+
+    /*
+     * Se acabou de ser aprovado,
+     * registra o uso do cupom.
+     */
+    if (previousPaymentStatus != PaymentStatus.APPROVED
+            && order.getPaymentStatus()
+            == PaymentStatus.APPROVED) {
+
+        couponService.registerUsageForOrder(
+                order
+        );
+
+        loyaltyService.registerForOrder(
+                order
+        );
+    }
+
+    Map<String, Object> response =
+            new HashMap<>();
+
+    response.put(
+            "success",
+            true
+    );
+
+    response.put(
+            "orderId",
+            order.getId()
+    );
+
+    response.put(
+            "storeId",
+            order.getStore() != null
+                    ? order.getStore().getId()
+                    : null
+    );
+
+    response.put(
+            "paymentExternalId",
+            order.getPaymentExternalId()
+    );
+
+    response.put(
+            "paymentStatus",
+            order.getPaymentStatus()
+                    .name()
+    );
+
+    response.put(
+            "orderStatus",
+            order.getStatus()
+                    .name()
+    );
+
+    return ResponseEntity
+            .ok()
+            .contentType(
+                    MediaType.APPLICATION_JSON
+            )
+            .body(
+                    response
+            );
+}
     // =========================
     // AUXILIARES
     // =========================

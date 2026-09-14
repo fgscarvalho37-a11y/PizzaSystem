@@ -4,6 +4,7 @@ import com.pizzasystem.backend.dto.OrderItemRequest;
 import com.pizzasystem.backend.dto.OrderRequest;
 
 import com.pizzasystem.backend.entity.Coupon;
+import com.pizzasystem.backend.entity.Customer;
 import com.pizzasystem.backend.entity.Crust;
 import com.pizzasystem.backend.entity.DeliveryArea;
 import com.pizzasystem.backend.entity.Order;
@@ -14,6 +15,7 @@ import com.pizzasystem.backend.entity.Product;
 import com.pizzasystem.backend.entity.Store;
 
 import com.pizzasystem.backend.repository.CrustRepository;
+import com.pizzasystem.backend.repository.CustomerRepository;
 import com.pizzasystem.backend.repository.DeliveryAreaRepository;
 import com.pizzasystem.backend.repository.OrderItemRepository;
 import com.pizzasystem.backend.repository.OrderRepository;
@@ -23,6 +25,9 @@ import com.pizzasystem.backend.service.CouponService;
 import com.pizzasystem.backend.service.CurrentStoreService;
 import com.pizzasystem.backend.service.PublicStoreService;
 import com.pizzasystem.backend.service.StoreStatusService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.springframework.http.HttpStatus;
 
@@ -52,6 +57,10 @@ public class OrderController {
     private final CrustRepository crustRepository;
     private final PublicStoreService publicStoreService;
     private final CurrentStoreService currentStoreService;
+    private final CustomerRepository customerRepository;
+
+    private static final String SESSION_CUSTOMER_ID =
+            "CUSTOMER_ID";
 
     public OrderController(
             OrderRepository orderRepository,
@@ -62,7 +71,8 @@ public class OrderController {
             CouponService couponService,
             CrustRepository crustRepository,
             PublicStoreService publicStoreService,
-            CurrentStoreService currentStoreService
+            CurrentStoreService currentStoreService,
+            CustomerRepository customerRepository
     ) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
@@ -73,6 +83,7 @@ public class OrderController {
         this.crustRepository = crustRepository;
         this.publicStoreService = publicStoreService;
         this.currentStoreService = currentStoreService;
+        this.customerRepository = customerRepository;
     }
 
     // =========================
@@ -139,7 +150,8 @@ public class OrderController {
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
     public Order create(
-            @RequestBody OrderRequest request
+            @RequestBody OrderRequest request,
+            HttpServletRequest servletRequest
     ) {
 
         if (request.getStoreSlug() == null
@@ -237,6 +249,69 @@ public class OrderController {
                 new Order();
 
         order.setStore(store);
+
+        // =========================
+        // CONTA DO CLIENTE - OPCIONAL
+        // =========================
+
+        /*
+         * Visitante:
+         * não existe CUSTOMER_ID na sessão e
+         * o pedido continua com customer = null.
+         *
+         * Cliente logado:
+         * vinculamos a conta ao pedido.
+         *
+         * Nome e telefone continuam sendo salvos
+         * como snapshot do checkout.
+         */
+        HttpSession customerSession =
+                servletRequest.getSession(
+                        false
+                );
+
+        if (customerSession != null) {
+
+            Object customerIdObject =
+                    customerSession.getAttribute(
+                            SESSION_CUSTOMER_ID
+                    );
+
+            if (customerIdObject
+                    instanceof Long customerId) {
+
+                Customer customer =
+                        customerRepository
+                                .findById(
+                                        customerId
+                                )
+                                .orElse(null);
+
+                if (customer != null
+                        && customer.isActive()) {
+
+                    order.setCustomer(
+                            customer
+                    );
+
+                } else {
+
+                    /*
+                     * Sessão antiga/inválida.
+                     * Limpamos somente os dados
+                     * da conta do cliente e o pedido
+                     * segue normalmente como visitante.
+                     */
+                    customerSession.removeAttribute(
+                            SESSION_CUSTOMER_ID
+                    );
+
+                    customerSession.removeAttribute(
+                            "CUSTOMER_EMAIL"
+                    );
+                }
+            }
+        }
 
         order.setCustomerName(
                 request
@@ -568,6 +643,71 @@ public class OrderController {
 
         order.setStatus(
                 status
+        );
+
+        return orderRepository.save(
+                order
+        );
+    }
+
+    // =========================
+    // CANCELAR PEDIDO
+    // =========================
+
+    @PatchMapping("/{id}/cancel")
+    @Transactional
+    public Order cancel(
+            @PathVariable Long id,
+            @RequestParam(required = false) String token
+    ) {
+
+        Order order =
+                getOrderForAccess(
+                        id,
+                        token
+                );
+
+        if (order.getPaymentStatus()
+                == PaymentStatus.APPROVED) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Pedido já pago não pode ser cancelado por aqui"
+            );
+        }
+
+        if (order.getStatus()
+                == OrderStatus.DELIVERED) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Pedido já entregue não pode ser cancelado"
+            );
+        }
+
+        if (order.getStatus()
+                == OrderStatus.CANCELLED) {
+
+            return order;
+        }
+
+        /*
+         * O cancelamento público é destinado ao fluxo
+         * de pagamento pendente. Depois que a produção
+         * começou, o cliente não pode cancelar sozinho.
+         */
+        if (!isAdminAuthenticated()
+                && order.getStatus()
+                != OrderStatus.PENDING_PAYMENT) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Este pedido não pode mais ser cancelado pelo cliente"
+            );
+        }
+
+        order.setStatus(
+                OrderStatus.CANCELLED
         );
 
         return orderRepository.save(

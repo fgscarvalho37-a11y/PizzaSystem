@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
@@ -101,12 +101,17 @@ function CopyIcon({
 export default function PagamentoPage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const id = params.id as string;
 
-  const tokenFromUrl =
-    searchParams.get("token");
+  const [tokenFromUrl, setTokenFromUrl] =
+    useState<string | null>(null);
+
+  const [storeSlug, setStoreSlug] =
+    useState("");
+
+  const [urlReady, setUrlReady] =
+    useState(false);
 
   const [accessToken, setAccessToken] =
     useState<string | null>(null);
@@ -126,8 +131,43 @@ export default function PagamentoPage() {
   const [copied, setCopied] =
     useState(false);
 
+  const [expiresAt, setExpiresAt] =
+    useState<number | null>(null);
+
+  const [secondsLeft, setSecondsLeft] =
+    useState(0);
+
+  const [canceling, setCanceling] =
+    useState(false);
+
+  const [cancelError, setCancelError] =
+    useState("");
+
+  const [showCancelConfirm, setShowCancelConfirm] =
+    useState(false);
+
+  const [autoCancelTriggered, setAutoCancelTriggered] =
+    useState(false);
+
   useEffect(() => {
-    if (!id) {
+    const query =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    setTokenFromUrl(
+      query.get("token")
+    );
+
+    setStoreSlug(
+      query.get("store")?.trim() ?? ""
+    );
+
+    setUrlReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!urlReady || !id) {
       return;
     }
 
@@ -159,7 +199,78 @@ export default function PagamentoPage() {
     );
 
     setTokenReady(true);
-  }, [id, tokenFromUrl]);
+  }, [id, tokenFromUrl, urlReady]);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    const expirationKey =
+      `pizzasystem-pix-expires-at:${id}`;
+
+    const storedExpiration =
+      localStorage.getItem(
+        expirationKey
+      );
+
+    let nextExpiration =
+      storedExpiration
+        ? Number(storedExpiration)
+        : 0;
+
+    if (!nextExpiration ||
+        Number.isNaN(nextExpiration)) {
+
+      nextExpiration =
+        Date.now() +
+        15 * 60 * 1000;
+
+      localStorage.setItem(
+        expirationKey,
+        String(nextExpiration)
+      );
+    }
+
+    setExpiresAt(
+      nextExpiration
+    );
+  }, [id]);
+
+  useEffect(() => {
+    if (!expiresAt) {
+      return;
+    }
+
+    const expirationTime =
+      expiresAt;
+
+    function updateCountdown() {
+      const difference =
+        Math.max(
+          0,
+          Math.ceil(
+            (expirationTime - Date.now()) /
+            1000
+          )
+        );
+
+      setSecondsLeft(
+        difference
+      );
+    }
+
+    updateCountdown();
+
+    const timer =
+      setInterval(
+        updateCountdown,
+        1000
+      );
+
+    return () =>
+      clearInterval(timer);
+  }, [expiresAt]);
 
   async function loadData() {
     if (!accessToken) {
@@ -237,7 +348,112 @@ export default function PagamentoPage() {
     return () => clearInterval(interval);
   }, [id, accessToken, tokenReady]);
 
-  if (!tokenReady || loading) {
+  useEffect(() => {
+    if (!localOrder ||
+        localOrder.paymentStatus !== "APPROVED" ||
+        !accessToken) {
+      return;
+    }
+
+    localStorage.removeItem(
+      `pizzasystem-pix-expires-at:${id}`
+    );
+
+    const timer =
+      setTimeout(() => {
+        router.push(
+          `/pedido/${localOrder.id}?token=${encodeURIComponent(
+            accessToken
+          )}`
+        );
+      }, 1800);
+
+    return () =>
+      clearTimeout(timer);
+  }, [
+    localOrder,
+    accessToken,
+    id,
+    router,
+  ]);
+
+  useEffect(() => {
+    if (
+      !tokenReady ||
+      !localOrder ||
+      localOrder.paymentStatus === "APPROVED" ||
+      localOrder.status === "CANCELLED" ||
+      secondsLeft > 0 ||
+      autoCancelTriggered ||
+      !accessToken
+    ) {
+      return;
+    }
+
+    setAutoCancelTriggered(true);
+
+    const cancelExpiredOrder =
+      async () => {
+        try {
+          const encodedToken =
+            encodeURIComponent(
+              accessToken
+            );
+
+          const response =
+            await fetch(
+              `${API_URL}/api/orders/${id}/cancel?token=${encodedToken}`,
+              {
+                method: "PATCH",
+                headers: {
+                  "Content-Type":
+                    "application/json",
+                },
+              }
+            );
+
+          if (!response.ok) {
+            throw new Error(
+              "Não foi possível cancelar o Pix expirado."
+            );
+          }
+
+          localStorage.removeItem(
+            `pizzasystem-pix-expires-at:${id}`
+          );
+
+          router.replace(
+            storeSlug
+              ? `/cardapio/${encodeURIComponent(
+                  storeSlug
+                )}?pix=expired`
+              : "/"
+          );
+        } catch (error) {
+          console.error(
+            "Erro ao cancelar Pix expirado:",
+            error
+          );
+
+          setCancelError(
+            "O Pix expirou, mas não foi possível cancelar o pedido automaticamente."
+          );
+        }
+      };
+
+    void cancelExpiredOrder();
+  }, [
+    tokenReady,
+    localOrder,
+    secondsLeft,
+    autoCancelTriggered,
+    accessToken,
+    id,
+    router,
+    storeSlug,
+  ]);
+
+  if (!urlReady || !tokenReady || loading) {
     return (
       <main className="min-h-screen bg-background pb-16 text-foreground">
         <header className="border-b border-border bg-background/85 backdrop-blur-md">
@@ -280,9 +496,7 @@ export default function PagamentoPage() {
 
           <button
             type="button"
-            onClick={() =>
-              router.push("/cardapio")
-            }
+            onClick={goBackToStore}
             className="brand-button mt-6 w-full rounded-2xl px-5 py-3.5"
           >
             Voltar ao cardápio
@@ -320,6 +534,127 @@ export default function PagamentoPage() {
     }, 2000);
   }
 
+  const expired =
+    !approved &&
+    secondsLeft <= 0;
+
+  const minutes =
+    Math.floor(
+      secondsLeft / 60
+    );
+
+  const seconds =
+    secondsLeft % 60;
+
+  const countdown =
+    `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+  function goBackToStore() {
+    if (storeSlug) {
+      router.push(
+        `/cardapio/${encodeURIComponent(
+          storeSlug
+        )}`
+      );
+
+      return;
+    }
+
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push("/");
+  }
+
+  async function cancelOrder(
+    automatic = false
+  ) {
+    if (!accessToken ||
+        approved ||
+        canceling) {
+      return;
+    }
+
+    try {
+      setCanceling(true);
+      setCancelError("");
+
+      const encodedToken =
+        encodeURIComponent(
+          accessToken
+        );
+
+      const response =
+        await fetch(
+          `${API_URL}/api/orders/${id}/cancel?token=${encodedToken}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+          }
+        );
+
+      if (!response.ok) {
+        let message =
+          "Não foi possível cancelar o pedido.";
+
+        try {
+          const payload =
+            await response.json();
+
+          if (
+            typeof payload?.message ===
+              "string" &&
+            payload.message
+          ) {
+            message =
+              payload.message;
+          }
+        } catch {
+          // mantém mensagem padrão
+        }
+
+        throw new Error(
+          message
+        );
+      }
+
+      localStorage.removeItem(
+        `pizzasystem-pix-expires-at:${id}`
+      );
+
+      setShowCancelConfirm(false);
+
+      if (automatic) {
+        router.replace(
+          storeSlug
+            ? `/cardapio/${encodeURIComponent(
+                storeSlug
+              )}?pix=expired`
+            : "/"
+        );
+
+        return;
+      }
+
+      goBackToStore();
+
+    } catch (error) {
+      setCancelError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível cancelar o pedido."
+      );
+
+      setShowCancelConfirm(false);
+    } finally {
+      setCanceling(false);
+    }
+  }
   if (approved) {
     return (
       <main className="min-h-screen bg-background pb-16 text-foreground">
@@ -327,9 +662,7 @@ export default function PagamentoPage() {
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
             <button
               type="button"
-              onClick={() =>
-                router.push("/cardapio")
-              }
+              onClick={goBackToStore}
               className="flex items-center gap-2.5"
             >
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary font-display text-lg text-primary-foreground shadow-[0_2px_0_0] shadow-foreground/30">
@@ -361,7 +694,7 @@ export default function PagamentoPage() {
             </h1>
 
             <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
-              O pagamento foi aprovado e a pizzaria já recebeu seu pedido.
+              O pagamento foi aprovado e a pizzaria já recebeu seu pedido. Você será direcionado para o acompanhamento em instantes.
             </p>
 
             <div className="mx-auto mt-7 max-w-md rounded-2xl bg-secondary p-5">
@@ -409,9 +742,7 @@ export default function PagamentoPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <button
             type="button"
-            onClick={() =>
-              router.push("/cardapio")
-            }
+            onClick={goBackToStore}
             className="flex items-center gap-2.5"
           >
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary font-display text-lg text-primary-foreground shadow-[0_2px_0_0] shadow-foreground/30">
@@ -462,7 +793,7 @@ export default function PagamentoPage() {
             </p>
 
             <div className="mt-4 rounded-2xl bg-white p-4">
-              {qrBase64 ? (
+              {qrBase64 && !expired ? (
                 <img
                   src={`data:image/png;base64,${qrBase64}`}
                   alt="QR Code Pix"
@@ -470,7 +801,9 @@ export default function PagamentoPage() {
                 />
               ) : (
                 <div className="grid aspect-square place-items-center rounded-xl bg-secondary text-center text-sm text-muted-foreground">
-                  QR Code indisponível
+                  {expired
+                    ? "Pix expirado"
+                    : "QR Code indisponível"}
                 </div>
               )}
             </div>
@@ -485,18 +818,44 @@ export default function PagamentoPage() {
                   </p>
 
                   <h2 className="mt-1 font-display text-2xl tracking-tight">
-                    Aguardando pagamento
+                    {expired
+                      ? "Pix expirado"
+                      : "Aguardando pagamento"}
                   </h2>
                 </div>
 
                 <span className="flex items-center gap-2 rounded-full bg-butter/35 px-3 py-1.5 font-mono-brand text-[10px] font-bold uppercase tracking-wider">
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-                  Verificando
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      expired
+                        ? "bg-muted-foreground"
+                        : "animate-pulse bg-primary"
+                    }`}
+                  />
+                  {expired
+                    ? "Expirado"
+                    : "Verificando"}
+                </span>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between rounded-2xl bg-secondary/70 px-4 py-3">
+                <span className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                  Tempo restante
+                </span>
+
+                <span className={`font-mono-brand text-lg font-bold ${
+                  expired
+                    ? "text-primary"
+                    : "text-foreground"
+                }`}>
+                  {countdown}
                 </span>
               </div>
 
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Pode fechar o aplicativo do banco depois de pagar. Esta página verifica o status automaticamente a cada poucos segundos.
+                {expired
+                  ? "O tempo desta cobrança terminou. Cancele o pedido ou volte ao cardápio para fazer um novo pedido."
+                  : "Pode fechar o aplicativo do banco depois de pagar. Esta página verifica o status automaticamente a cada poucos segundos."}
               </p>
             </section>
 
@@ -507,7 +866,11 @@ export default function PagamentoPage() {
 
               <textarea
                 readOnly
-                value={qrCode}
+                value={
+                  expired
+                    ? ""
+                    : qrCode
+                }
                 rows={5}
                 className="mt-3 w-full resize-none rounded-2xl border border-border bg-secondary/60 p-3 font-mono text-xs leading-5 outline-none"
               />
@@ -515,7 +878,11 @@ export default function PagamentoPage() {
               <button
                 type="button"
                 onClick={copyPix}
-                className="brand-button mt-3 w-full rounded-2xl px-5 py-3.5"
+                disabled={
+                  expired ||
+                  !qrCode
+                }
+                className="brand-button mt-3 w-full rounded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {copied ? (
                   <>
@@ -530,7 +897,8 @@ export default function PagamentoPage() {
                 )}
               </button>
 
-              {payment?.payment_method?.ticket_url && (
+              {!expired &&
+                payment?.payment_method?.ticket_url && (
                 <a
                   href={
                     payment.payment_method.ticket_url
@@ -546,12 +914,102 @@ export default function PagamentoPage() {
           </div>
         </div>
 
+        {cancelError && (
+          <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+            <p className="font-bold text-primary">
+              Não foi possível cancelar
+            </p>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              {cancelError}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={goBackToStore}
+            className="min-h-12 rounded-2xl border-2 border-foreground bg-transparent px-5 text-sm font-bold transition-colors hover:bg-foreground hover:text-cream"
+          >
+            Voltar ao cardápio
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setShowCancelConfirm(true)
+            }
+            disabled={
+              approved ||
+              canceling
+            }
+            className="min-h-12 rounded-2xl border border-primary/30 bg-primary/5 px-5 text-sm font-bold text-primary transition-colors hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {canceling
+              ? "Cancelando..."
+              : "Cancelar pedido"}
+          </button>
+        </div>
+
         <div className="mt-6 rounded-2xl border border-border bg-secondary/55 p-4">
           <p className="text-sm font-semibold">
             Depois do pagamento, você será direcionado para acompanhar o pedido assim que a aprovação for identificada.
           </p>
         </div>
       </div>
+
+      {showCancelConfirm && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4 backdrop-blur-[2px]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-order-title"
+        >
+          <div className="w-full max-w-md rounded-[28px] border border-border bg-card p-6 shadow-2xl sm:p-7">
+            <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+              Cancelar pedido
+            </p>
+
+            <h2
+              id="cancel-order-title"
+              className="mt-2 font-display text-3xl tracking-tight"
+            >
+              Tem certeza?
+            </h2>
+
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              Se você cancelar agora, este pedido será encerrado e o Pix não será mais considerado válido pelo PizzaSystem.
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setShowCancelConfirm(false)
+                }
+                disabled={canceling}
+                className="min-h-12 rounded-2xl border-2 border-foreground bg-transparent px-5 text-sm font-bold transition-colors hover:bg-foreground hover:text-cream disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Manter pedido
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  void cancelOrder(false)
+                }
+                disabled={canceling}
+                className="min-h-12 rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {canceling
+                  ? "Cancelando..."
+                  : "Sim, cancelar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

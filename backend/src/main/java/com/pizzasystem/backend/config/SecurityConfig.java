@@ -86,48 +86,47 @@ public class SecurityConfig {
                                 )
 
                                 // =========================
-                                // LOGIN
+                                // AUTH ADMIN
                                 // =========================
 
-                                /*
-                                 * Login ainda não possui sessão
-                                 * autenticada, então não exigimos
-                                 * CSRF nessa operação.
-                                 */
                                 .ignoringRequestMatchers(
                                         "/api/auth/login"
                                 )
 
+                                .ignoringRequestMatchers(
+                                        "/api/auth/logout"
+                                )
+
                                 // =========================
-                                // PEDIDO DO CLIENTE
+                                // AUTH CLIENTE
                                 // =========================
 
-                                /*
-                                 * Pedido público criado pelo
-                                 * checkout do cliente.
-                                 */
                                 .ignoringRequestMatchers(
-                                        "/api/orders"
+                                        "/api/customer-auth/register",
+                                        "/api/customer-auth/login",
+                                        "/api/customer-auth/logout"
+                                )
+
+                                // =========================
+                                // PEDIDOS PÚBLICOS
+                                // =========================
+
+                                .ignoringRequestMatchers(
+                                        "/api/orders",
+                                        "/api/orders/*/cancel"
                                 )
 
                                 // =========================
                                 // PAGAMENTOS
                                 // =========================
 
-                                /*
-                                 * Os endpoints públicos de pagamento
-                                 * precisam receber chamadas do checkout.
-                                 *
-                                 * O acesso ao pedido continua protegido
-                                 * pelo publicAccessToken.
-                                 */
                                 .ignoringRequestMatchers(
                                         "/api/payments/**"
                                 )
                 )
 
                 // =========================
-                // FILTRO DA SESSÃO ADMIN
+                // FILTRO ADMIN
                 // =========================
 
                 .addFilterBefore(
@@ -143,7 +142,7 @@ public class SecurityConfig {
                         auth -> auth
 
                                 // =========================
-                                // PREFLIGHT
+                                // OPTIONS
                                 // =========================
 
                                 .requestMatchers(
@@ -153,69 +152,42 @@ public class SecurityConfig {
                                 .permitAll()
 
                                 // =========================
-                                // LOGIN ADMIN
+                                // AUTH ADMIN
                                 // =========================
 
                                 .requestMatchers(
-                                        HttpMethod.POST,
-                                        "/api/auth/login"
+                                        "/api/auth/**"
                                 )
                                 .permitAll()
 
                                 // =========================
-                                // VERIFICAR SESSÃO
+                                // AUTH CLIENTE
+                                // =========================
+
+                                .requestMatchers(
+                                        "/api/customer-auth/**"
+                                )
+                                .permitAll()
+
+                                // =========================
+                                // MEUS PEDIDOS
                                 // =========================
 
                                 /*
-                                 * Precisa ser público para o frontend
-                                 * descobrir se existe sessão.
-                                 *
-                                 * Sem sessão válida, o controller
-                                 * responde 401.
+                                 * Spring libera a chamada,
+                                 * mas o controller exige
+                                 * CUSTOMER_ID válido na sessão.
                                  */
                                 .requestMatchers(
                                         HttpMethod.GET,
-                                        "/api/auth/me"
+                                        "/api/customer/orders"
                                 )
                                 .permitAll()
-
-                                // =========================
-                                // TOKEN CSRF
-                                // =========================
-
-                                .requestMatchers(
-                                        HttpMethod.GET,
-                                        "/api/auth/csrf"
-                                )
-                                .permitAll()
-
-                                // =========================
-                                // LOGOUT
-                                // =========================
-
-                                .requestMatchers(
-                                        HttpMethod.POST,
-                                        "/api/auth/logout"
-                                )
-                                .authenticated()
 
                                 // =========================
                                 // API PÚBLICA SAAS
                                 // =========================
 
-                                /*
-                                 * Endpoints públicos resolvidos
-                                 * pelo slug da pizzaria.
-                                 *
-                                 * Exemplos:
-                                 *
-                                 * /api/public/stores/misterio-do-sabor
-                                 *
-                                 * /api/public/stores/
-                                 * misterio-do-sabor/menu
-                                 *
-                                 * Apenas GET fica público.
-                                 */
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/public/**"
@@ -223,7 +195,17 @@ public class SecurityConfig {
                                 .permitAll()
 
                                 // =========================
-                                // PRODUTOS PÚBLICOS
+                                // PERFIL PÚBLICO DA STORE
+                                // =========================
+
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/store/profile"
+                                )
+                                .permitAll()
+
+                                // =========================
+                                // PRODUTOS
                                 // =========================
 
                                 .requestMatchers(
@@ -233,10 +215,18 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
+                                // =========================
+                                // CATEGORIAS
+                                // =========================
 
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/categories/**"
+                                )
+                                .permitAll()
 
                                 // =========================
-                                // ÁREAS DE ENTREGA PÚBLICAS
+                                // ÁREAS DE ENTREGA
                                 // =========================
 
                                 .requestMatchers(
@@ -256,27 +246,7 @@ public class SecurityConfig {
                                 .permitAll()
 
                                 // =========================
-                                // PERFIL PÚBLICO DA LOJA
-                                // =========================
-
-                                /*
-                                 * Nome, logo, capa, cores,
-                                 * headline, faixa e informações
-                                 * públicas do estabelecimento.
-                                 *
-                                 * Apenas GET é público.
-                                 *
-                                 * PUT /api/store/profile continua
-                                 * protegido pela regra ADMIN.
-                                 */
-                                .requestMatchers(
-                                        HttpMethod.GET,
-                                        "/api/store/profile"
-                                )
-                                .permitAll()
-
-                                // =========================
-                                // VALIDAÇÃO DE CUPOM
+                                // CUPOM
                                 // =========================
 
                                 .requestMatchers(
@@ -286,7 +256,7 @@ public class SecurityConfig {
                                 .permitAll()
 
                                 // =========================
-                                // BORDAS ATIVAS
+                                // BORDAS
                                 // =========================
 
                                 .requestMatchers(
@@ -296,7 +266,7 @@ public class SecurityConfig {
                                 .permitAll()
 
                                 // =========================
-                                // CRIAÇÃO DE PEDIDO
+                                // CRIAR PEDIDO
                                 // =========================
 
                                 .requestMatchers(
@@ -306,14 +276,19 @@ public class SecurityConfig {
                                 .permitAll()
 
                                 // =========================
-                                // ACOMPANHAMENTO DO PEDIDO
+                                // CANCELAR PEDIDO
                                 // =========================
 
-                                /*
-                                 * Esses endpoints são públicos,
-                                 * mas o OrderController exige
-                                 * publicAccessToken para clientes.
-                                 */
+                                .requestMatchers(
+                                        HttpMethod.PATCH,
+                                        "/api/orders/*/cancel"
+                                )
+                                .permitAll()
+
+                                // =========================
+                                // CONSULTAR PEDIDO
+                                // =========================
+
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/orders/*"
@@ -330,12 +305,6 @@ public class SecurityConfig {
                                 // PAGAMENTOS
                                 // =========================
 
-                                /*
-                                 * Fluxo público do cliente.
-                                 *
-                                 * O PaymentController valida
-                                 * orderId + publicAccessToken.
-                                 */
                                 .requestMatchers(
                                         "/api/payments/**"
                                 )
@@ -345,22 +314,6 @@ public class SecurityConfig {
                                 // RESTANTE = ADMIN
                                 // =========================
 
-                                /*
-                                 * Qualquer endpoint não listado
-                                 * acima exige ROLE_ADMIN.
-                                 *
-                                 * Continua protegendo:
-                                 *
-                                 * PUT /api/store/profile
-                                 * PUT /api/store
-                                 * PATCH /api/store/open
-                                 * administração do cardápio
-                                 * relatórios
-                                 * caixa
-                                 * cupons
-                                 * configurações
-                                 * pedidos administrativos
-                                 */
                                 .anyRequest()
                                 .hasRole(
                                         "ADMIN"
@@ -368,7 +321,7 @@ public class SecurityConfig {
                 )
 
                 // =========================
-                // LOGIN HTML DESATIVADO
+                // FORM LOGIN
                 // =========================
 
                 .formLogin(
@@ -377,7 +330,7 @@ public class SecurityConfig {
                 )
 
                 // =========================
-                // BASIC AUTH DESATIVADO
+                // BASIC AUTH
                 // =========================
 
                 .httpBasic(
@@ -386,7 +339,7 @@ public class SecurityConfig {
                 )
 
                 // =========================
-                // NÃO AUTENTICADO = 401
+                // 401
                 // =========================
 
                 .exceptionHandling(
@@ -403,7 +356,7 @@ public class SecurityConfig {
     }
 
     // =========================
-    // PASSWORD ENCODER
+    // PASSWORD
     // =========================
 
     @Bean

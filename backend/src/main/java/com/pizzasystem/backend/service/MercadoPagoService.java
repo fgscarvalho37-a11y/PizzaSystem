@@ -26,8 +26,11 @@ public class MercadoPagoService {
     @Value("${mercadopago.access-token}")
     private String accessToken;
 
-    @Value("${mercadopago.pix-payer-email:test@testuser.com}")
+    @Value("${mercadopago.pix-payer-email:test_user_br@testuser.com}")
     private String pixPayerEmail;
+
+    @Value("${mercadopago.test-auto-approve-pix:false}")
+    private boolean testAutoApprovePix;
 
     private final RestTemplate restTemplate;
 
@@ -77,7 +80,8 @@ public class MercadoPagoService {
                 pixPayerEmail,
                 null,
                 null,
-                payment
+                payment,
+                true
         );
     }
 
@@ -172,7 +176,8 @@ public class MercadoPagoService {
                 email,
                 identificationType,
                 identificationNumber,
-                payment
+                payment,
+                false
         );
     }
 
@@ -186,7 +191,8 @@ public class MercadoPagoService {
             String email,
             String identificationType,
             String identificationNumber,
-            Map<String, Object> payment
+            Map<String, Object> payment,
+            boolean pix
     ) {
 
         String url =
@@ -204,6 +210,35 @@ public class MercadoPagoService {
             );
         }
 
+        // =========================
+        // AUTO APROVAÇÃO PIX TESTE
+        // =========================
+
+        /*
+         * Somente para ambiente de teste.
+         *
+         * true:
+         * Mercado Pago recebe first_name = APRO
+         * e simula aprovação automática.
+         *
+         * false:
+         * Pix permanece pendente para permitir
+         * testar QR Code, expiração e cancelamento.
+         */
+        if (pix
+                && testAutoApprovePix
+                && "test_user_br@testuser.com"
+                .equalsIgnoreCase(
+                        email != null
+                                ? email.trim()
+                                : ""
+                )) {
+
+            payer.put(
+                    "first_name",
+                    "APRO"
+            );
+        }
 
         if (identificationType != null
                 && !identificationType.isBlank()
@@ -276,12 +311,6 @@ public class MercadoPagoService {
         HttpHeaders headers =
                 createHeaders();
 
-        /*
-         * Cada criação recebe uma chave única.
-         * O controller já evita uma nova cobrança
-         * quando a order possui pagamento em andamento
-         * ou aprovado.
-         */
         headers.set(
                 "X-Idempotency-Key",
                 UUID.randomUUID()
@@ -321,23 +350,21 @@ public class MercadoPagoService {
 
         } catch (HttpStatusCodeException e) {
 
-            /*
-             * Não registramos o body completo em log.
-             * Respostas de meios de pagamento podem
-             * conter informações que não devem ficar
-             * persistidas desnecessariamente.
-             */
+            String responseBody =
+                    e.getResponseBodyAsString();
+
             logger.warn(
-                    "Mercado Pago recusou criação da order do pedido {}. HTTP {}.",
+                    "Mercado Pago recusou criação da order do pedido {}. HTTP {}. Resposta: {}",
                     orderId,
                     e.getStatusCode()
-                            .value()
+                            .value(),
+                    responseBody
             );
 
             return new MercadoPagoResult(
                     e.getStatusCode()
                             .value(),
-                    e.getResponseBodyAsString()
+                    responseBody
             );
         }
     }

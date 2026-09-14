@@ -8,6 +8,7 @@ import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentStatus;
 import com.pizzasystem.backend.repository.OrderRepository;
 import com.pizzasystem.backend.service.CouponService;
+import com.pizzasystem.backend.service.LoyaltyService;
 import com.pizzasystem.backend.service.MercadoPagoService;
 import com.pizzasystem.backend.service.MercadoPagoWebhookSignatureService;
 
@@ -22,13 +23,15 @@ public class MercadoPagoWebhookController {
     private final MercadoPagoService mercadoPagoService;
     private final MercadoPagoWebhookSignatureService signatureService;
     private final CouponService couponService;
+    private final LoyaltyService loyaltyService;
     private final ObjectMapper objectMapper;
 
     public MercadoPagoWebhookController(
             OrderRepository orderRepository,
             MercadoPagoService mercadoPagoService,
             MercadoPagoWebhookSignatureService signatureService,
-            CouponService couponService
+            CouponService couponService,
+            LoyaltyService loyaltyService
     ) {
         this.orderRepository =
                 orderRepository;
@@ -41,6 +44,9 @@ public class MercadoPagoWebhookController {
 
         this.couponService =
                 couponService;
+
+        this.loyaltyService =
+                loyaltyService;
 
         this.objectMapper =
                 new ObjectMapper();
@@ -259,6 +265,14 @@ public class MercadoPagoWebhookController {
                         order
                 );
 
+                // =========================
+                // REGISTRAR FIDELIDADE
+                // =========================
+
+                loyaltyService.registerForOrder(
+                        order
+                );
+
                 System.out.println(
                         "Pedido #"
                                 + order.getId()
@@ -277,6 +291,13 @@ public class MercadoPagoWebhookController {
                                     + order.isCouponUsageRegistered()
                     );
                 }
+
+                System.out.println(
+                        "Fidelidade do pedido #"
+                                + order.getId()
+                                + " | registrada: "
+                                + order.isLoyaltyRegistered()
+                );
             }
 
             return ResponseEntity
