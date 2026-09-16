@@ -1,6 +1,7 @@
 package com.pizzasystem.backend.controller;
 
 import com.pizzasystem.backend.dto.StoreStatusResponse;
+import com.pizzasystem.backend.entity.LoyaltyEarningType;
 import com.pizzasystem.backend.entity.Store;
 
 import com.pizzasystem.backend.service.CurrentStoreService;
@@ -8,6 +9,8 @@ import com.pizzasystem.backend.service.StoreStatusService;
 
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/store")
@@ -36,13 +39,6 @@ public class StoreSettingsController {
     // ADMIN
     // =========================
 
-    /*
-     * Mantém o mesmo formato que o
-     * frontend antigo já espera.
-     *
-     * A diferença é que agora os dados
-     * vêm diretamente da Store do admin.
-     */
     @GetMapping
     @Transactional(readOnly = true)
     public StoreSettingsResponse getSettings() {
@@ -60,20 +56,6 @@ public class StoreSettingsController {
     // STATUS DA LOJA
     // =========================
 
-    /*
-     * PÚBLICO:
-     *
-     * GET /api/store/status
-     * ?store=misterio-do-sabor
-     *
-     *
-     * ADMIN:
-     *
-     * GET /api/store/status
-     *
-     * Quando não existe slug, usamos
-     * a Store do administrador logado.
-     */
     @GetMapping("/status")
     @Transactional(readOnly = true)
     public StoreStatusResponse getStatus(
@@ -165,13 +147,6 @@ public class StoreSettingsController {
                 )
         );
 
-        /*
-         * Não recebemos storeId.
-         *
-         * A entidade Store já está gerenciada
-         * pelo JPA dentro da transação.
-         */
-
         return toSettingsResponse(
                 store
         );
@@ -259,6 +234,123 @@ public class StoreSettingsController {
         );
 
         // =========================
+        // HERO
+        // =========================
+
+        store.setHeroTitleLine1(
+                cleanWithDefault(
+                        data.heroTitleLine1(),
+                        "ESCOLHA."
+                )
+        );
+
+        store.setHeroTitleLine2(
+                cleanWithDefault(
+                        data.heroTitleLine2(),
+                        "PEÇA."
+                )
+        );
+
+        store.setHeroTitleLine3(
+                cleanWithDefault(
+                        data.heroTitleLine3(),
+                        "APROVEITE."
+                )
+        );
+
+        store.setHeroDescription(
+                cleanWithDefault(
+                        data.heroDescription(),
+                        "Escolha seus favoritos, monte seu pedido e acompanhe tudo pelo site."
+                )
+        );
+
+        store.setHeroPrimaryButtonText(
+                cleanWithDefault(
+                        data.heroPrimaryButtonText(),
+                        "Ver cardápio"
+                )
+        );
+
+        store.setHeroSecondaryButtonText(
+                cleanWithDefault(
+                        data.heroSecondaryButtonText(),
+                        "Ver meu pedido"
+                )
+        );
+
+        store.setHeroBadgeText(
+                cleanWithDefault(
+                        data.heroBadgeText(),
+                        "CARDÁPIO ONLINE"
+                )
+        );
+
+        store.setHeroOpenStatusText(
+                cleanWithDefault(
+                        data.heroOpenStatusText(),
+                        "ABERTO"
+                )
+        );
+
+        store.setHeroClosedStatusText(
+                cleanWithDefault(
+                        data.heroClosedStatusText(),
+                        "FECHADO"
+                )
+        );
+
+        // =========================
+        // MENU
+        // =========================
+
+        store.setMenuTitle(
+                cleanWithDefault(
+                        data.menuTitle(),
+                        "O cardápio"
+                )
+        );
+
+        store.setMenuSubtitle(
+                cleanWithDefault(
+                        data.menuSubtitle(),
+                        "Escolha o seu"
+                )
+        );
+
+        store.setMenuSearchPlaceholder(
+                cleanWithDefault(
+                        data.menuSearchPlaceholder(),
+                        "Buscar no cardápio"
+                )
+        );
+
+        store.setMenuEmptyTitle(
+                cleanWithDefault(
+                        data.menuEmptyTitle(),
+                        "Nenhum produto encontrado"
+                )
+        );
+
+        store.setMenuEmptyDescription(
+                cleanWithDefault(
+                        data.menuEmptyDescription(),
+                        "Tente buscar por outro termo ou escolha outra categoria."
+                )
+        );
+
+        // =========================
+        // FOOTER
+        // =========================
+
+        store.setFooterTagline(
+                cleanWithDefault(
+                        data.footerTagline(),
+                        "Pedidos online"
+                )
+        );
+
+        // =========================
         // CONTATO
         // =========================
 
@@ -300,6 +392,40 @@ public class StoreSettingsController {
                 )
         );
 
+        store.setLoyaltyEarningType(
+                normalizeLoyaltyEarningType(
+                        data.loyaltyEarningType()
+                )
+        );
+
+        store.setLoyaltyPointsPerOrder(
+                normalizePositiveInteger(
+                        data.loyaltyPointsPerOrder(),
+                        1,
+                        "A quantidade de selos por pedido"
+                )
+        );
+
+        store.setLoyaltyAmountStep(
+                normalizeAmountStep(
+                        data.loyaltyAmountStep()
+                )
+        );
+
+        store.setLoyaltyPointsPerAmountStep(
+                normalizePositiveInteger(
+                        data.loyaltyPointsPerAmountStep(),
+                        1,
+                        "A quantidade de selos por faixa de valor"
+                )
+        );
+
+        store.setLoyaltyMinimumOrderValue(
+                normalizeMinimumOrderValue(
+                        data.loyaltyMinimumOrderValue()
+                )
+        );
+
         return toProfileResponse(
                 store
         );
@@ -307,7 +433,6 @@ public class StoreSettingsController {
 
     // =========================
     // ABRIR / FECHAR
-    // ADMIN
     // =========================
 
     @PatchMapping("/open")
@@ -367,12 +492,42 @@ public class StoreSettingsController {
                 store.getHeadline(),
                 store.getMarqueeMessage(),
                 store.isMarqueeEnabled(),
+
+                // Hero
+                store.getHeroTitleLine1(),
+                store.getHeroTitleLine2(),
+                store.getHeroTitleLine3(),
+                store.getHeroDescription(),
+                store.getHeroPrimaryButtonText(),
+                store.getHeroSecondaryButtonText(),
+                store.getHeroBadgeText(),
+                store.getHeroOpenStatusText(),
+                store.getHeroClosedStatusText(),
+
+                // Menu
+                store.getMenuTitle(),
+                store.getMenuSubtitle(),
+                store.getMenuSearchPlaceholder(),
+                store.getMenuEmptyTitle(),
+                store.getMenuEmptyDescription(),
+
+                // Footer
+                store.getFooterTagline(),
+
+                // Contato
                 store.getWhatsapp(),
                 store.getPhone(),
                 store.getEmail(),
+
+                // Fidelidade
                 store.isLoyaltyEnabled(),
                 store.getLoyaltyStampGoal(),
-                store.getLoyaltyRewardDescription()
+                store.getLoyaltyRewardDescription(),
+                store.getLoyaltyEarningType(),
+                store.getLoyaltyPointsPerOrder(),
+                store.getLoyaltyAmountStep(),
+                store.getLoyaltyPointsPerAmountStep(),
+                store.getLoyaltyMinimumOrderValue()
         );
     }
 
@@ -414,16 +569,25 @@ public class StoreSettingsController {
                 : cleaned;
     }
 
+    private String cleanWithDefault(
+            String value,
+            String defaultValue
+    ) {
+
+        String cleaned =
+                cleanNullable(
+                        value
+                );
+
+        return cleaned == null
+                ? defaultValue
+                : cleaned;
+    }
+
     // =========================
     // LIMITE DIÁRIO
     // =========================
 
-    /*
-     * 0 = sem limite.
-     *
-     * Isso agora bate com o que
-     * o frontend informa ao usuário.
-     */
     private Integer normalizeDailyLimit(
             Integer value
     ) {
@@ -461,6 +625,85 @@ public class StoreSettingsController {
 
             throw new IllegalArgumentException(
                     "A meta de fidelidade não pode ultrapassar 100 selos."
+            );
+        }
+
+        return value;
+    }
+
+    private LoyaltyEarningType
+    normalizeLoyaltyEarningType(
+            LoyaltyEarningType value
+    ) {
+
+        if (value == null) {
+
+            return LoyaltyEarningType.PER_ORDER;
+        }
+
+        return value;
+    }
+
+    private Integer normalizePositiveInteger(
+            Integer value,
+            Integer defaultValue,
+            String field
+    ) {
+
+        if (value == null) {
+
+            return defaultValue;
+        }
+
+        if (value < 1) {
+
+            throw new IllegalArgumentException(
+                    field
+                            + " deve ser maior ou igual a 1."
+            );
+        }
+
+        return value;
+    }
+
+    private BigDecimal normalizeAmountStep(
+            BigDecimal value
+    ) {
+
+        if (value == null) {
+
+            return BigDecimal.valueOf(
+                    20
+            );
+        }
+
+        if (value.compareTo(
+                BigDecimal.ZERO
+        ) <= 0) {
+
+            throw new IllegalArgumentException(
+                    "O valor da faixa de fidelidade deve ser maior que zero."
+            );
+        }
+
+        return value;
+    }
+
+    private BigDecimal normalizeMinimumOrderValue(
+            BigDecimal value
+    ) {
+
+        if (value == null) {
+
+            return null;
+        }
+
+        if (value.compareTo(
+                BigDecimal.ZERO
+        ) < 0) {
+
+            throw new IllegalArgumentException(
+                    "O valor mínimo do pedido não pode ser negativo."
             );
         }
 
@@ -536,12 +779,42 @@ public class StoreSettingsController {
             String headline,
             String marqueeMessage,
             boolean marqueeEnabled,
+
+            // Hero
+            String heroTitleLine1,
+            String heroTitleLine2,
+            String heroTitleLine3,
+            String heroDescription,
+            String heroPrimaryButtonText,
+            String heroSecondaryButtonText,
+            String heroBadgeText,
+            String heroOpenStatusText,
+            String heroClosedStatusText,
+
+            // Menu
+            String menuTitle,
+            String menuSubtitle,
+            String menuSearchPlaceholder,
+            String menuEmptyTitle,
+            String menuEmptyDescription,
+
+            // Footer
+            String footerTagline,
+
+            // Contato
             String whatsapp,
             String phone,
             String email,
+
+            // Fidelidade
             boolean loyaltyEnabled,
             Integer loyaltyStampGoal,
-            String loyaltyRewardDescription
+            String loyaltyRewardDescription,
+            LoyaltyEarningType loyaltyEarningType,
+            Integer loyaltyPointsPerOrder,
+            BigDecimal loyaltyAmountStep,
+            Integer loyaltyPointsPerAmountStep,
+            BigDecimal loyaltyMinimumOrderValue
     ) {
     }
 
@@ -560,12 +833,42 @@ public class StoreSettingsController {
             String headline,
             String marqueeMessage,
             boolean marqueeEnabled,
+
+            // Hero
+            String heroTitleLine1,
+            String heroTitleLine2,
+            String heroTitleLine3,
+            String heroDescription,
+            String heroPrimaryButtonText,
+            String heroSecondaryButtonText,
+            String heroBadgeText,
+            String heroOpenStatusText,
+            String heroClosedStatusText,
+
+            // Menu
+            String menuTitle,
+            String menuSubtitle,
+            String menuSearchPlaceholder,
+            String menuEmptyTitle,
+            String menuEmptyDescription,
+
+            // Footer
+            String footerTagline,
+
+            // Contato
             String whatsapp,
             String phone,
             String email,
+
+            // Fidelidade
             boolean loyaltyEnabled,
             Integer loyaltyStampGoal,
-            String loyaltyRewardDescription
+            String loyaltyRewardDescription,
+            LoyaltyEarningType loyaltyEarningType,
+            Integer loyaltyPointsPerOrder,
+            BigDecimal loyaltyAmountStep,
+            Integer loyaltyPointsPerAmountStep,
+            BigDecimal loyaltyMinimumOrderValue
     ) {
     }
 }

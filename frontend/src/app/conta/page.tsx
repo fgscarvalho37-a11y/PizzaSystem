@@ -2,6 +2,7 @@
 
 import {
   FormEvent,
+  Suspense,
   useEffect,
   useState,
 } from "react";
@@ -38,7 +39,7 @@ type CustomerOrder = {
   publicAccessToken: string;
 };
 
-export default function ContaPage() {
+function ContaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -532,7 +533,7 @@ export default function ContaPage() {
               </p>
 
               <h2 className="mt-2 font-display text-2xl tracking-tight">
-                Pontos e selos
+                Selos
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -896,5 +897,26 @@ export default function ContaPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ContaPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-background px-4 py-12 text-foreground">
+          <div className="mx-auto max-w-4xl">
+            <div className="skeleton h-10 w-48 rounded-xl" />
+
+            <div className="mt-8 grid gap-6 md:grid-cols-[1fr_360px]">
+              <div className="skeleton h-72 rounded-[28px]" />
+              <div className="skeleton h-72 rounded-[28px]" />
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <ContaContent />
+    </Suspense>
   );
 }

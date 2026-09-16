@@ -54,28 +54,61 @@ type StoreProfile = {
   loyaltyEnabled: boolean;
   loyaltyStampGoal: number | null;
   loyaltyRewardDescription: string | null;
+
+  loyaltyEarningType:
+    | "PER_ORDER"
+    | "PER_AMOUNT"
+    | null;
+
+  loyaltyPointsPerOrder: number | null;
+
+  loyaltyAmountStep: number | null;
+
+  loyaltyPointsPerAmountStep:
+    number | null;
+
+  loyaltyMinimumOrderValue:
+    number | null;
 };
 
 type ProfileForm = {
   name: string;
+
   primaryColor: string;
   secondaryColor: string;
+
   headline: string;
+
   marqueeMessage: string;
   marqueeEnabled: boolean;
+
   whatsapp: string;
   phone: string;
   email: string;
+
   loyaltyEnabled: boolean;
+
   loyaltyStampGoal: number;
+
   loyaltyRewardDescription: string;
+
+  loyaltyEarningType:
+    | "PER_ORDER"
+    | "PER_AMOUNT";
+
+  loyaltyPointsPerOrder: number;
+
+  loyaltyAmountStep: number;
+
+  loyaltyPointsPerAmountStep:
+    number;
+
+  loyaltyMinimumOrderValue:
+    number | null;
 };
 
-const DEFAULT_PRIMARY =
-  "#E63946";
-
-const DEFAULT_SECONDARY =
-  "#F4C95D";
+const DEFAULT_PRIMARY = "#E63946";
+const DEFAULT_SECONDARY = "#F4C95D";
 
 function Toggle({
   checked,
@@ -159,30 +192,34 @@ export default function ConfiguracoesPage() {
   const [
     dailyOrderLimit,
     setDailyOrderLimit,
-  ] =
-    useState(30);
+  ] = useState(30);
 
   const [
     profileForm,
     setProfileForm,
-  ] =
-    useState<ProfileForm>({
-      name: "",
-      primaryColor:
-        DEFAULT_PRIMARY,
-      secondaryColor:
-        DEFAULT_SECONDARY,
-      headline: "",
-      marqueeMessage: "",
-      marqueeEnabled: true,
-      whatsapp: "",
-      phone: "",
-      email: "",
-      loyaltyEnabled: false,
-      loyaltyStampGoal: 10,
-      loyaltyRewardDescription:
-        "",
-    });
+  ] = useState<ProfileForm>({
+    name: "",
+    primaryColor:
+      DEFAULT_PRIMARY,
+    secondaryColor:
+      DEFAULT_SECONDARY,
+    headline: "",
+    marqueeMessage: "",
+    marqueeEnabled: true,
+    whatsapp: "",
+    phone: "",
+    email: "",
+    loyaltyEnabled: false,
+    loyaltyStampGoal: 10,
+    loyaltyRewardDescription: "",
+    loyaltyEarningType:
+      "PER_ORDER",
+    loyaltyPointsPerOrder: 1,
+    loyaltyAmountStep: 20,
+    loyaltyPointsPerAmountStep: 1,
+    loyaltyMinimumOrderValue:
+      null,
+  });
 
   const [loading, setLoading] =
     useState(true);
@@ -193,30 +230,22 @@ export default function ConfiguracoesPage() {
   const [
     savingProfile,
     setSavingProfile,
-  ] =
-    useState(false);
+  ] = useState(false);
 
   const [
     changingStatus,
     setChangingStatus,
-  ] =
-    useState(false);
+  ] = useState(false);
 
   const [
     errorMessage,
     setErrorMessage,
-  ] =
-    useState("");
+  ] = useState("");
 
   const [
     successMessage,
     setSuccessMessage,
-  ] =
-    useState("");
-
-  // =========================
-  // NORMALIZAR PERFIL
-  // =========================
+  ] = useState("");
 
   function fillProfileForm(
     data: StoreProfile
@@ -255,18 +284,32 @@ export default function ConfiguracoesPage() {
         data.loyaltyEnabled,
 
       loyaltyStampGoal:
-        data.loyaltyStampGoal ??
-        10,
+        data.loyaltyStampGoal ?? 10,
 
       loyaltyRewardDescription:
         data.loyaltyRewardDescription ??
         "",
+
+      loyaltyEarningType:
+        data.loyaltyEarningType ??
+        "PER_ORDER",
+
+      loyaltyPointsPerOrder:
+        data.loyaltyPointsPerOrder ??
+        1,
+
+      loyaltyAmountStep:
+        data.loyaltyAmountStep ?? 20,
+
+      loyaltyPointsPerAmountStep:
+        data.loyaltyPointsPerAmountStep ??
+        1,
+
+      loyaltyMinimumOrderValue:
+        data.loyaltyMinimumOrderValue ??
+        null,
     });
   }
-
-  // =========================
-  // CARREGAR DADOS
-  // =========================
 
   async function loadData() {
     try {
@@ -276,107 +319,81 @@ export default function ConfiguracoesPage() {
         settingsResponse,
         statusResponse,
         profileResponse,
-      ] =
-        await Promise.all([
-          adminFetch(
-            `${API_URL}/api/store`,
-            {
-              cache:
-                "no-store",
-            }
-          ),
+      ] = await Promise.all([
+        adminFetch(
+          `${API_URL}/api/store`,
+          {
+            cache: "no-store",
+          }
+        ),
 
-          adminFetch(
-            `${API_URL}/api/store/status`,
-            {
-              cache:
-                "no-store",
-            }
-          ),
+        adminFetch(
+          `${API_URL}/api/store/status`,
+          {
+            cache: "no-store",
+          }
+        ),
 
-          adminFetch(
-            `${API_URL}/api/store/profile`,
-            {
-              cache:
-                "no-store",
-            }
-          ),
-        ]);
+        adminFetch(
+          `${API_URL}/api/store/profile`,
+          {
+            cache: "no-store",
+          }
+        ),
+      ]);
 
       if (!settingsResponse.ok) {
         throw new Error(
-          "Erro ao carregar configurações"
+          "Erro ao carregar configurações."
         );
       }
 
       if (!statusResponse.ok) {
         throw new Error(
-          "Erro ao carregar status"
+          "Erro ao carregar status."
         );
       }
 
       if (!profileResponse.ok) {
         throw new Error(
-          "Erro ao carregar personalização"
+          "Erro ao carregar perfil da loja."
         );
       }
 
-      const settingsData:
-        StoreSettings =
+      const settingsData: StoreSettings =
         await settingsResponse.json();
 
-      const statusData:
-        StoreStatus =
+      const statusData: StoreStatus =
         await statusResponse.json();
 
-      const profileData:
-        StoreProfile =
+      const profileData: StoreProfile =
         await profileResponse.json();
 
-      setSettings(
-        settingsData
-      );
-
-      setStatus(
-        statusData
-      );
-
-      setProfile(
-        profileData
-      );
+      setSettings(settingsData);
+      setStatus(statusData);
+      setProfile(profileData);
 
       setStoreName(
-        settingsData.storeName ??
-          ""
+        settingsData.storeName ?? ""
       );
 
       setWhatsapp(
-        settingsData.whatsapp ??
-          ""
+        settingsData.whatsapp ?? ""
       );
 
       setDailyOrderLimit(
-        settingsData.dailyOrderLimit ??
-          30
+        settingsData.dailyOrderLimit ?? 30
       );
 
-      fillProfileForm(
-        profileData
-      );
-
+      fillProfileForm(profileData);
     } catch {
       setErrorMessage(
         "Não foi possível carregar as configurações."
       );
-
     } finally {
       setLoading(false);
     }
   }
-
-  // =========================
-  // ATUALIZAR STATUS
-  // =========================
 
   async function refreshStatus() {
     try {
@@ -384,8 +401,7 @@ export default function ConfiguracoesPage() {
         await adminFetch(
           `${API_URL}/api/store/status`,
           {
-            cache:
-              "no-store",
+            cache: "no-store",
           }
         );
 
@@ -393,14 +409,12 @@ export default function ConfiguracoesPage() {
         return;
       }
 
-      const data:
-        StoreStatus =
+      const data: StoreStatus =
         await response.json();
 
       setStatus(data);
-
     } catch {
-      // mantém último estado
+      // mantém o último estado
     }
   }
 
@@ -413,14 +427,8 @@ export default function ConfiguracoesPage() {
       }, 10000);
 
     return () =>
-      clearInterval(
-        interval
-      );
+      clearInterval(interval);
   }, []);
-
-  // =========================
-  // ABRIR / FECHAR
-  // =========================
 
   async function changeStoreStatus() {
     if (!settings) {
@@ -428,10 +436,7 @@ export default function ConfiguracoesPage() {
     }
 
     try {
-      setChangingStatus(
-        true
-      );
-
+      setChangingStatus(true);
       setErrorMessage("");
       setSuccessMessage("");
 
@@ -442,14 +447,13 @@ export default function ConfiguracoesPage() {
         await adminFetch(
           `${API_URL}/api/store/open?open=${newStatus}`,
           {
-            method:
-              "PATCH",
+            method: "PATCH",
           }
         );
 
       if (!response.ok) {
         throw new Error(
-          "Erro ao alterar funcionamento"
+          "Erro ao alterar funcionamento."
         );
       }
 
@@ -457,9 +461,7 @@ export default function ConfiguracoesPage() {
         StoreSettings =
         await response.json();
 
-      setSettings(
-        updatedSettings
-      );
+      setSettings(updatedSettings);
 
       await refreshStatus();
 
@@ -468,26 +470,17 @@ export default function ConfiguracoesPage() {
           ? "Recebimento manual de pedidos ativado."
           : "Recebimento de pedidos fechado manualmente."
       );
-
     } catch {
       setErrorMessage(
         "Não foi possível alterar o funcionamento."
       );
-
     } finally {
-      setChangingStatus(
-        false
-      );
+      setChangingStatus(false);
     }
   }
 
-  // =========================
-  // SALVAR OPERAÇÃO
-  // =========================
-
   async function saveSettings(
-    event:
-      FormEvent<HTMLFormElement>
+    event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
@@ -506,9 +499,7 @@ export default function ConfiguracoesPage() {
       return;
     }
 
-    if (
-      dailyOrderLimit < 0
-    ) {
+    if (dailyOrderLimit < 0) {
       setErrorMessage(
         "O limite diário não pode ser negativo."
       );
@@ -523,35 +514,28 @@ export default function ConfiguracoesPage() {
         await adminFetch(
           `${API_URL}/api/store`,
           {
-            method:
-              "PUT",
+            method: "PUT",
 
             headers: {
               "Content-Type":
                 "application/json",
             },
 
-            body:
-              JSON.stringify({
-                id: 1,
-
-                storeName:
-                  storeName.trim(),
-
-                whatsapp:
-                  whatsapp.trim(),
-
-                open:
-                  settings.open,
-
-                dailyOrderLimit,
-              }),
+            body: JSON.stringify({
+              id: 1,
+              storeName:
+                storeName.trim(),
+              whatsapp:
+                whatsapp.trim(),
+              open: settings.open,
+              dailyOrderLimit,
+            }),
           }
         );
 
       if (!response.ok) {
         throw new Error(
-          "Erro ao salvar configurações"
+          "Erro ao salvar configurações."
         );
       }
 
@@ -559,13 +543,12 @@ export default function ConfiguracoesPage() {
         StoreSettings =
         await response.json();
 
-      setSettings(
-        updatedSettings
-      );
+      setSettings(updatedSettings);
 
       setProfileForm(
         (current) => ({
           ...current,
+
           name:
             updatedSettings.storeName ??
             current.name,
@@ -581,33 +564,24 @@ export default function ConfiguracoesPage() {
       setSuccessMessage(
         "Configurações operacionais salvas."
       );
-
     } catch {
       setErrorMessage(
         "Não foi possível salvar as configurações."
       );
-
     } finally {
       setSaving(false);
     }
   }
 
-  // =========================
-  // SALVAR PERSONALIZAÇÃO
-  // =========================
-
   async function saveProfile(
-    event:
-      FormEvent<HTMLFormElement>
+    event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
     setErrorMessage("");
     setSuccessMessage("");
 
-    if (
-      !profileForm.name.trim()
-    ) {
+    if (!profileForm.name.trim()) {
       setErrorMessage(
         "Informe o nome da pizzaria."
       );
@@ -617,8 +591,7 @@ export default function ConfiguracoesPage() {
 
     if (
       profileForm.loyaltyEnabled &&
-      profileForm.loyaltyStampGoal <
-        2
+      profileForm.loyaltyStampGoal < 2
     ) {
       setErrorMessage(
         "A meta de fidelidade deve ter pelo menos 2 selos."
@@ -627,81 +600,136 @@ export default function ConfiguracoesPage() {
       return;
     }
 
-    try {
-      setSavingProfile(
-        true
+    if (
+      profileForm.loyaltyEnabled &&
+      profileForm.loyaltyEarningType ===
+        "PER_ORDER" &&
+      profileForm.loyaltyPointsPerOrder < 1
+    ) {
+      setErrorMessage(
+        "A quantidade de selos por pedido deve ser pelo menos 1."
       );
+
+      return;
+    }
+
+    if (
+      profileForm.loyaltyEnabled &&
+      profileForm.loyaltyEarningType ===
+        "PER_AMOUNT" &&
+      profileForm.loyaltyAmountStep <= 0
+    ) {
+      setErrorMessage(
+        "O valor da faixa de fidelidade deve ser maior que zero."
+      );
+
+      return;
+    }
+
+    if (
+      profileForm.loyaltyEnabled &&
+      profileForm.loyaltyEarningType ===
+        "PER_AMOUNT" &&
+      profileForm.loyaltyPointsPerAmountStep < 1
+    ) {
+      setErrorMessage(
+        "A quantidade de selos por faixa deve ser pelo menos 1."
+      );
+
+      return;
+    }
+
+    if (
+      profileForm.loyaltyMinimumOrderValue !==
+        null &&
+      profileForm.loyaltyMinimumOrderValue < 0
+    ) {
+      setErrorMessage(
+        "O valor mínimo do pedido não pode ser negativo."
+      );
+
+      return;
+    }
+
+    try {
+      setSavingProfile(true);
 
       const response =
         await adminFetch(
           `${API_URL}/api/store/profile`,
           {
-            method:
-              "PUT",
+            method: "PUT",
 
             headers: {
               "Content-Type":
                 "application/json",
             },
 
-            body:
-              JSON.stringify({
-                name:
-                  profileForm.name.trim(),
+            body: JSON.stringify({
+              name:
+                profileForm.name.trim(),
 
-                /*
-                 * Upload real será ligado na próxima etapa.
-                 * Preservamos os valores atuais enquanto isso.
-                 */
-                logoUrl:
-                  profile?.logoUrl ??
-                  null,
+              logoUrl:
+                profile?.logoUrl ?? null,
 
-                coverImageUrl:
-                  profile?.coverImageUrl ??
-                  null,
+              coverImageUrl:
+                profile?.coverImageUrl ??
+                null,
 
-                primaryColor:
-                  profileForm.primaryColor,
+              primaryColor:
+                profileForm.primaryColor,
 
-                secondaryColor:
-                  profileForm.secondaryColor,
+              secondaryColor:
+                profileForm.secondaryColor,
 
-                headline:
-                  profileForm.headline.trim(),
+              headline:
+                profileForm.headline.trim(),
 
-                marqueeMessage:
-                  profileForm.marqueeMessage.trim(),
+              marqueeMessage:
+                profileForm.marqueeMessage.trim(),
 
-                marqueeEnabled:
-                  profileForm.marqueeEnabled,
+              marqueeEnabled:
+                profileForm.marqueeEnabled,
 
-                whatsapp:
-                  profileForm.whatsapp.trim(),
+              whatsapp:
+                profileForm.whatsapp.trim(),
 
-                phone:
-                  profileForm.phone.trim(),
+              phone:
+                profileForm.phone.trim(),
 
-                email:
-                  profileForm.email.trim(),
+              email:
+                profileForm.email.trim(),
 
-                loyaltyEnabled:
-                  profileForm.loyaltyEnabled,
+              loyaltyEnabled:
+                profileForm.loyaltyEnabled,
 
-                loyaltyStampGoal:
-                  profileForm.loyaltyStampGoal,
+              loyaltyStampGoal:
+                profileForm.loyaltyStampGoal,
 
-                loyaltyRewardDescription:
-                  profileForm
-                    .loyaltyRewardDescription
-                    .trim(),
-              }),
+              loyaltyRewardDescription:
+                profileForm.loyaltyRewardDescription.trim(),
+
+              loyaltyEarningType:
+                profileForm.loyaltyEarningType,
+
+              loyaltyPointsPerOrder:
+                profileForm.loyaltyPointsPerOrder,
+
+              loyaltyAmountStep:
+                profileForm.loyaltyAmountStep,
+
+              loyaltyPointsPerAmountStep:
+                profileForm.loyaltyPointsPerAmountStep,
+
+              loyaltyMinimumOrderValue:
+                profileForm.loyaltyMinimumOrderValue,
+            }),
           }
         );
 
       if (!response.ok) {
         let message =
-          "Não foi possível salvar a personalização.";
+          "Não foi possível salvar as configurações.";
 
         try {
           const data =
@@ -712,25 +740,20 @@ export default function ConfiguracoesPage() {
               "string" &&
             data.message
           ) {
-            message =
-              data.message;
+            message = data.message;
           }
         } catch {
           // mantém mensagem padrão
         }
 
-        throw new Error(
-          message
-        );
+        throw new Error(message);
       }
 
       const updatedProfile:
         StoreProfile =
         await response.json();
 
-      setProfile(
-        updatedProfile
-      );
+      setProfile(updatedProfile);
 
       fillProfileForm(
         updatedProfile
@@ -741,8 +764,7 @@ export default function ConfiguracoesPage() {
       );
 
       setWhatsapp(
-        updatedProfile.whatsapp ??
-          ""
+        updatedProfile.whatsapp ?? ""
       );
 
       setSettings(
@@ -750,6 +772,7 @@ export default function ConfiguracoesPage() {
           current
             ? {
                 ...current,
+
                 storeName:
                   updatedProfile.name,
 
@@ -760,26 +783,48 @@ export default function ConfiguracoesPage() {
       );
 
       setSuccessMessage(
-        "Personalização da loja salva com sucesso."
+        "Configurações da loja salvas com sucesso."
       );
-
     } catch (error) {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Não foi possível salvar a personalização."
+          : "Não foi possível salvar as configurações."
       );
-
     } finally {
-      setSavingProfile(
-        false
-      );
+      setSavingProfile(false);
     }
   }
 
-  // =========================
-  // PREVIEW
-  // =========================
+  const limitEnabled =
+    status !== null &&
+    status.dailyOrderLimit > 0;
+
+  const limitReached =
+    limitEnabled &&
+    status !== null &&
+    status.ordersToday >=
+      status.dailyOrderLimit;
+
+  const remainingOrders =
+    status
+      ? Math.max(
+          status.dailyOrderLimit -
+            status.ordersToday,
+          0
+        )
+      : 0;
+
+  const percentage =
+    status &&
+    status.dailyOrderLimit > 0
+      ? Math.min(
+          (status.ordersToday /
+            status.dailyOrderLimit) *
+            100,
+          100
+        )
+      : 0;
 
   const previewPrimary =
     profileForm.primaryColor ||
@@ -790,137 +835,59 @@ export default function ConfiguracoesPage() {
     DEFAULT_SECONDARY;
 
   const previewInitial =
-    useMemo(
-      () =>
-        profileForm.name
-          .trim()
-          .charAt(0)
-          .toUpperCase() ||
-        "P",
-      [profileForm.name]
-    );
+    useMemo(() => {
+      const name =
+        profileForm.name.trim();
 
-  // =========================
-  // CARREGANDO
-  // =========================
+      return name
+        ? name
+            .charAt(0)
+            .toUpperCase()
+        : "P";
+    }, [profileForm.name]);
 
   if (loading) {
     return (
       <main className="min-h-screen bg-background">
         <AdminHeader />
 
-        <div className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8">
-          <div className="rounded-[24px] border border-border bg-card p-6 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
-
-            <div
-              className="animate-pulse space-y-4"
-              role="status"
-              aria-label="Carregando configurações"
-            >
-              <div className="h-3 w-28 rounded bg-muted" />
-              <div className="h-8 w-64 rounded bg-muted" />
-              <div className="h-4 w-full max-w-xl rounded bg-muted" />
-
-              <div className="grid gap-3 pt-3 sm:grid-cols-3">
-                <div className="h-32 rounded-2xl bg-muted" />
-                <div className="h-32 rounded-2xl bg-muted" />
-                <div className="h-32 rounded-2xl bg-muted" />
-              </div>
-
-              <div className="h-80 rounded-2xl bg-muted" />
-            </div>
-
+        <div className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6 lg:px-8">
+          <div className="rounded-[24px] border border-border bg-card p-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              Carregando configurações...
+            </p>
           </div>
         </div>
       </main>
     );
   }
 
-  // =========================
-  // ERRO DE CARREGAMENTO
-  // =========================
-
-  if (
-    !settings ||
-    !status ||
-    !profile
-  ) {
+  if (!settings || !status) {
     return (
       <main className="min-h-screen bg-background">
         <AdminHeader />
 
-        <div className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8">
-
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
-            <h2 className="text-lg font-bold text-red-700">
-              Não foi possível carregar as configurações
-            </h2>
-
-            <p className="mt-2 text-sm text-red-600">
-              Verifique se o backend está funcionando e tente novamente.
+        <div className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6 lg:px-8">
+          <div className="rounded-[24px] border border-red-200 bg-red-50 p-6">
+            <p className="font-semibold text-red-700">
+              Atenção
             </p>
 
-            <button
-              type="button"
-              onClick={() => {
-                setLoading(true);
-                loadData();
-              }}
-              className="mt-4 h-10 rounded-xl bg-red-600 px-5 text-sm font-bold text-white transition hover:bg-red-700"
-            >
-              Tentar novamente
-            </button>
+            <p className="mt-1 text-sm text-red-600">
+              {errorMessage ||
+                "Não foi possível carregar as configurações."}
+            </p>
           </div>
-
         </div>
       </main>
     );
   }
-
-  // =========================
-  // CÁLCULOS
-  // =========================
-
-  const limitEnabled =
-    status.dailyOrderLimit >
-    0;
-
-  const limitReached =
-    limitEnabled &&
-    status.ordersToday >=
-      status.dailyOrderLimit;
-
-  const percentage =
-    limitEnabled
-      ? Math.min(
-          (
-            status.ordersToday /
-            status.dailyOrderLimit
-          ) * 100,
-          100
-        )
-      : 0;
-
-  const remainingOrders =
-    limitEnabled
-      ? Math.max(
-          status.dailyOrderLimit -
-            status.ordersToday,
-          0
-        )
-      : null;
-
-  // =========================
-  // TELA
-  // =========================
 
   return (
     <main className="min-h-screen bg-background">
       <AdminHeader />
 
       <div className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8">
-
-        {/* TÍTULO */}
 
         <div className="mb-6 border-b border-border pb-6">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
@@ -932,11 +899,9 @@ export default function ConfiguracoesPage() {
           </h2>
 
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Controle a operação, identidade visual, comunicação do cardápio e programa de fidelidade.
+            Controle a operação, identidade visual, comunicação e programa de fidelidade.
           </p>
         </div>
-
-        {/* MENSAGENS */}
 
         {errorMessage && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
@@ -962,13 +927,7 @@ export default function ConfiguracoesPage() {
           </div>
         )}
 
-        {/* =========================
-            STATUS
-            ========================= */}
-
         <div className="grid gap-4 lg:grid-cols-3">
-
-          {/* CONTROLE MANUAL */}
 
           <section className="rounded-[22px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
@@ -1003,15 +962,9 @@ export default function ConfiguracoesPage() {
 
             <div className="mt-6">
               <Toggle
-                checked={
-                  settings.open
-                }
-                disabled={
-                  changingStatus
-                }
-                onChange={
-                  changeStoreStatus
-                }
+                checked={settings.open}
+                disabled={changingStatus}
+                onChange={changeStoreStatus}
                 label={
                   changingStatus
                     ? "Atualizando..."
@@ -1023,8 +976,6 @@ export default function ConfiguracoesPage() {
               />
             </div>
           </section>
-
-          {/* STATUS REAL */}
 
           <section className="rounded-[22px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
@@ -1096,8 +1047,6 @@ export default function ConfiguracoesPage() {
             </div>
           </section>
 
-          {/* PEDIDOS DO DIA */}
-
           <section className="rounded-[22px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
               Pedidos aprovados hoje
@@ -1115,10 +1064,7 @@ export default function ConfiguracoesPage() {
               {limitEnabled && (
                 <span className="text-xl font-semibold text-muted-foreground">
                   {" "}
-                  /{" "}
-                  {
-                    status.dailyOrderLimit
-                  }
+                  / {status.dailyOrderLimit}
                 </span>
               )}
             </h3>
@@ -1143,8 +1089,7 @@ export default function ConfiguracoesPage() {
                   {limitReached
                     ? "Limite diário atingido. Novos pedidos estão bloqueados."
                     : `${remainingOrders} ${
-                        remainingOrders ===
-                        1
+                        remainingOrders === 1
                           ? "pedido disponível"
                           : "pedidos disponíveis"
                       } hoje.`}
@@ -1164,14 +1109,8 @@ export default function ConfiguracoesPage() {
           </section>
         </div>
 
-        {/* =========================
-            OPERAÇÃO
-            ========================= */}
-
         <form
-          onSubmit={
-            saveSettings
-          }
+          onSubmit={saveSettings}
           className="mt-6 rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]"
         >
           <div>
@@ -1197,12 +1136,8 @@ export default function ConfiguracoesPage() {
 
               <input
                 required
-                value={
-                  storeName
-                }
-                onChange={(
-                  event
-                ) =>
+                value={storeName}
+                onChange={(event) =>
                   setStoreName(
                     event.target.value
                   )
@@ -1218,12 +1153,8 @@ export default function ConfiguracoesPage() {
               </FieldLabel>
 
               <input
-                value={
-                  whatsapp
-                }
-                onChange={(
-                  event
-                ) =>
+                value={whatsapp}
+                onChange={(event) =>
                   setWhatsapp(
                     event.target.value
                   )
@@ -1245,12 +1176,8 @@ export default function ConfiguracoesPage() {
               <input
                 type="number"
                 min="0"
-                value={
-                  dailyOrderLimit
-                }
-                onChange={(
-                  event
-                ) =>
+                value={dailyOrderLimit}
+                onChange={(event) =>
                   setDailyOrderLimit(
                     Number(
                       event.target.value
@@ -1269,9 +1196,7 @@ export default function ConfiguracoesPage() {
           <div className="mt-6 border-t border-border pt-6">
             <button
               type="submit"
-              disabled={
-                saving
-              }
+              disabled={saving}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:shadow-sm disabled:pointer-events-none disabled:opacity-50"
             >
               {saving
@@ -1281,548 +1206,662 @@ export default function ConfiguracoesPage() {
           </div>
         </form>
 
-        {/* =========================
-            PERSONALIZAÇÃO
-            ========================= */}
-
         <form
-          onSubmit={
-            saveProfile
-          }
+          onSubmit={saveProfile}
           className="mt-6"
         >
+          <div className="space-y-6">
 
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+            <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                Identidade
+              </p>
 
-            <div className="space-y-6">
+              <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
+                Identidade da loja
+              </h3>
 
-              {/* IDENTIDADE */}
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Informações básicas usadas no cardápio público.
+              </p>
 
-              <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                  Personalização
-                </p>
+              <div className="mt-6 grid gap-5 md:grid-cols-2">
 
-                <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                  Identidade da loja
-                </h3>
+                <div className="md:col-span-2">
+                  <FieldLabel>
+                    Nome exibido
+                  </FieldLabel>
 
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Essas informações serão usadas no cardápio público da pizzaria.
-                </p>
-
-                <div className="mt-6 grid gap-5 md:grid-cols-2">
-
-                  <div className="md:col-span-2">
-                    <FieldLabel>
-                      Nome exibido
-                    </FieldLabel>
-
-                    <input
-                      required
-                      value={
-                        profileForm.name
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setProfileForm(
-                          (current) => ({
-                            ...current,
-                            name:
-                              event.target.value,
-                          })
-                        )
-                      }
-                      className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                      placeholder="Nome da pizzaria"
-                    />
-                  </div>
-
-                  <div>
-                    <FieldLabel>
-                      Cor principal
-                    </FieldLabel>
-
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={
-                          profileForm.primaryColor
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setProfileForm(
-                            (current) => ({
-                              ...current,
-                              primaryColor:
-                                event.target.value,
-                            })
-                          )
-                        }
-                        className="h-11 w-14 cursor-pointer rounded-xl border border-input bg-background p-1"
-                      />
-
-                      <input
-                        value={
-                          profileForm.primaryColor
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setProfileForm(
-                            (current) => ({
-                              ...current,
-                              primaryColor:
-                                event.target.value,
-                            })
-                          )
-                        }
-                        maxLength={7}
-                        className="h-11 min-w-0 flex-1 rounded-xl border border-input bg-background px-3.5 text-sm font-mono outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <FieldLabel>
-                      Cor secundária
-                    </FieldLabel>
-
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={
-                          profileForm.secondaryColor
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setProfileForm(
-                            (current) => ({
-                              ...current,
-                              secondaryColor:
-                                event.target.value,
-                            })
-                          )
-                        }
-                        className="h-11 w-14 cursor-pointer rounded-xl border border-input bg-background p-1"
-                      />
-
-                      <input
-                        value={
-                          profileForm.secondaryColor
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setProfileForm(
-                            (current) => ({
-                              ...current,
-                              secondaryColor:
-                                event.target.value,
-                            })
-                          )
-                        }
-                        maxLength={7}
-                        className="h-11 min-w-0 flex-1 rounded-xl border border-input bg-background px-3.5 text-sm font-mono outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <FieldLabel>
-                      Frase principal
-                    </FieldLabel>
-
-                    <input
-                      value={
-                        profileForm.headline
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setProfileForm(
-                          (current) => ({
-                            ...current,
-                            headline:
-                              event.target.value,
-                          })
-                        )
-                      }
-                      maxLength={180}
-                      className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                      placeholder="Pizza feita do nosso jeito, do forno até você."
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {/* IMAGENS */}
-
-              <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                  Marca
-                </p>
-
-                <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                  Logo e capa
-                </h3>
-
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  As imagens já fazem parte do perfil da loja. O upload direto pelo painel será conectado na próxima etapa.
-                </p>
-
-                <div className="mt-6 grid gap-4 md:grid-cols-2">
-
-                  <div className="overflow-hidden rounded-2xl border border-dashed border-border bg-background">
-                    <div className="grid h-40 place-items-center p-5 text-center">
-                      {profile.logoUrl ? (
-                        <img
-                          src={
-                            profile.logoUrl
-                          }
-                          alt="Logo atual"
-                          className="max-h-28 max-w-full object-contain"
-                        />
-                      ) : (
-                        <div>
-                          <div
-                            className="mx-auto grid h-16 w-16 place-items-center rounded-2xl text-xl font-bold text-white"
-                            style={{
-                              backgroundColor:
-                                previewPrimary,
-                            }}
-                          >
-                            {previewInitial}
-                          </div>
-
-                          <p className="mt-3 text-sm font-bold">
-                            Logo da pizzaria
-                          </p>
-
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Nenhuma logo enviada
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="border-t border-border bg-muted/30 px-4 py-3">
-                      <p className="text-xs font-semibold text-muted-foreground">
-                        Upload pelo painel — próxima etapa
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="overflow-hidden rounded-2xl border border-dashed border-border bg-background">
-                    <div className="relative h-40 overflow-hidden">
-                      {profile.coverImageUrl ? (
-                        <img
-                          src={
-                            profile.coverImageUrl
-                          }
-                          alt="Capa atual"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div
-                          className="grid h-full place-items-center p-5 text-center"
-                          style={{
-                            background:
-                              `linear-gradient(135deg, ${previewPrimary}22, ${previewSecondary}66)`,
-                          }}
-                        >
-                          <div>
-                            <p className="text-sm font-bold">
-                              Capa do cardápio
-                            </p>
-
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Nenhuma capa enviada
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="border-t border-border bg-muted/30 px-4 py-3">
-                      <p className="text-xs font-semibold text-muted-foreground">
-                        Upload pelo painel — próxima etapa
-                      </p>
-                    </div>
-                  </div>
-
-                </div>
-              </section>
-
-              {/* MENSAGEM */}
-
-              <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                  Comunicação
-                </p>
-
-                <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                  Faixa do cardápio
-                </h3>
-
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Controle a mensagem animada exibida na parte pública do cardápio.
-                </p>
-
-                <div className="mt-6 space-y-5">
-
-                  <Toggle
-                    checked={
-                      profileForm.marqueeEnabled
+                  <input
+                    required
+                    value={
+                      profileForm.name
                     }
-                    onChange={() =>
+                    onChange={(event) =>
                       setProfileForm(
                         (current) => ({
                           ...current,
-                          marqueeEnabled:
-                            !current.marqueeEnabled,
+                          name:
+                            event.target.value,
                         })
                       )
                     }
-                    label={
-                      profileForm.marqueeEnabled
-                        ? "Mensagem ativada"
-                        : "Mensagem desativada"
-                    }
-                    description="Exibir a faixa promocional no cardápio"
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    placeholder="Nome da pizzaria"
                   />
+                </div>
 
-                  <div>
-                    <FieldLabel>
-                      Mensagem
-                    </FieldLabel>
+                <div>
+                  <FieldLabel>
+                    Cor principal
+                  </FieldLabel>
 
+                  <div className="flex gap-2">
                     <input
+                      type="color"
                       value={
-                        profileForm.marqueeMessage
+                        profileForm.primaryColor
                       }
-                      onChange={(
-                        event
-                      ) =>
+                      onChange={(event) =>
                         setProfileForm(
                           (current) => ({
                             ...current,
-                            marqueeMessage:
+                            primaryColor:
                               event.target.value,
                           })
                         )
                       }
-                      maxLength={250}
-                      disabled={
-                        !profileForm.marqueeEnabled
+                      className="h-11 w-14 cursor-pointer rounded-xl border border-input bg-background p-1"
+                    />
+
+                    <input
+                      value={
+                        profileForm.primaryColor
                       }
-                      className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
-                      placeholder="Entrega grátis acima de R$ 80"
+                      onChange={(event) =>
+                        setProfileForm(
+                          (current) => ({
+                            ...current,
+                            primaryColor:
+                              event.target.value,
+                          })
+                        )
+                      }
+                      maxLength={7}
+                      className="h-11 min-w-0 flex-1 rounded-xl border border-input bg-background px-3.5 text-sm font-mono outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                     />
                   </div>
                 </div>
-              </section>
 
-              {/* CONTATO */}
+                <div>
+                  <FieldLabel>
+                    Cor secundária
+                  </FieldLabel>
 
-              <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                  Contato
-                </p>
-
-                <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                  Informações públicas
-                </h3>
-
-                <div className="mt-6 grid gap-5 md:grid-cols-2">
-
-                  <div>
-                    <FieldLabel>
-                      WhatsApp
-                    </FieldLabel>
-
+                  <div className="flex gap-2">
                     <input
+                      type="color"
                       value={
-                        profileForm.whatsapp
+                        profileForm.secondaryColor
                       }
-                      onChange={(
-                        event
-                      ) =>
+                      onChange={(event) =>
                         setProfileForm(
                           (current) => ({
                             ...current,
-                            whatsapp:
+                            secondaryColor:
                               event.target.value,
                           })
                         )
                       }
-                      className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                      placeholder="(19) 99999-9999"
+                      className="h-11 w-14 cursor-pointer rounded-xl border border-input bg-background p-1"
                     />
-                  </div>
-
-                  <div>
-                    <FieldLabel>
-                      Telefone
-                    </FieldLabel>
 
                     <input
                       value={
-                        profileForm.phone
+                        profileForm.secondaryColor
                       }
-                      onChange={(
-                        event
-                      ) =>
+                      onChange={(event) =>
                         setProfileForm(
                           (current) => ({
                             ...current,
-                            phone:
+                            secondaryColor:
                               event.target.value,
                           })
                         )
                       }
-                      className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                      placeholder="(19) 3333-3333"
+                      maxLength={7}
+                      className="h-11 min-w-0 flex-1 rounded-xl border border-input bg-background px-3.5 text-sm font-mono outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                     />
                   </div>
-
-                  <div className="md:col-span-2">
-                    <FieldLabel>
-                      E-mail
-                    </FieldLabel>
-
-                    <input
-                      type="email"
-                      value={
-                        profileForm.email
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setProfileForm(
-                          (current) => ({
-                            ...current,
-                            email:
-                              event.target.value,
-                          })
-                        )
-                      }
-                      className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                      placeholder="contato@pizzaria.com.br"
-                    />
-                  </div>
-
                 </div>
-              </section>
 
-              {/* FIDELIDADE */}
+                <div className="md:col-span-2">
+                  <FieldLabel>
+                    Frase principal
+                  </FieldLabel>
 
-              <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                  Fidelidade
-                </p>
-
-                <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                  Clube de clientes
-                </h3>
-
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  O cliente continuará podendo comprar sem cadastro. O clube será opcional para quem quiser acumular selos.
-                </p>
-
-                <div className="mt-6 space-y-5">
-
-                  <Toggle
-                    checked={
-                      profileForm.loyaltyEnabled
+                  <input
+                    value={
+                      profileForm.headline
                     }
-                    onChange={() =>
+                    onChange={(event) =>
                       setProfileForm(
                         (current) => ({
                           ...current,
-                          loyaltyEnabled:
-                            !current.loyaltyEnabled,
+                          headline:
+                            event.target.value,
                         })
                       )
                     }
-                    label={
-                      profileForm.loyaltyEnabled
-                        ? "Programa ativado"
-                        : "Programa desativado"
-                    }
-                    description="Permitir que clientes participem do programa de fidelidade"
+                    maxLength={180}
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    placeholder="Pizza feita do nosso jeito, do forno até você."
                   />
+                </div>
+              </div>
+            </section>
 
-                  <div className="grid gap-5 md:grid-cols-2">
+            <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                Comunicação
+              </p>
 
-                    <div>
-                      <FieldLabel>
-                        Meta de selos
-                      </FieldLabel>
+              <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
+                Faixa do cardápio
+              </h3>
 
-                      <input
-                        type="number"
-                        min="2"
-                        max="100"
-                        value={
-                          profileForm.loyaltyStampGoal
-                        }
-                        disabled={
-                          !profileForm.loyaltyEnabled
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setProfileForm(
-                            (current) => ({
-                              ...current,
-                              loyaltyStampGoal:
-                                Number(
-                                  event.target.value
-                                ),
-                            })
-                          )
-                        }
-                        className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
-                      />
-                    </div>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Controle a mensagem exibida na parte pública do cardápio.
+              </p>
 
-                    <div>
-                      <FieldLabel>
-                        Recompensa
-                      </FieldLabel>
+              <div className="mt-6 space-y-5">
 
-                      <input
-                        value={
-                          profileForm.loyaltyRewardDescription
-                        }
-                        disabled={
-                          !profileForm.loyaltyEnabled
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setProfileForm(
-                            (current) => ({
-                              ...current,
-                              loyaltyRewardDescription:
-                                event.target.value,
-                            })
-                          )
-                        }
-                        maxLength={180}
-                        className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder="Ganhe uma pizza grátis"
-                      />
-                    </div>
+                <Toggle
+                  checked={
+                    profileForm.marqueeEnabled
+                  }
+                  onChange={() =>
+                    setProfileForm(
+                      (current) => ({
+                        ...current,
+                        marqueeEnabled:
+                          !current.marqueeEnabled,
+                      })
+                    )
+                  }
+                  label={
+                    profileForm.marqueeEnabled
+                      ? "Mensagem ativada"
+                      : "Mensagem desativada"
+                  }
+                  description="Exibir a faixa promocional no cardápio"
+                />
 
-                  </div>
+                <div>
+                  <FieldLabel>
+                    Mensagem
+                  </FieldLabel>
 
-                  {profileForm.loyaltyEnabled && (
+                  <input
+                    value={
+                      profileForm.marqueeMessage
+                    }
+                    onChange={(event) =>
+                      setProfileForm(
+                        (current) => ({
+                          ...current,
+                          marqueeMessage:
+                            event.target.value,
+                        })
+                      )
+                    }
+                    maxLength={250}
+                    disabled={
+                      !profileForm.marqueeEnabled
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Entrega grátis acima de R$ 80"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                Contato
+              </p>
+
+              <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
+                Informações públicas
+              </h3>
+
+              <div className="mt-6 grid gap-5 md:grid-cols-2">
+
+                <div>
+                  <FieldLabel>
+                    WhatsApp
+                  </FieldLabel>
+
+                  <input
+                    value={
+                      profileForm.whatsapp
+                    }
+                    onChange={(event) =>
+                      setProfileForm(
+                        (current) => ({
+                          ...current,
+                          whatsapp:
+                            event.target.value,
+                        })
+                      )
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    placeholder="(19) 99999-9999"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Telefone
+                  </FieldLabel>
+
+                  <input
+                    value={
+                      profileForm.phone
+                    }
+                    onChange={(event) =>
+                      setProfileForm(
+                        (current) => ({
+                          ...current,
+                          phone:
+                            event.target.value,
+                        })
+                      )
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    placeholder="(19) 3333-3333"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <FieldLabel>
+                    E-mail
+                  </FieldLabel>
+
+                  <input
+                    type="email"
+                    value={
+                      profileForm.email
+                    }
+                    onChange={(event) =>
+                      setProfileForm(
+                        (current) => ({
+                          ...current,
+                          email:
+                            event.target.value,
+                        })
+                      )
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    placeholder="contato@pizzaria.com.br"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                Fidelidade
+              </p>
+
+              <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
+                Clube de clientes
+              </h3>
+
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                O cliente continuará podendo comprar sem cadastro. O clube é opcional para quem quiser acumular selos.
+              </p>
+
+              <div className="mt-6 space-y-5">
+
+                <Toggle
+                  checked={
+                    profileForm.loyaltyEnabled
+                  }
+                  onChange={() =>
+                    setProfileForm(
+                      (current) => ({
+                        ...current,
+                        loyaltyEnabled:
+                          !current.loyaltyEnabled,
+                      })
+                    )
+                  }
+                  label={
+                    profileForm.loyaltyEnabled
+                      ? "Programa ativado"
+                      : "Programa desativado"
+                  }
+                  description="Permitir que clientes participem do programa de fidelidade"
+                />
+
+                {profileForm.loyaltyEnabled && (
+                  <>
                     <div className="rounded-2xl border border-border bg-background p-4">
+
+                      <div>
+                        <p className="text-sm font-bold text-foreground">
+                          Como o cliente ganha selos?
+                        </p>
+
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          Escolha a regra usada para calcular os selos de cada pedido aprovado.
+                        </p>
+                      </div>
+
+                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setProfileForm(
+                              (current) => ({
+                                ...current,
+                                loyaltyEarningType:
+                                  "PER_ORDER",
+                              })
+                            )
+                          }
+                          className={`rounded-xl border p-4 text-left transition ${
+                            profileForm.loyaltyEarningType ===
+                            "PER_ORDER"
+                              ? "border-primary bg-primary/5 ring-2 ring-primary/10"
+                              : "border-border bg-card hover:bg-muted"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+
+                            <span
+                              className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
+                                profileForm.loyaltyEarningType ===
+                                "PER_ORDER"
+                                  ? "border-primary"
+                                  : "border-muted-foreground/40"
+                              }`}
+                            >
+                              {profileForm.loyaltyEarningType ===
+                                "PER_ORDER" && (
+                                <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+                              )}
+                            </span>
+
+                            <div>
+                              <p className="text-sm font-bold">
+                                1 selo por pedido
+                              </p>
+
+                              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                O cliente recebe uma quantidade fixa de selos em cada pedido aprovado.
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setProfileForm(
+                              (current) => ({
+                                ...current,
+                                loyaltyEarningType:
+                                  "PER_AMOUNT",
+                              })
+                            )
+                          }
+                          className={`rounded-xl border p-4 text-left transition ${
+                            profileForm.loyaltyEarningType ===
+                            "PER_AMOUNT"
+                              ? "border-primary bg-primary/5 ring-2 ring-primary/10"
+                              : "border-border bg-card hover:bg-muted"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+
+                            <span
+                              className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
+                                profileForm.loyaltyEarningType ===
+                                "PER_AMOUNT"
+                                  ? "border-primary"
+                                  : "border-muted-foreground/40"
+                              }`}
+                            >
+                              {profileForm.loyaltyEarningType ===
+                                "PER_AMOUNT" && (
+                                <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+                              )}
+                            </span>
+
+                            <div>
+                              <p className="text-sm font-bold">
+                                Selos por valor gasto
+                              </p>
+
+                              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                O cliente ganha selos conforme o valor do pedido.
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+
+                      {profileForm.loyaltyEarningType ===
+                      "PER_ORDER" ? (
+                        <div className="mt-4">
+                          <FieldLabel>
+                            Selos por pedido
+                          </FieldLabel>
+
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={
+                              profileForm.loyaltyPointsPerOrder
+                            }
+                            onChange={(event) =>
+                              setProfileForm(
+                                (current) => ({
+                                  ...current,
+                                  loyaltyPointsPerOrder:
+                                    Number(
+                                      event.target.value
+                                    ),
+                                })
+                              )
+                            }
+                            className="h-11 w-full rounded-xl border border-input bg-card px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                          />
+
+                          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                            Exemplo: 1 selo por pedido aprovado.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="mt-4 grid gap-4 md:grid-cols-2">
+
+                          <div>
+                            <FieldLabel>
+                              A cada valor de
+                            </FieldLabel>
+
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                                R$
+                              </span>
+
+                              <input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                value={
+                                  profileForm.loyaltyAmountStep
+                                }
+                                onChange={(event) =>
+                                  setProfileForm(
+                                    (current) => ({
+                                      ...current,
+                                      loyaltyAmountStep:
+                                        Number(
+                                          event.target.value
+                                        ),
+                                    })
+                                  )
+                                }
+                                className="h-11 w-full rounded-xl border border-input bg-card pl-10 pr-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                              />
+                            </div>
+
+                            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                              Exemplo: a cada R$ 20 em compras.
+                            </p>
+                          </div>
+
+                          <div>
+                            <FieldLabel>
+                              Selos ganhos
+                            </FieldLabel>
+
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={
+                                profileForm.loyaltyPointsPerAmountStep
+                              }
+                              onChange={(event) =>
+                                setProfileForm(
+                                  (current) => ({
+                                    ...current,
+                                    loyaltyPointsPerAmountStep:
+                                      Number(
+                                        event.target.value
+                                      ),
+                                  })
+                                )
+                              }
+                              className="h-11 w-full rounded-xl border border-input bg-card px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                            />
+
+                            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                              Exemplo: 1 selo a cada R$ 20.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-4">
+                        <FieldLabel>
+                          Valor mínimo do pedido
+                        </FieldLabel>
+
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                            R$
+                          </span>
+
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={
+                              profileForm.loyaltyMinimumOrderValue ??
+                              ""
+                            }
+                            onChange={(event) =>
+                              setProfileForm(
+                                (current) => ({
+                                  ...current,
+                                  loyaltyMinimumOrderValue:
+                                    event.target.value ===
+                                    ""
+                                      ? null
+                                      : Number(
+                                          event.target.value
+                                        ),
+                                })
+                              )
+                            }
+                            className="h-11 w-full rounded-xl border border-input bg-card pl-10 pr-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                            placeholder="0,00"
+                          />
+                        </div>
+
+                        <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                          Deixe em branco para permitir selos em qualquer valor de pedido.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+
+                      <div>
+                        <FieldLabel>
+                          Meta de selos
+                        </FieldLabel>
+
+                        <input
+                          type="number"
+                          min="2"
+                          max="100"
+                          value={
+                            profileForm.loyaltyStampGoal
+                          }
+                          onChange={(event) =>
+                            setProfileForm(
+                              (current) => ({
+                                ...current,
+                                loyaltyStampGoal:
+                                  Number(
+                                    event.target.value
+                                  ),
+                              })
+                            )
+                          }
+                          className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                        />
+
+                        <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                          Quantos selos o cliente precisa completar para liberar a recompensa.
+                        </p>
+                      </div>
+
+                      <div>
+                        <FieldLabel>
+                          Recompensa
+                        </FieldLabel>
+
+                        <input
+                          value={
+                            profileForm.loyaltyRewardDescription
+                          }
+                          onChange={(event) =>
+                            setProfileForm(
+                              (current) => ({
+                                ...current,
+                                loyaltyRewardDescription:
+                                  event.target.value,
+                              })
+                            )
+                          }
+                          maxLength={180}
+                          className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                          placeholder="Ganhe uma pizza grátis"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-border bg-background p-4">
+
                       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                         Prévia dos selos
                       </p>
@@ -1831,23 +1870,26 @@ export default function ConfiguracoesPage() {
                         {Array.from({
                           length:
                             Math.min(
-                              profileForm.loyaltyStampGoal,
+                              Math.max(
+                                profileForm.loyaltyStampGoal,
+                                1
+                              ),
                               20
                             ),
                         }).map(
                           (_, index) => (
                             <span
-                              key={
-                                index
-                              }
+                              key={index}
                               className="grid h-8 w-8 place-items-center rounded-full border text-[10px] font-bold"
                               style={{
                                 borderColor:
                                   previewPrimary,
+
                                 backgroundColor:
                                   index < 4
                                     ? previewPrimary
                                     : "transparent",
+
                                 color:
                                   index < 4
                                     ? "#ffffff"
@@ -1866,160 +1908,73 @@ export default function ConfiguracoesPage() {
                           Prévia limitada aos primeiros 20 selos.
                         </p>
                       )}
+
+                      <div className="mt-4 rounded-xl bg-muted/40 p-3">
+
+                        <p className="text-xs font-semibold text-foreground">
+                          Regra atual
+                        </p>
+
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          {profileForm.loyaltyEarningType ===
+                          "PER_ORDER"
+                            ? `${profileForm.loyaltyPointsPerOrder} ${
+                                profileForm.loyaltyPointsPerOrder ===
+                                1
+                                  ? "selo"
+                                  : "selos"
+                              } por pedido aprovado`
+                            : `${profileForm.loyaltyPointsPerAmountStep} ${
+                                profileForm.loyaltyPointsPerAmountStep ===
+                                1
+                                  ? "selo"
+                                  : "selos"
+                              } a cada R$ ${profileForm.loyaltyAmountStep
+                                .toFixed(2)
+                                .replace(
+                                  ".",
+                                  ","
+                                )}`}
+                        </p>
+
+                        {profileForm.loyaltyMinimumOrderValue !==
+                          null && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Pedido mínimo para participar: R${" "}
+                            {profileForm.loyaltyMinimumOrderValue
+                              .toFixed(2)
+                              .replace(
+                                ".",
+                                ","
+                              )}
+                          </p>
+                        )}
+
+                        <p className="mt-1 text-xs font-semibold text-primary">
+                          Recompensa:{" "}
+                          {profileForm.loyaltyRewardDescription ||
+                            "Defina uma recompensa"}
+                        </p>
+                      </div>
                     </div>
-                  )}
-
-                </div>
-              </section>
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={
-                    savingProfile
-                  }
-                  className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-7 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:shadow-md disabled:pointer-events-none disabled:opacity-50"
-                >
-                  {savingProfile
-                    ? "Salvando personalização..."
-                    : "Salvar personalização"}
-                </button>
-              </div>
-
-            </div>
-
-            {/* PREVIEW */}
-
-            <aside className="xl:sticky xl:top-6 xl:self-start">
-              <div className="overflow-hidden rounded-[26px] border border-border bg-card shadow-[0_18px_50px_rgba(0,0,0,0.08)]">
-
-                <div
-                  className="relative min-h-44 p-5"
-                  style={{
-                    background:
-                      profile.coverImageUrl
-                        ? undefined
-                        : `linear-gradient(135deg, ${previewPrimary}, ${previewSecondary})`,
-                  }}
-                >
-                  {profile.coverImageUrl && (
-                    <img
-                      src={
-                        profile.coverImageUrl
-                      }
-                      alt=""
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                  )}
-
-                  <div className="absolute inset-0 bg-black/20" />
-
-                  <div className="relative flex items-center gap-3">
-                    <div className="grid h-12 w-12 place-items-center overflow-hidden rounded-2xl bg-white font-display text-xl text-foreground shadow-sm">
-                      {profile.logoUrl ? (
-                        <img
-                          src={
-                            profile.logoUrl
-                          }
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        previewInitial
-                      )}
-                    </div>
-
-                    <div className="min-w-0 text-white">
-                      <p className="truncate text-lg font-bold">
-                        {profileForm.name ||
-                          "Sua pizzaria"}
-                      </p>
-
-                      <p className="text-xs text-white/75">
-                        /{profile.slug}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="relative mt-8">
-                    <h4 className="max-w-sm font-display text-3xl leading-none text-white">
-                      {profileForm.headline ||
-                        "Sua frase principal aparecerá aqui."}
-                    </h4>
-                  </div>
-                </div>
-
-                {profileForm.marqueeEnabled && (
-                  <div
-                    className="overflow-hidden px-4 py-2.5"
-                    style={{
-                      backgroundColor:
-                        previewSecondary,
-                    }}
-                  >
-                    <p
-                      className="truncate text-center text-xs font-bold uppercase tracking-[0.12em]"
-                      style={{
-                        color:
-                          "#111111",
-                      }}
-                    >
-                      {profileForm.marqueeMessage ||
-                        "Sua mensagem animada aparecerá aqui"}
-                    </p>
-                  </div>
+                  </>
                 )}
-
-                <div className="p-5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                    Prévia do cardápio
-                  </p>
-
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    {[1, 2].map(
-                      (item) => (
-                        <div
-                          key={
-                            item
-                          }
-                          className="overflow-hidden rounded-2xl border border-border"
-                        >
-                          <div
-                            className="h-20"
-                            style={{
-                              backgroundColor:
-                                `${previewPrimary}18`,
-                            }}
-                          />
-
-                          <div className="p-3">
-                            <div className="h-2.5 w-16 rounded bg-muted" />
-                            <div className="mt-2 h-2 w-full rounded bg-muted" />
-
-                            <div
-                              className="mt-4 h-7 rounded-lg"
-                              style={{
-                                backgroundColor:
-                                  previewPrimary,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
-
-                  <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                    Essa prévia mostra a identidade salva para a loja. A aplicação dessas cores e textos no cardápio público será feita na próxima ligação.
-                  </p>
-                </div>
-
               </div>
-            </aside>
+            </section>
 
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={savingProfile}
+                className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-7 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:shadow-md disabled:pointer-events-none disabled:opacity-50"
+              >
+                {savingProfile
+                  ? "Salvando..."
+                  : "Salvar configurações"}
+              </button>
+            </div>
           </div>
         </form>
-
       </div>
     </main>
   );

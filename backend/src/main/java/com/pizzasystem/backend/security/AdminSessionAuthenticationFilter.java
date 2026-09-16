@@ -46,14 +46,24 @@ public class AdminSessionAuthenticationFilter
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        System.out.println(
+                "[ADMIN FILTER] "
+                        + request.getMethod()
+                        + " "
+                        + request.getRequestURI()
+        );
+
+        System.out.println(
+                "[ADMIN FILTER] Session ID: "
+                        + request.getSession(false)
+        );
+
         if (SecurityContextHolder
                 .getContext()
                 .getAuthentication() == null) {
 
             HttpSession session =
-                    request.getSession(
-                            false
-                    );
+                    request.getSession(false);
 
             if (session != null) {
 
@@ -67,6 +77,16 @@ public class AdminSessionAuthenticationFilter
                                 SESSION_ADMIN_EMAIL
                         );
 
+                System.out.println(
+                        "[ADMIN FILTER] ADMIN_USER_ID: "
+                                + adminIdValue
+                );
+
+                System.out.println(
+                        "[ADMIN FILTER] ADMIN_USER_EMAIL: "
+                                + adminEmailValue
+                );
+
                 if (adminIdValue != null
                         && adminEmailValue != null) {
 
@@ -76,6 +96,10 @@ public class AdminSessionAuthenticationFilter
                             );
 
                     if (adminId == null) {
+
+                        System.out.println(
+                                "[ADMIN FILTER] ID inválido"
+                        );
 
                         invalidateSession(
                                 session
@@ -91,6 +115,10 @@ public class AdminSessionAuthenticationFilter
 
                         if (optionalAdmin.isEmpty()) {
 
+                            System.out.println(
+                                    "[ADMIN FILTER] Admin não encontrado"
+                            );
+
                             invalidateSession(
                                     session
                             );
@@ -102,17 +130,16 @@ public class AdminSessionAuthenticationFilter
 
                             if (!admin.isActive()) {
 
+                                System.out.println(
+                                        "[ADMIN FILTER] Admin inativo"
+                                );
+
                                 invalidateSession(
                                         session
                                 );
 
                             } else {
 
-                                /*
-                                 * Atualiza o e-mail salvo
-                                 * na sessão caso ele seja
-                                 * alterado futuramente.
-                                 */
                                 session.setAttribute(
                                         SESSION_ADMIN_EMAIL,
                                         admin.getEmail()
@@ -138,16 +165,48 @@ public class AdminSessionAuthenticationFilter
                                         .setAuthentication(
                                                 authentication
                                         );
+
+                                System.out.println(
+                                        "[ADMIN FILTER] AUTH OK - "
+                                                + admin.getEmail()
+                                                + " - ROLE_ADMIN"
+                                );
                             }
                         }
                     }
                 }
+            } else {
+
+                System.out.println(
+                        "[ADMIN FILTER] SEM SESSÃO"
+                );
             }
+
+        } else {
+
+            System.out.println(
+                    "[ADMIN FILTER] Já autenticado: "
+                            + SecurityContextHolder
+                            .getContext()
+                            .getAuthentication()
+            );
         }
+
+        System.out.println(
+                "[ADMIN FILTER] Antes do próximo filtro: "
+                        + SecurityContextHolder
+                        .getContext()
+                        .getAuthentication()
+        );
 
         filterChain.doFilter(
                 request,
                 response
+        );
+
+        System.out.println(
+                "[ADMIN FILTER] Resposta: "
+                        + response.getStatus()
         );
     }
 

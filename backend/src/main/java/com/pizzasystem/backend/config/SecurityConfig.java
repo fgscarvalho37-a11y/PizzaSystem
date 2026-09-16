@@ -17,14 +17,24 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
 import java.util.List;
 
 @Configuration
@@ -42,14 +52,9 @@ public class SecurityConfig {
             AdminSessionAuthenticationFilter
                     adminSessionAuthenticationFilter
     ) {
-
         this.adminSessionAuthenticationFilter =
                 adminSessionAuthenticationFilter;
     }
-
-    // =========================
-    // SECURITY FILTER CHAIN
-    // =========================
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -57,12 +62,12 @@ public class SecurityConfig {
     ) throws Exception {
 
         CookieCsrfTokenRepository csrfRepository =
-                CookieCsrfTokenRepository
-                        .withHttpOnlyFalse();
+                CookieCsrfTokenRepository.withHttpOnlyFalse();
 
-        csrfRepository.setCookiePath(
-                "/"
-        );
+        csrfRepository.setCookiePath("/");
+
+        CsrfTokenRequestAttributeHandler csrfHandler =
+                new CsrfTokenRequestAttributeHandler();
 
         http
 
@@ -75,6 +80,15 @@ public class SecurityConfig {
                 )
 
                 // =========================
+                // FILTRO ADMIN
+                // =========================
+
+                .addFilterBefore(
+                        adminSessionAuthenticationFilter,
+                        CsrfFilter.class
+                )
+
+                // =========================
                 // CSRF
                 // =========================
 
@@ -83,6 +97,10 @@ public class SecurityConfig {
 
                                 .csrfTokenRepository(
                                         csrfRepository
+                                )
+
+                                .csrfTokenRequestHandler(
+                                        csrfHandler
                                 )
 
                                 // =========================
@@ -126,12 +144,35 @@ public class SecurityConfig {
                 )
 
                 // =========================
-                // FILTRO ADMIN
+                // GERA COOKIE CSRF
                 // =========================
 
-                .addFilterBefore(
-                        adminSessionAuthenticationFilter,
-                        AnonymousAuthenticationFilter.class
+                .addFilterAfter(
+                        new OncePerRequestFilter() {
+
+                            @Override
+                            protected void doFilterInternal(
+                                    HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain
+                            ) throws ServletException, IOException {
+
+                                filterChain.doFilter(
+                                        request,
+                                        response
+                                );
+
+                                CsrfToken csrfToken =
+                                        (CsrfToken) request.getAttribute(
+                                                CsrfToken.class.getName()
+                                        );
+
+                                if (csrfToken != null) {
+                                    csrfToken.getToken();
+                                }
+                            }
+                        },
+                        CsrfFilter.class
                 )
 
                 // =========================
@@ -141,52 +182,27 @@ public class SecurityConfig {
                 .authorizeHttpRequests(
                         auth -> auth
 
-                                // =========================
-                                // OPTIONS
-                                // =========================
-
                                 .requestMatchers(
                                         HttpMethod.OPTIONS,
                                         "/**"
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // AUTH ADMIN
-                                // =========================
-
                                 .requestMatchers(
                                         "/api/auth/**"
                                 )
                                 .permitAll()
-
-                                // =========================
-                                // AUTH CLIENTE
-                                // =========================
 
                                 .requestMatchers(
                                         "/api/customer-auth/**"
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // MEUS PEDIDOS
-                                // =========================
-
-                                /*
-                                 * Spring libera a chamada,
-                                 * mas o controller exige
-                                 * CUSTOMER_ID válido na sessão.
-                                 */
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/customer/orders"
                                 )
                                 .permitAll()
-
-                                // =========================
-                                // API PÚBLICA SAAS
-                                // =========================
 
                                 .requestMatchers(
                                         HttpMethod.GET,
@@ -194,19 +210,11 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // PERFIL PÚBLICO DA STORE
-                                // =========================
-
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/store/profile"
                                 )
                                 .permitAll()
-
-                                // =========================
-                                // PRODUTOS
-                                // =========================
 
                                 .requestMatchers(
                                         HttpMethod.GET,
@@ -215,19 +223,11 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // CATEGORIAS
-                                // =========================
-
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/categories/**"
                                 )
                                 .permitAll()
-
-                                // =========================
-                                // ÁREAS DE ENTREGA
-                                // =========================
 
                                 .requestMatchers(
                                         HttpMethod.GET,
@@ -235,19 +235,11 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // STATUS DA LOJA
-                                // =========================
-
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/store/status"
                                 )
                                 .permitAll()
-
-                                // =========================
-                                // CUPOM
-                                // =========================
 
                                 .requestMatchers(
                                         HttpMethod.GET,
@@ -255,19 +247,11 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // BORDAS
-                                // =========================
-
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/crusts/active"
                                 )
                                 .permitAll()
-
-                                // =========================
-                                // CRIAR PEDIDO
-                                // =========================
 
                                 .requestMatchers(
                                         HttpMethod.POST,
@@ -275,19 +259,11 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // CANCELAR PEDIDO
-                                // =========================
-
                                 .requestMatchers(
                                         HttpMethod.PATCH,
                                         "/api/orders/*/cancel"
                                 )
                                 .permitAll()
-
-                                // =========================
-                                // CONSULTAR PEDIDO
-                                // =========================
 
                                 .requestMatchers(
                                         HttpMethod.GET,
@@ -301,27 +277,17 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // PAGAMENTOS
-                                // =========================
-
                                 .requestMatchers(
                                         "/api/payments/**"
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // RESTANTE = ADMIN
-                                // =========================
-
                                 .anyRequest()
-                                .hasRole(
-                                        "ADMIN"
-                                )
+                                .hasRole("ADMIN")
                 )
 
                 // =========================
-                // FORM LOGIN
+                // LOGIN PADRÃO DESATIVADO
                 // =========================
 
                 .formLogin(
@@ -330,7 +296,7 @@ public class SecurityConfig {
                 )
 
                 // =========================
-                // BASIC AUTH
+                // BASIC AUTH DESATIVADO
                 // =========================
 
                 .httpBasic(
