@@ -23,3 +23,5 @@ backend/target/
 *.log
 # Configuração local do banco
 backend/src/main/resources/application.properties
+# Uploads dos clientes
+backend/uploads/

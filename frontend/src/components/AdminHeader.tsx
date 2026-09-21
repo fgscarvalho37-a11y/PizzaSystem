@@ -665,10 +665,10 @@ export default function AdminHeader() {
           overflow-hidden
           border-r border-border
           bg-background/98
-          shadow-[8px_0_28px_rgba(0,0,0,0.025)]
+          shadow-[8px_0_32px_rgba(0,0,0,0.04)]
           transition-[width] duration-300 ease-out
           lg:flex
-          lg:hover:w-64
+          lg:hover:w-72
         "
       >
         {/* LOGO */}
@@ -684,7 +684,7 @@ export default function AdminHeader() {
             "
           >
             <div className="flex w-20 shrink-0 items-center justify-center">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_3px_0_0] shadow-primary/20">
                 <span className="font-display text-xl leading-none">
                   P
                 </span>
@@ -777,7 +777,7 @@ export default function AdminHeader() {
                               "relative flex h-11 w-14 items-center overflow-hidden rounded-xl transition-all duration-300 group-hover/sidebar:w-full",
                               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                               active
-                                ? "bg-primary text-primary-foreground shadow-sm"
+                                ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15"
                                 : "text-muted-foreground hover:bg-card hover:text-foreground",
                             ].join(
                               " "
@@ -823,7 +823,7 @@ export default function AdminHeader() {
 
         {/* RODAPÉ */}
 
-        <div className="shrink-0 border-t border-border py-3">
+        <div className="shrink-0 border-t border-border bg-card/30 py-3">
           <div className="space-y-1 px-3">
 
             <Link
@@ -932,8 +932,8 @@ export default function AdminHeader() {
           flex h-16 items-center
           justify-between
           border-b border-border
-          bg-background/95 px-4
-          backdrop-blur
+          bg-background/90 px-4
+          backdrop-blur-xl
           lg:hidden
         "
       >
@@ -942,7 +942,7 @@ export default function AdminHeader() {
           className="flex items-center gap-3"
           onClick={closeMobileMenu}
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_3px_0_0] shadow-primary/20">
             <span className="font-display text-lg">P</span>
           </div>
 
@@ -990,7 +990,7 @@ export default function AdminHeader() {
           <aside
             className="
               absolute inset-y-0 left-0
-              flex w-[min(88vw,340px)] flex-col
+              flex w-[min(90vw,360px)] flex-col
               border-r border-border bg-background
               shadow-2xl
             "
@@ -1001,7 +1001,7 @@ export default function AdminHeader() {
                 onClick={closeMobileMenu}
                 className="flex items-center gap-3"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_3px_0_0] shadow-primary/20">
                   <span className="font-display text-lg">P</span>
                 </div>
                 <div>
@@ -1050,7 +1050,7 @@ export default function AdminHeader() {
                               "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition",
                               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                               active
-                                ? "bg-primary/10 text-primary"
+                                ? "bg-primary/10 text-primary ring-1 ring-primary/15"
                                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
                             ].join(" ")}
                           >
@@ -1065,7 +1065,7 @@ export default function AdminHeader() {
               </div>
             </nav>
 
-            <div className="shrink-0 border-t border-border p-3">
+            <div className="shrink-0 border-t border-border bg-card/30 p-3">
               <Link
                 href={publicMenuUrl}
                 target="_blank"

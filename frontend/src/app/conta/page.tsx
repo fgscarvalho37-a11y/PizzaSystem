@@ -126,7 +126,7 @@ function ContaContent() {
   }
 
   const [mode, setMode] =
-    useState<"login" | "register">(
+    useState<"login" | "register" | "forgot" | "reset">(
       "login"
     );
 
@@ -189,6 +189,45 @@ function ContaContent() {
 
   const [password, setPassword] =
     useState("");
+
+  const [resetEmail, setResetEmail] =
+    useState("");
+
+  const [resetCode, setResetCode] =
+    useState("");
+
+  const [resetNewPassword, setResetNewPassword] =
+    useState("");
+
+  const [resetConfirmPassword, setResetConfirmPassword] =
+    useState("");
+
+  const [resetSubmitting, setResetSubmitting] =
+    useState(false);
+
+  const [resetError, setResetError] =
+    useState("");
+
+  const [resetMessage, setResetMessage] =
+    useState("");
+
+  const [verificationCode, setVerificationCode] =
+    useState("");
+
+  const [verificationError, setVerificationError] =
+    useState("");
+
+  const [verificationMessage, setVerificationMessage] =
+    useState("");
+
+  const [verificationSubmitting, setVerificationSubmitting] =
+    useState(false);
+
+  const [verificationSending, setVerificationSending] =
+    useState(false);
+
+  const [verificationCooldown, setVerificationCooldown] =
+    useState(0);
 
   const [profileOpen, setProfileOpen] =
     useState(false);
@@ -827,6 +866,427 @@ function ContaContent() {
     }
   }, [customer, mode]);
 
+  useEffect(() => {
+    if (verificationCooldown <= 0) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setVerificationCooldown((current) =>
+        current <= 1 ? 0 : current - 1
+      );
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [verificationCooldown]);
+
+  async function getCsrfToken() {
+    const csrfResponse = await fetch(
+      `${API_URL}/api/auth/csrf`,
+      {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      }
+    );
+
+    if (!csrfResponse.ok) {
+      throw new Error(
+        "Não foi possível validar a segurança da sessão."
+      );
+    }
+
+    return csrfResponse.json();
+  }
+
+  async function sendVerificationCode(
+    showSuccessMessage = true
+  ) {
+    if (
+      verificationSending ||
+      verificationSubmitting
+    ) {
+      return false;
+    }
+
+    setVerificationSending(true);
+    setVerificationError("");
+
+    if (showSuccessMessage) {
+      setVerificationMessage("");
+    }
+
+    try {
+      const csrf = await getCsrfToken();
+
+      const response = await fetch(
+        `${API_URL}/api/customer-auth/email-verification/send`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            [csrf.headerName]: csrf.token,
+          },
+        }
+      );
+
+      const responseText = await response.text();
+
+      let data: any = {};
+
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          // Mantém mensagem genérica abaixo.
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ??
+            "Não foi possível enviar o código de verificação."
+        );
+      }
+
+      setVerificationCooldown(60);
+
+      if (showSuccessMessage) {
+        setVerificationMessage(
+          data?.message ??
+            "Enviamos um novo código para o seu e-mail."
+        );
+      }
+
+      return true;
+    } catch (error) {
+      setVerificationError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível enviar o código de verificação."
+      );
+
+      return false;
+    } finally {
+      setVerificationSending(false);
+    }
+  }
+
+  async function handleVerifyEmail(
+    event: FormEvent
+  ) {
+    event.preventDefault();
+
+    if (
+      verificationSubmitting ||
+      verificationSending
+    ) {
+      return;
+    }
+
+    const normalizedCode =
+      verificationCode.replace(/\D/g, "");
+
+    if (normalizedCode.length !== 6) {
+      setVerificationError(
+        "Digite o código de 6 dígitos enviado para o seu e-mail."
+      );
+      return;
+    }
+
+    setVerificationSubmitting(true);
+    setVerificationError("");
+    setVerificationMessage("");
+
+    try {
+      const csrf = await getCsrfToken();
+
+      const response = await fetch(
+        `${API_URL}/api/customer-auth/email-verification/verify`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            [csrf.headerName]: csrf.token,
+          },
+          body: JSON.stringify({
+            code: normalizedCode,
+          }),
+        }
+      );
+
+      const responseText = await response.text();
+
+      let data: any = {};
+
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          // Mantém mensagem genérica abaixo.
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ??
+            "Não foi possível verificar o e-mail."
+        );
+      }
+
+      setVerificationCode("");
+      setVerificationMessage(
+        data?.message ??
+          "E-mail verificado com sucesso."
+      );
+      setCustomer(data);
+    } catch (error) {
+      setVerificationError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível verificar o e-mail."
+      );
+    } finally {
+      setVerificationSubmitting(false);
+    }
+  }
+
+  async function handleResendVerificationCode() {
+    if (
+      verificationCooldown > 0 ||
+      verificationSending ||
+      verificationSubmitting
+    ) {
+      return;
+    }
+
+    await sendVerificationCode(true);
+  }
+
+  // =========================
+  // RECUPERAÇÃO DE SENHA
+  // =========================
+
+  async function handleRequestPasswordReset(
+    event: FormEvent
+  ) {
+    event.preventDefault();
+
+    if (resetSubmitting) {
+      return;
+    }
+
+    const normalizedEmail =
+      resetEmail.trim();
+
+    if (!normalizedEmail) {
+      setResetError("Informe seu e-mail.");
+      return;
+    }
+
+    setResetSubmitting(true);
+    setResetError("");
+    setResetMessage("");
+
+    try {
+      const csrf = await getCsrfToken();
+
+      const response = await fetch(
+        `${API_URL}/api/customer-auth/password-reset/request`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            [csrf.headerName]: csrf.token,
+          },
+          body: JSON.stringify({
+            email: normalizedEmail,
+          }),
+        }
+      );
+
+      const responseText =
+        await response.text();
+
+      let data: any = {};
+
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          // Mantém mensagem genérica abaixo.
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ??
+            "Não foi possível solicitar a recuperação de senha."
+        );
+      }
+
+      setResetEmail(normalizedEmail);
+      setResetCode("");
+      setResetNewPassword("");
+      setResetConfirmPassword("");
+      setResetMessage(
+        data?.message ??
+          "Se existir uma conta com esse e-mail, enviaremos um código de recuperação."
+      );
+      setMode("reset");
+    } catch (error) {
+      setResetError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível solicitar a recuperação de senha."
+      );
+    } finally {
+      setResetSubmitting(false);
+    }
+  }
+
+  async function handleResetPassword(
+    event: FormEvent
+  ) {
+    event.preventDefault();
+
+    if (resetSubmitting) {
+      return;
+    }
+
+    const normalizedCode =
+      resetCode.replace(/\D/g, "");
+
+    if (normalizedCode.length !== 6) {
+      setResetError(
+        "Digite o código de 6 dígitos enviado para o seu e-mail."
+      );
+      return;
+    }
+
+    if (resetNewPassword.length < 8) {
+      setResetError(
+        "A nova senha deve ter pelo menos 8 caracteres."
+      );
+      return;
+    }
+
+    if (
+      resetNewPassword !==
+      resetConfirmPassword
+    ) {
+      setResetError(
+        "A confirmação da nova senha não confere."
+      );
+      return;
+    }
+
+    setResetSubmitting(true);
+    setResetError("");
+    setResetMessage("");
+
+    try {
+      const csrf = await getCsrfToken();
+
+      const validateResponse = await fetch(
+        `${API_URL}/api/customer-auth/password-reset/validate`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            [csrf.headerName]: csrf.token,
+          },
+          body: JSON.stringify({
+            email: resetEmail.trim(),
+            code: normalizedCode,
+          }),
+        }
+      );
+
+      const validateText =
+        await validateResponse.text();
+
+      let validateData: any = {};
+
+      if (validateText) {
+        try {
+          validateData =
+            JSON.parse(validateText);
+        } catch {
+          // Mantém mensagem genérica abaixo.
+        }
+      }
+
+      if (!validateResponse.ok) {
+        throw new Error(
+          validateData?.message ??
+            "Código de recuperação inválido ou expirado."
+        );
+      }
+
+      const resetResponse = await fetch(
+        `${API_URL}/api/customer-auth/password-reset/reset`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            [csrf.headerName]: csrf.token,
+          },
+          body: JSON.stringify({
+            email: resetEmail.trim(),
+            code: normalizedCode,
+            newPassword: resetNewPassword,
+          }),
+        }
+      );
+
+      const resetText =
+        await resetResponse.text();
+
+      let resetData: any = {};
+
+      if (resetText) {
+        try {
+          resetData =
+            JSON.parse(resetText);
+        } catch {
+          // Mantém mensagem genérica abaixo.
+        }
+      }
+
+      if (!resetResponse.ok) {
+        throw new Error(
+          resetData?.message ??
+            "Não foi possível redefinir sua senha."
+        );
+      }
+
+      setEmail(resetEmail.trim());
+      setPassword("");
+      setResetCode("");
+      setResetNewPassword("");
+      setResetConfirmPassword("");
+      setResetError("");
+      setResetMessage("");
+      setError("");
+      setMode("login");
+    } catch (error) {
+      setResetError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível redefinir sua senha."
+      );
+    } finally {
+      setResetSubmitting(false);
+    }
+  }
+
   // =========================
   // LOGIN
   // =========================
@@ -874,6 +1334,14 @@ function ContaContent() {
       setCustomer(data);
 
       setPassword("");
+
+      if (data?.emailVerified === false) {
+        setVerificationCode("");
+        setVerificationError("");
+        setVerificationMessage("");
+
+        await sendVerificationCode(false);
+      }
 
     } catch (error) {
       setError(
@@ -936,6 +1404,13 @@ function ContaContent() {
       setCustomer(data);
 
       setPassword("");
+      setVerificationCode("");
+      setVerificationError("");
+      setVerificationMessage("");
+
+      if (data?.emailVerified === false) {
+        await sendVerificationCode(false);
+      }
 
     } catch (error) {
       setError(
@@ -966,6 +1441,11 @@ function ContaContent() {
       setCustomer(null);
       setMode("login");
 
+      setVerificationCode("");
+      setVerificationError("");
+      setVerificationMessage("");
+      setVerificationCooldown(0);
+
       setOrders([]);
       setOrdersOpen(false);
       setOrdersError("");
@@ -992,6 +1472,152 @@ function ContaContent() {
           <div className="mt-8 grid gap-6 md:grid-cols-[1fr_360px]">
             <div className="skeleton h-72 rounded-[28px]" />
             <div className="skeleton h-72 rounded-[28px]" />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // =========================
+  // VERIFICAÇÃO DE E-MAIL
+  // =========================
+
+  if (
+    customer &&
+    !customer.emailVerified &&
+    !customer.googleConnected
+  ) {
+    return (
+      <main className="min-h-screen bg-background px-4 py-10 text-foreground sm:px-6">
+        <div className="mx-auto max-w-lg">
+          <button
+            type="button"
+            onClick={goBackToStore}
+            className="text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            ← Voltar ao cardápio
+          </button>
+
+          <div className="mt-6 rounded-[30px] border border-border bg-card p-6 shadow-[0_18px_60px_-30px] shadow-foreground/40 sm:p-8">
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-primary/10 text-3xl">
+              ✉
+            </div>
+
+            <p className="mt-6 text-center font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              Verificação de e-mail
+            </p>
+
+            <h1 className="mt-2 text-center font-display text-4xl tracking-tight">
+              Confira seu e-mail
+            </h1>
+
+            <p className="mt-3 text-center text-sm leading-6 text-muted-foreground">
+              Enviamos um código de 6 dígitos para
+              <br />
+              <strong className="text-foreground">
+                {customer.email}
+              </strong>
+            </p>
+
+            <form
+              onSubmit={handleVerifyEmail}
+              className="mt-7"
+            >
+              <label className="block text-center text-sm font-bold">
+                Código de verificação
+              </label>
+
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={verificationCode}
+                onChange={(event) => {
+                  const value =
+                    event.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 6);
+
+                  setVerificationCode(value);
+                  setVerificationError("");
+                }}
+                autoFocus
+                className="mt-3 h-16 w-full rounded-2xl border border-border bg-background px-4 text-center font-mono text-3xl font-bold tracking-[0.35em] outline-none transition focus:border-primary"
+                placeholder="000000"
+              />
+
+              {verificationError && (
+                <div className="mt-4 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+                  <p className="text-sm font-semibold text-destructive">
+                    {verificationError}
+                  </p>
+                </div>
+              )}
+
+              {verificationMessage && (
+                <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                  <p className="text-sm font-semibold text-primary">
+                    {verificationMessage}
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  verificationSubmitting ||
+                  verificationSending ||
+                  verificationCode.length !== 6
+                }
+                className="brand-button mt-5 min-h-12 w-full rounded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {verificationSubmitting
+                  ? "Verificando..."
+                  : "Verificar e-mail"}
+              </button>
+            </form>
+
+            <div className="mt-6 border-t border-border pt-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                Não recebeu o código?
+              </p>
+
+              <button
+                type="button"
+                onClick={() =>
+                  void handleResendVerificationCode()
+                }
+                disabled={
+                  verificationCooldown > 0 ||
+                  verificationSending ||
+                  verificationSubmitting
+                }
+                className="mt-2 text-sm font-bold text-primary transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {verificationSending
+                  ? "Enviando..."
+                  : verificationCooldown > 0
+                    ? `Reenviar em ${verificationCooldown}s`
+                    : "Reenviar código"}
+              </button>
+            </div>
+
+            <div className="mt-6 rounded-2xl bg-secondary p-4">
+              <p className="text-center text-xs leading-5 text-muted-foreground">
+                O código expira em 15 minutos. Você precisa confirmar seu e-mail para acessar sua conta.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                void handleLogout()
+              }
+              className="mt-5 w-full text-center text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Sair da conta
+            </button>
           </div>
         </div>
       </main>
@@ -1977,7 +2603,7 @@ function ContaContent() {
   }
 
   // =========================
-  // LOGIN / CADASTRO
+  // LOGIN / CADASTRO / RECUPERAÇÃO
   // =========================
 
   return (
@@ -1992,11 +2618,19 @@ function ContaContent() {
         <button
           type="button"
           onClick={
-            goBackToStore
+            mode === "forgot" || mode === "reset"
+              ? () => {
+                  setMode("login");
+                  setResetError("");
+                  setResetMessage("");
+                }
+              : goBackToStore
           }
           className="text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
         >
-          ← Voltar ao cardápio
+          {mode === "forgot" || mode === "reset"
+            ? "← Voltar ao login"
+            : "← Voltar ao cardápio"}
         </button>
 
         <div className="mt-6 rounded-[30px] border border-border bg-card p-6 shadow-[0_18px_60px_-30px] shadow-foreground/40 sm:p-8">
@@ -2007,180 +2641,373 @@ function ContaContent() {
           <h1 className="mt-2 font-display text-4xl tracking-tight">
             {mode === "login"
               ? "Entrar na sua conta"
-              : "Criar sua conta"}
+              : mode === "register"
+                ? "Criar sua conta"
+                : mode === "forgot"
+                  ? "Recuperar senha"
+                  : "Criar nova senha"}
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            A conta é opcional. Você pode continuar comprando sem login normalmente.
+            {mode === "forgot"
+              ? "Informe o e-mail da sua conta. Se ele estiver cadastrado, enviaremos um código de recuperação."
+              : mode === "reset"
+                ? `Digite o código de 6 dígitos enviado para ${resetEmail} e escolha uma nova senha.`
+                : "A conta é opcional. Você pode continuar comprando sem login normalmente."}
           </p>
 
-          <div className="mt-6 grid grid-cols-2 rounded-2xl bg-secondary p-1">
-            <button
-              type="button"
-              onClick={() => {
-                setMode("login");
-                setError("");
-              }}
-              className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                mode === "login"
-                  ? "bg-card shadow-sm"
-                  : "text-muted-foreground"
-              }`}
-            >
-              Entrar
-            </button>
+          {(mode === "login" || mode === "register") && (
+            <div className="mt-6 grid grid-cols-2 rounded-2xl bg-secondary p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setError("");
+                }}
+                className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                  mode === "login"
+                    ? "bg-card shadow-sm"
+                    : "text-muted-foreground"
+                }`}
+              >
+                Entrar
+              </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setMode("register");
-                setError("");
-              }}
-              className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                mode === "register"
-                  ? "bg-card shadow-sm"
-                  : "text-muted-foreground"
-              }`}
-            >
-              Criar conta
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("register");
+                  setError("");
+                }}
+                className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                  mode === "register"
+                    ? "bg-card shadow-sm"
+                    : "text-muted-foreground"
+                }`}
+              >
+                Criar conta
+              </button>
+            </div>
+          )}
 
-          <form
-            onSubmit={
-              mode === "login"
-                ? handleLogin
-                : handleRegister
-            }
-            className="mt-6 space-y-4"
-          >
-            {mode === "register" && (
-              <>
+          {mode === "forgot" ? (
+            <form
+              onSubmit={handleRequestPasswordReset}
+              className="mt-6 space-y-4"
+            >
+              <div>
+                <label className="text-sm font-bold">
+                  E-mail
+                </label>
+
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(event) => {
+                    setResetEmail(event.target.value);
+                    setResetError("");
+                  }}
+                  required
+                  autoComplete="email"
+                  autoFocus
+                  className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
+                  placeholder="voce@email.com"
+                />
+              </div>
+
+              {resetError && (
+                <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+                  <p className="text-sm font-semibold text-destructive">
+                    {resetError}
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={resetSubmitting}
+                className="brand-button min-h-12 w-full rounded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {resetSubmitting
+                  ? "Enviando..."
+                  : "Enviar código"}
+              </button>
+            </form>
+          ) : mode === "reset" ? (
+            <form
+              onSubmit={handleResetPassword}
+              className="mt-6 space-y-4"
+            >
+              {resetMessage && (
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                  <p className="text-sm font-semibold text-primary">
+                    {resetMessage}
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-bold">
+                  Código de recuperação
+                </label>
+
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={resetCode}
+                  onChange={(event) => {
+                    setResetCode(
+                      event.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 6)
+                    );
+                    setResetError("");
+                  }}
+                  autoFocus
+                  className="mt-2 h-16 w-full rounded-2xl border border-border bg-background px-4 text-center font-mono text-3xl font-bold tracking-[0.35em] outline-none transition focus:border-primary"
+                  placeholder="000000"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold">
+                  Nova senha
+                </label>
+
+                <input
+                  type="password"
+                  value={resetNewPassword}
+                  onChange={(event) => {
+                    setResetNewPassword(event.target.value);
+                    setResetError("");
+                  }}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
+                  placeholder="Mínimo 8 caracteres"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold">
+                  Confirmar nova senha
+                </label>
+
+                <input
+                  type="password"
+                  value={resetConfirmPassword}
+                  onChange={(event) => {
+                    setResetConfirmPassword(event.target.value);
+                    setResetError("");
+                  }}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
+                  placeholder="Repita a nova senha"
+                />
+              </div>
+
+              {resetError && (
+                <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+                  <p className="text-sm font-semibold text-destructive">
+                    {resetError}
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  resetSubmitting ||
+                  resetCode.length !== 6
+                }
+                className="brand-button min-h-12 w-full rounded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {resetSubmitting
+                  ? "Alterando senha..."
+                  : "Redefinir senha"}
+              </button>
+
+              <button
+                type="button"
+                disabled={resetSubmitting}
+                onClick={() => {
+                  setMode("forgot");
+                  setResetCode("");
+                  setResetNewPassword("");
+                  setResetConfirmPassword("");
+                  setResetError("");
+                  setResetMessage("");
+                }}
+                className="w-full text-center text-sm font-bold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+              >
+                Solicitar outro código
+              </button>
+            </form>
+          ) : (
+            <>
+              <form
+                onSubmit={
+                  mode === "login"
+                    ? handleLogin
+                    : handleRegister
+                }
+                className="mt-6 space-y-4"
+              >
+                {mode === "register" && (
+                  <>
+                    <div>
+                      <label className="text-sm font-bold">
+                        Nome
+                      </label>
+
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(event) =>
+                          setName(
+                            event.target.value
+                          )
+                        }
+                        required
+                        className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
+                        placeholder="Seu nome"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-bold">
+                        Telefone
+                      </label>
+
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(event) =>
+                          setPhone(
+                            event.target.value
+                          )
+                        }
+                        className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
+                        placeholder="(19) 99999-9999"
+                      />
+                    </div>
+                  </>
+                )}
+
                 <div>
                   <label className="text-sm font-bold">
-                    Nome
+                    E-mail
                   </label>
 
                   <input
-                    type="text"
-                    value={name}
+                    type="email"
+                    value={email}
                     onChange={(event) =>
-                      setName(
+                      setEmail(
                         event.target.value
                       )
                     }
                     required
                     className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
-                    placeholder="Seu nome"
+                    placeholder="voce@email.com"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm font-bold">
-                    Telefone
-                  </label>
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="text-sm font-bold">
+                      Senha
+                    </label>
+
+                    {mode === "login" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResetEmail(email.trim());
+                          setResetCode("");
+                          setResetNewPassword("");
+                          setResetConfirmPassword("");
+                          setResetError("");
+                          setResetMessage("");
+                          setError("");
+                          setMode("forgot");
+                        }}
+                        className="text-xs font-bold text-primary"
+                      >
+                        Esqueci minha senha
+                      </button>
+                    )}
+                  </div>
 
                   <input
-                    type="tel"
-                    value={phone}
+                    type="password"
+                    value={password}
                     onChange={(event) =>
-                      setPhone(
+                      setPassword(
                         event.target.value
                       )
                     }
+                    required
+                    minLength={8}
                     className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
-                    placeholder="(19) 99999-9999"
+                    placeholder="Mínimo 8 caracteres"
                   />
                 </div>
-              </>
-            )}
 
-            <div>
-              <label className="text-sm font-bold">
-                E-mail
-              </label>
+                {error && (
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                    <p className="text-sm font-semibold text-primary">
+                      {error}
+                    </p>
+                  </div>
+                )}
 
-              <input
-                type="email"
-                value={email}
-                onChange={(event) =>
-                  setEmail(
-                    event.target.value
-                  )
-                }
-                required
-                className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
-                placeholder="voce@email.com"
-              />
-            </div>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="brand-button min-h-12 w-full rounded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {submitting
+                    ? "Aguarde..."
+                    : mode === "login"
+                      ? "Entrar"
+                      : "Criar conta"}
+                </button>
+              </form>
 
-            <div>
-              <label className="text-sm font-bold">
-                Senha
-              </label>
+              <div className="my-6 flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
 
-              <input
-                type="password"
-                value={password}
-                onChange={(event) =>
-                  setPassword(
-                    event.target.value
-                  )
-                }
-                required
-                minLength={8}
-                className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
-                placeholder="Mínimo 8 caracteres"
-              />
-            </div>
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  ou
+                </span>
 
-            {error && (
-              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                <p className="text-sm font-semibold text-primary">
-                  {error}
-                </p>
+                <div className="h-px flex-1 bg-border" />
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="brand-button min-h-12 w-full rounded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {submitting
-                ? "Aguarde..."
-                : mode === "login"
-                  ? "Entrar"
-                  : "Criar conta"}
-            </button>
-          </form>
+              <div
+                className={`flex min-h-12 w-full items-center justify-center ${
+                  submitting
+                    ? "pointer-events-none opacity-50"
+                    : ""
+                }`}
+              >
+                <div
+                  ref={googleButtonRef}
+                  className="flex w-full justify-center"
+                />
+              </div>
 
-          <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              ou
-            </span>
-
-            <div className="h-px flex-1 bg-border" />
-          </div>
-
-          <div
-            className={`flex min-h-12 w-full items-center justify-center ${
-              submitting
-                ? "pointer-events-none opacity-50"
-                : ""
-            }`}
-          >
-            <div
-              ref={googleButtonRef}
-              className="flex w-full justify-center"
-            />
-          </div>
-
-          <p className="mt-3 text-center text-xs text-muted-foreground">
-            Use sua conta Google para entrar ou criar sua conta automaticamente.
-          </p>
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                Use sua conta Google para entrar ou criar sua conta automaticamente.
+              </p>
+            </>
+          )}
         </div>
       </div>
     </main>

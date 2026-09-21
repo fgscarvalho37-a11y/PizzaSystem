@@ -1354,11 +1354,11 @@ export default function CardapioPage() {
             className="flex min-w-0 items-center gap-3 text-left"
           >
             {logoUrl ? (
-              <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-border bg-white p-1 shadow-[0_3px_0_0] shadow-foreground/20">
+              <span className="flex h-12 w-20 shrink-0 items-center justify-center sm:h-14 sm:w-24">
                 <img
                   src={logoUrl}
                   alt={`Logo ${storeName}`}
-                  className="max-h-full max-w-full object-contain"
+                  className="h-full w-full object-contain"
                 />
               </span>
             ) : (

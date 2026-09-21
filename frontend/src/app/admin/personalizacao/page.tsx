@@ -531,15 +531,16 @@ export default function PersonalizacaoPage() {
     }
   }
 
-  function resetToDefault() {
+  function resetColorsToDefault() {
     setErrorMessage("");
     setSuccessMessage(
-      "Padrão restaurado na prévia. Clique em Salvar personalização para confirmar."
+      "Cores padrão restauradas na prévia. Clique em Salvar personalização para confirmar."
     );
 
     setForm((current) => ({
       ...current,
-      ...DEFAULT_PERSONALIZATION,
+      primaryColor: DEFAULT_PRIMARY,
+      secondaryColor: DEFAULT_SECONDARY,
     }));
   }
 
@@ -773,10 +774,10 @@ export default function PersonalizacaoPage() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={resetToDefault}
+                onClick={resetColorsToDefault}
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-card px-5 text-sm font-bold text-foreground transition hover:bg-muted"
               >
-                Restaurar padrão
+                Restaurar cores
               </button>
 
               <a
@@ -1492,11 +1493,11 @@ export default function PersonalizacaoPage() {
                   <div className="flex items-center justify-between gap-3 px-4 py-3">
                     <div className="flex min-w-0 items-center gap-2">
                       {profile.logoUrl ? (
-                        <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl border border-border bg-white p-1">
+                        <span className="flex h-10 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-white p-1">
                           <img
                             src={imageUrl(profile.logoUrl)}
                             alt=""
-                            className="max-h-full max-w-full object-contain"
+                            className="h-full w-full object-contain"
                           />
                         </span>
                       ) : (
