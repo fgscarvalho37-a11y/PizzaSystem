@@ -206,6 +206,29 @@ public class SecurityConfig {
                                 .permitAll()
 
                                 // =========================
+                                // MERCADO PAGO OAUTH
+                                // =========================
+
+                                /*
+                                 * O Mercado Pago redireciona o navegador
+                                 * para este endpoint após a autorização.
+                                 *
+                                 * Somente o callback é público.
+                                 *
+                                 * /connect
+                                 * /disconnect
+                                 * /status
+                                 *
+                                 * continuam protegidos pelo ROLE_ADMIN
+                                 * através do anyRequest() no final.
+                                 */
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/admin/mercadopago/oauth/callback"
+                                )
+                                .permitAll()
+
+                                // =========================
                                 // ÁREA DO CLIENTE
                                 // =========================
 

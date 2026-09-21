@@ -1,5 +1,9 @@
 spring.application.name=backend
 
+# =========================
+# BANCO DE DADOS
+# =========================
+
 spring.datasource.url=jdbc:postgresql://localhost:5432/pizzasystem
 spring.datasource.username=postgres
 spring.datasource.password=${DB_PASSWORD:}
@@ -7,4 +11,16 @@ spring.datasource.password=${DB_PASSWORD:}
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
+
+
+# =========================
+# MERCADO PAGO
+# =========================
+
+# Assinatura dos Webhooks
 mercadopago.webhook-secret=${MERCADOPAGO_WEBHOOK_SECRET:}
+
+# OAuth - conexão da conta Mercado Pago de cada estabelecimento
+mercadopago.oauth.client-id=${MERCADOPAGO_CLIENT_ID:}
+mercadopago.oauth.client-secret=${MERCADOPAGO_CLIENT_SECRET:}
+mercadopago.oauth.redirect-uri=${MERCADOPAGO_REDIRECT_URI:}

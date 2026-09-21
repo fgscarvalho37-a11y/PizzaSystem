@@ -30,6 +30,13 @@ type StoreStatus = {
   dailyOrderLimit: number;
 };
 
+type MercadoPagoStatus = {
+  connected: boolean;
+  mercadoPagoUserId?: string | null;
+  connectedAt?: string | null;
+  tokenExpiresAt?: string | null;
+};
+
 type StoreProfile = {
   id: number;
   name: string;
@@ -293,6 +300,15 @@ export default function ConfiguracoesPage() {
     setChangingStatus,
   ] = useState(false);
 
+  const [mercadoPagoStatus, setMercadoPagoStatus] =
+    useState<MercadoPagoStatus | null>(null);
+
+  const [mercadoPagoLoading, setMercadoPagoLoading] =
+    useState(true);
+
+  const [mercadoPagoActionLoading, setMercadoPagoActionLoading] =
+    useState(false);
+
   const [
     errorMessage,
     setErrorMessage,
@@ -400,6 +416,97 @@ export default function ConfiguracoesPage() {
         data.loyaltyMinimumOrderValue ??
         null,
     });
+  }
+
+  async function loadMercadoPagoStatus() {
+    try {
+      setMercadoPagoLoading(true);
+      const response = await adminFetch(
+        `${API_URL}/api/admin/mercadopago/status`,
+        { cache: "no-store" }
+      );
+      if (!response.ok) {
+        throw new Error("Não foi possível consultar o Mercado Pago.");
+      }
+      const data: MercadoPagoStatus = await response.json();
+      setMercadoPagoStatus(data);
+    } catch {
+      setMercadoPagoStatus(null);
+    } finally {
+      setMercadoPagoLoading(false);
+    }
+  }
+
+  async function connectMercadoPago() {
+    try {
+      setMercadoPagoActionLoading(true);
+      setErrorMessage("");
+      setSuccessMessage("");
+
+      const response = await adminFetch(
+        `${API_URL}/api/admin/mercadopago/connect`,
+        { method: "POST" }
+      );
+
+      if (!response.ok) {
+        let message = "Não foi possível iniciar a conexão com o Mercado Pago.";
+        try {
+          const data = await response.json();
+          if (typeof data?.message === "string" && data.message) {
+            message = data.message;
+          }
+        } catch {
+          // mantém mensagem padrão
+        }
+        throw new Error(message);
+      }
+
+      const data: { authorizationUrl?: string } = await response.json();
+      if (!data.authorizationUrl) {
+        throw new Error("O Mercado Pago não retornou a URL de autorização.");
+      }
+
+      window.location.assign(data.authorizationUrl);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível iniciar a conexão com o Mercado Pago."
+      );
+      setMercadoPagoActionLoading(false);
+    }
+  }
+
+  async function disconnectMercadoPago() {
+    if (!window.confirm("Deseja desconectar a conta do Mercado Pago desta loja?")) {
+      return;
+    }
+
+    try {
+      setMercadoPagoActionLoading(true);
+      setErrorMessage("");
+      setSuccessMessage("");
+
+      const response = await adminFetch(
+        `${API_URL}/api/admin/mercadopago/disconnect`,
+        { method: "POST" }
+      );
+
+      if (!response.ok) {
+        throw new Error("Não foi possível desconectar o Mercado Pago.");
+      }
+
+      await loadMercadoPagoStatus();
+      setSuccessMessage("Mercado Pago desconectado.");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível desconectar o Mercado Pago."
+      );
+    } finally {
+      setMercadoPagoActionLoading(false);
+    }
   }
 
   async function loadData() {
@@ -511,6 +618,18 @@ export default function ConfiguracoesPage() {
 
   useEffect(() => {
     loadData();
+    loadMercadoPagoStatus();
+
+    const params = new URLSearchParams(window.location.search);
+    const mercadoPagoResult = params.get("mercadopago");
+
+    if (mercadoPagoResult === "connected") {
+      setSuccessMessage("Mercado Pago conectado com sucesso.");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (mercadoPagoResult === "error") {
+      setErrorMessage("Não foi possível concluir a conexão com o Mercado Pago.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
 
     const interval =
       setInterval(() => {
@@ -1294,6 +1413,91 @@ export default function ConfiguracoesPage() {
             </button>
           </div>
         </form>
+
+        <section className="mt-6 rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                Pagamentos
+              </p>
+              <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
+                Mercado Pago
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Conecte a conta Mercado Pago da loja para receber os pagamentos dos clientes diretamente na conta do estabelecimento.
+              </p>
+            </div>
+
+            <div className="shrink-0">
+              {mercadoPagoLoading ? (
+                <span className="inline-flex h-9 items-center rounded-full border border-border bg-background px-4 text-xs font-bold text-muted-foreground">
+                  Verificando...
+                </span>
+              ) : mercadoPagoStatus?.connected ? (
+                <span className="inline-flex h-9 items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Conectado
+                </span>
+              ) : (
+                <span className="inline-flex h-9 items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-700">
+                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                  Não conectado
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-border bg-background p-4">
+            {mercadoPagoStatus?.connected ? (
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-foreground">Conta Mercado Pago vinculada</p>
+                  {mercadoPagoStatus.mercadoPagoUserId && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Identificação da conta: {mercadoPagoStatus.mercadoPagoUserId}
+                    </p>
+                  )}
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Os dados de acesso da conta ficam protegidos no backend e não são exibidos no painel.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={mercadoPagoActionLoading}
+                  onClick={disconnectMercadoPago}
+                  className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-700 transition hover:bg-red-100 disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {mercadoPagoActionLoading ? "Desconectando..." : "Desconectar"}
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-foreground">Nenhuma conta vinculada</p>
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
+                    O proprietário autoriza o PizzaSystem na própria conta Mercado Pago. Nenhuma senha ou Access Token é solicitado neste painel.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={mercadoPagoLoading || mercadoPagoActionLoading}
+                  onClick={connectMercadoPago}
+                  className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:shadow-sm disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {mercadoPagoActionLoading ? "Conectando..." : "Conectar Mercado Pago"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {!mercadoPagoLoading && !mercadoPagoStatus?.connected && (
+            <p className="mt-3 text-xs leading-5 text-muted-foreground">
+              A conexão OAuth será habilitada assim que as credenciais de produção da aplicação estiverem configuradas.
+            </p>
+          )}
+        </section>
 
         <form
           onSubmit={saveProfile}
