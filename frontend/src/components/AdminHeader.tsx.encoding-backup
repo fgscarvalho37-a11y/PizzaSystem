@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -6,7 +6,6 @@ import {
   useRouter,
 } from "next/navigation";
 import {
-  useEffect,
   useState,
 } from "react";
 
@@ -24,7 +23,7 @@ const API_URL =
   "http://localhost:8080";
 
 /* =========================
-   ÍCONES
+   ÃCONES
 ========================= */
 
 function DashboardIcon({
@@ -304,29 +303,6 @@ function ClockIcon({
   );
 }
 
-function PersonalizationIcon({
-  className = "h-5 w-5",
-}: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M12 3a9 9 0 1 0 0 18h1.2a2 2 0 0 0 0-4H12a1.5 1.5 0 0 1 0-3h2a7 7 0 0 0 7-7 4 4 0 0 0-4-4h-5Z" />
-      <circle cx="7.5" cy="10" r=".8" fill="currentColor" stroke="none" />
-      <circle cx="9.5" cy="6.5" r=".8" fill="currentColor" stroke="none" />
-      <circle cx="14" cy="6" r=".8" fill="currentColor" stroke="none" />
-      <circle cx="17" cy="9" r=".8" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
 function SettingsIcon({
   className = "h-5 w-5",
 }: IconProps) {
@@ -431,12 +407,12 @@ function LogoutIcon({
 }
 
 /* =========================
-   NAVEGAÇÃO
+   NAVEGAÃ‡ÃƒO
 ========================= */
 
 const sections = [
   {
-    title: "Operação",
+    title: "OperaÃ§Ã£o",
     items: [
       {
         label: "Painel",
@@ -461,15 +437,15 @@ const sections = [
     ],
   },
   {
-    title: "Gestão",
+    title: "GestÃ£o",
     items: [
       {
-        label: "Histórico",
+        label: "HistÃ³rico",
         href: "/admin/historico",
         icon: HistoryIcon,
       },
       {
-        label: "Relatórios",
+        label: "RelatÃ³rios",
         href: "/admin/relatorios",
         icon: ChartIcon,
       },
@@ -491,7 +467,7 @@ const sections = [
     ],
   },
   {
-    title: "Cardápio",
+    title: "CardÃ¡pio",
     items: [
       {
         label: "Produtos",
@@ -514,17 +490,12 @@ const sections = [
     title: "Sistema",
     items: [
       {
-        label: "Horários",
+        label: "HorÃ¡rios",
         href: "/admin/horarios",
         icon: ClockIcon,
       },
       {
-        label: "Personalização",
-        href: "/admin/personalizacao",
-        icon: PersonalizationIcon,
-      },
-      {
-        label: "Configurações",
+        label: "ConfiguraÃ§Ãµes",
         href: "/admin/configuracoes",
         icon: SettingsIcon,
       },
@@ -548,55 +519,6 @@ export default function AdminHeader() {
     mobileOpen,
     setMobileOpen,
   ] = useState(false);
-
-  const [
-    storeSlug,
-    setStoreSlug,
-  ] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadStoreSlug() {
-      try {
-        const response =
-          await adminFetch(
-            `${API_URL}/api/store/profile`,
-            {
-              cache: "no-store",
-            }
-          );
-
-        if (!response.ok) {
-          return;
-        }
-
-        const data:
-          { slug?: string | null } =
-          await response.json();
-
-        const slug =
-          data.slug?.trim();
-
-        if (!cancelled && slug) {
-          setStoreSlug(slug);
-        }
-      } catch {
-        // O painel continua funcionando mesmo se o perfil não carregar.
-      }
-    }
-
-    loadStoreSlug();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const publicMenuUrl =
-    storeSlug
-      ? `/cardapio/${encodeURIComponent(storeSlug)}`
-      : "/";
 
   function closeMobileMenu() {
     setMobileOpen(false);
@@ -632,7 +554,7 @@ export default function AdminHeader() {
 
       if (!response.ok) {
         throw new Error(
-          "Falha ao encerrar sessão."
+          "Falha ao encerrar sessÃ£o."
         );
       }
 
@@ -705,16 +627,16 @@ export default function AdminHeader() {
               </p>
 
               <p className="mt-0.5 whitespace-nowrap text-sm font-semibold text-foreground">
-                Administração
+                AdministraÃ§Ã£o
               </p>
             </div>
           </Link>
         </div>
 
-        {/* NAVEGAÇÃO */}
+        {/* NAVEGAÃ‡ÃƒO */}
 
         <nav
-          aria-label="Navegação administrativa"
+          aria-label="NavegaÃ§Ã£o administrativa"
           className="
             flex-1 overflow-y-auto
             overflow-x-hidden
@@ -821,16 +743,16 @@ export default function AdminHeader() {
           </div>
         </nav>
 
-        {/* RODAPÉ */}
+        {/* RODAPÃ‰ */}
 
         <div className="shrink-0 border-t border-border py-3">
           <div className="space-y-1 px-3">
 
             <Link
-              href={publicMenuUrl}
+              href="/cardapio"
               target="_blank"
               rel="noreferrer"
-              title="Ver cardápio"
+              title="Ver cardÃ¡pio"
               className="
                 flex h-11 w-14
                 items-center overflow-hidden
@@ -858,7 +780,7 @@ export default function AdminHeader() {
                   group-hover/sidebar:opacity-100
                 "
               >
-                Ver cardápio
+                Ver cardÃ¡pio
               </span>
             </Link>
 
@@ -951,7 +873,7 @@ export default function AdminHeader() {
               PizzaSystem
             </p>
             <p className="text-sm font-semibold text-foreground">
-              Administração
+              AdministraÃ§Ã£o
             </p>
           </div>
         </Link>
@@ -1009,7 +931,7 @@ export default function AdminHeader() {
                     PizzaSystem
                   </p>
                   <p className="text-sm font-semibold text-foreground">
-                    Administração
+                    AdministraÃ§Ã£o
                   </p>
                 </div>
               </Link>
@@ -1025,7 +947,7 @@ export default function AdminHeader() {
             </div>
 
             <nav
-              aria-label="Navegação administrativa móvel"
+              aria-label="NavegaÃ§Ã£o administrativa mÃ³vel"
               className="flex-1 overflow-y-auto px-3 py-4"
             >
               <div className="space-y-5">
@@ -1067,14 +989,14 @@ export default function AdminHeader() {
 
             <div className="shrink-0 border-t border-border p-3">
               <Link
-                href={publicMenuUrl}
+                href="/cardapio"
                 target="_blank"
                 rel="noreferrer"
                 onClick={closeMobileMenu}
                 className="flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
               >
                 <ExternalIcon className="h-5 w-5" />
-                Ver cardápio
+                Ver cardÃ¡pio
               </Link>
 
               <button

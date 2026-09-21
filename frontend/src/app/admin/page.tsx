@@ -1,6 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  adminFetch,
+} from "@/lib/adminFetch";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
 
 type IconProps = {
   className?: string;
@@ -166,6 +178,18 @@ function CouponIcon({
   );
 }
 
+function LoyaltyIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M12 21s-7-4.35-9.33-8.25C.8 9.63 2.1 5.5 5.75 4.4 8 3.72 10.05 4.55 12 6.5c1.95-1.95 4-2.78 6.25-2.1 3.65 1.1 4.95 5.23 3.08 8.35C19 16.65 12 21 12 21Z" />
+      <path d="M9 11h6" /><path d="M12 8v6" />
+    </svg>
+  );
+}
+
 function MenuIcon({
   className = "h-5 w-5",
 }: IconProps) {
@@ -323,6 +347,13 @@ const managementCards: AdminCard[] = [
     route: "/admin/cupons",
     icon: CouponIcon,
   },
+  {
+    title: "Fidelidade",
+    description:
+      "Gerencie pontos, recompensas e resgates dos clientes.",
+    route: "/admin/fidelidade",
+    icon: LoyaltyIcon,
+  },
 ];
 
 const catalogCards: AdminCard[] = [
@@ -415,6 +446,55 @@ function DashboardCard({
 }
 
 export default function AdminPage() {
+  const [
+    storeSlug,
+    setStoreSlug,
+  ] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStoreSlug() {
+      try {
+        const response =
+          await adminFetch(
+            `${API_URL}/api/store/profile`,
+            {
+              cache: "no-store",
+            }
+          );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data:
+          { slug?: string | null } =
+          await response.json();
+
+        const slug =
+          data.slug?.trim();
+
+        if (!cancelled && slug) {
+          setStoreSlug(slug);
+        }
+      } catch {
+        // Mantém o painel utilizável caso o perfil não carregue.
+      }
+    }
+
+    loadStoreSlug();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const publicMenuUrl =
+    storeSlug
+      ? `/cardapio/${encodeURIComponent(storeSlug)}`
+      : "/";
+
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1440px]">
@@ -439,7 +519,7 @@ export default function AdminPage() {
             </div>
 
             <Link
-              href="/cardapio"
+              href={publicMenuUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-card px-5 text-sm font-bold text-foreground transition hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-sm"
@@ -487,7 +567,7 @@ export default function AdminPage() {
             </h2>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             {managementCards.map((card) => (
               <DashboardCard
                 key={card.route}

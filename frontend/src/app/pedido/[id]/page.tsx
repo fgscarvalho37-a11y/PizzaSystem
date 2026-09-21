@@ -142,6 +142,14 @@ export default function PedidoPage() {
   const tokenFromUrl =
     searchParams.get("token");
 
+  const storeSlug =
+    searchParams.get("store");
+
+  const menuUrl =
+    storeSlug
+      ? `/cardapio/${encodeURIComponent(storeSlug)}`
+      : "/";
+
   const [accessToken, setAccessToken] =
     useState<string | null>(null);
 
@@ -297,7 +305,7 @@ export default function PedidoPage() {
             type="button"
             onClick={() =>
               router.push(
-                "/cardapio"
+                menuUrl
               )
             }
             className="brand-button mt-6 w-full rounded-2xl px-5 py-3.5"
@@ -351,7 +359,7 @@ export default function PedidoPage() {
             type="button"
             onClick={() =>
               router.push(
-                "/cardapio"
+                menuUrl
               )
             }
             className="flex items-center gap-2.5"
@@ -684,7 +692,7 @@ export default function PedidoPage() {
           type="button"
           onClick={() =>
             router.push(
-              "/cardapio"
+              menuUrl
             )
           }
           className="mt-6 w-full rounded-2xl border-2 border-foreground px-5 py-3.5 text-sm font-bold transition-colors hover:bg-foreground hover:text-cream"

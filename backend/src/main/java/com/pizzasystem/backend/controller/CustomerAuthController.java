@@ -149,6 +149,21 @@ public class CustomerAuthController {
                                     true
                             );
 
+            System.out.println(
+                    "[CUSTOMER LOGIN] requestedSessionId = "
+                            + servletRequest.getRequestedSessionId()
+            );
+
+            System.out.println(
+                    "[CUSTOMER LOGIN] sessionId = "
+                            + session.getId()
+            );
+
+            System.out.println(
+                    "[CUSTOMER LOGIN] customerId = "
+                            + customer.getId()
+            );
+
             session.setAttribute(
                     SESSION_CUSTOMER_ID,
                     customer.getId()
@@ -182,6 +197,74 @@ public class CustomerAuthController {
             response.put(
                     "message",
                     "E-mail ou senha inválidos"
+            );
+
+            return ResponseEntity
+                    .status(
+                            HttpStatus.UNAUTHORIZED
+                    )
+                    .body(
+                            response
+                    );
+        }
+    }
+
+
+    // =========================
+    // LOGIN COM GOOGLE
+    // =========================
+
+    @PostMapping("/google")
+    public ResponseEntity<?> googleLogin(
+            @RequestBody Map<String, Object> body,
+            HttpServletRequest servletRequest
+    ) {
+        try {
+            String credential =
+                    stringValue(
+                            body.get("credential")
+                    );
+
+            Customer customer =
+                    customerAuthService
+                            .loginWithGoogle(
+                                    credential
+                            );
+
+            HttpSession session =
+                    servletRequest
+                            .getSession(
+                                    true
+                            );
+
+            session.setAttribute(
+                    SESSION_CUSTOMER_ID,
+                    customer.getId()
+            );
+
+            session.setAttribute(
+                    SESSION_CUSTOMER_EMAIL,
+                    customer.getEmail()
+            );
+
+            return ResponseEntity.ok(
+                    authenticatedResponse(
+                            customer
+                    )
+            );
+
+        } catch (RuntimeException e) {
+            Map<String, Object> response =
+                    new HashMap<>();
+
+            response.put(
+                    "authenticated",
+                    false
+            );
+
+            response.put(
+                    "message",
+                    e.getMessage()
             );
 
             return ResponseEntity
@@ -322,6 +405,89 @@ public class CustomerAuthController {
 
             return unauthorized();
         }
+    }
+
+    // =========================
+    // ATUALIZAR MEUS DADOS
+    // =========================
+
+    @PatchMapping("/me")
+    public ResponseEntity<?> updateMe(
+            @RequestBody Map<String, Object> body,
+            HttpServletRequest request
+    ) {
+        HttpSession session = request.getSession(false);
+
+        if (session == null) {
+            return unauthorized();
+        }
+
+        Object customerIdObject =
+                session.getAttribute(SESSION_CUSTOMER_ID);
+
+        if (!(customerIdObject instanceof Long customerId)) {
+            clearCustomerSession(session);
+            return unauthorized();
+        }
+
+        try {
+            String name = stringValue(body.get("name"));
+            String email = stringValue(body.get("email"));
+            String phone = stringValue(body.get("phone"));
+            String currentPassword = stringValue(body.get("currentPassword"));
+            String newPassword = stringValue(body.get("newPassword"));
+
+            Customer customer =
+                    customerAuthService.updateProfile(
+                            customerId,
+                            name,
+                            email,
+                            phone,
+                            currentPassword,
+                            newPassword
+                    );
+
+            session.setAttribute(
+                    SESSION_CUSTOMER_ID,
+                    customer.getId()
+            );
+
+            session.setAttribute(
+                    SESSION_CUSTOMER_EMAIL,
+                    customer.getEmail()
+            );
+
+            Map<String, Object> response =
+                    authenticatedResponse(customer);
+
+            response.put(
+                    "message",
+                    "Dados atualizados com sucesso"
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> response =
+                    new HashMap<>();
+
+            response.put(
+                    "message",
+                    e.getMessage()
+            );
+
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(response);
+        }
+    }
+
+    private String stringValue(
+            Object value
+    ) {
+        return value == null
+                ? null
+                : String.valueOf(value);
     }
 
     // =========================

@@ -47,6 +47,47 @@ type CartItem = {
   crust: Crust | null;
 };
 
+
+type StoreProfile = {
+  id: number;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  coverImageUrl: string | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  headline: string | null;
+  marqueeMessage: string | null;
+  marqueeEnabled: boolean;
+  heroTitleLine1: string | null;
+  heroTitleLine2: string | null;
+  heroTitleLine3: string | null;
+  heroDescription: string | null;
+  heroPrimaryButtonText: string | null;
+  heroSecondaryButtonText: string | null;
+  heroBadgeText: string | null;
+  heroOpenStatusText: string | null;
+  heroClosedStatusText: string | null;
+  menuTitle: string | null;
+  menuSubtitle: string | null;
+  menuSearchPlaceholder: string | null;
+  menuEmptyTitle: string | null;
+  menuEmptyDescription: string | null;
+  footerTagline: string | null;
+};
+
+function resolveStoreImageUrl(value: string | null | undefined) {
+  if (!value) return "";
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("data:")
+  ) {
+    return value;
+  }
+  return `${API_URL}${value.startsWith("/") ? "" : "/"}${value}`;
+}
+
 type StoreStatus = {
   storeName: string;
   manualOpen: boolean;
@@ -307,6 +348,13 @@ export default function CardapioPage() {
   );
 
   const [
+    storeProfile,
+    setStoreProfile,
+  ] = useState<StoreProfile | null>(
+    null
+  );
+
+  const [
     loading,
     setLoading,
   ] = useState(true);
@@ -516,6 +564,7 @@ export default function CardapioPage() {
           productsResponse,
           statusResponse,
           crustsResponse,
+          profileResponse,
         ] =
           await Promise.all([
             fetch(
@@ -540,6 +589,16 @@ export default function CardapioPage() {
 
             fetch(
               `${API_URL}/api/crusts/active?store=${encodeURIComponent(
+                storeSlug
+              )}`,
+              {
+                cache:
+                  "no-store",
+              }
+            ),
+
+            fetch(
+              `${API_URL}/api/store/profile?store=${encodeURIComponent(
                 storeSlug
               )}`,
               {
@@ -585,6 +644,12 @@ export default function CardapioPage() {
           Crust[] =
           await crustsResponse.json();
 
+        const profileData:
+          StoreProfile | null =
+          profileResponse.ok
+            ? await profileResponse.json()
+            : null;
+
         if (!mounted) {
           return;
         }
@@ -599,6 +664,10 @@ export default function CardapioPage() {
 
         setCrusts(
           crustsData
+        );
+
+        setStoreProfile(
+          profileData
         );
 
       } catch (error) {
@@ -1211,8 +1280,27 @@ export default function CardapioPage() {
   }
 
   const storeName =
+    storeProfile?.name ||
     storeStatus?.storeName ||
     "PizzaSystem";
+
+  const primaryColor =
+    storeProfile?.primaryColor ||
+    "#E63946";
+
+  const secondaryColor =
+    storeProfile?.secondaryColor ||
+    "#F4C95D";
+
+  const logoUrl =
+    resolveStoreImageUrl(
+      storeProfile?.logoUrl
+    );
+
+  const coverImageUrl =
+    resolveStoreImageUrl(
+      storeProfile?.coverImageUrl
+    ) || "/pizzasystem/hero.jpg";
 
   const brandInitial =
     storeName
@@ -1238,7 +1326,13 @@ export default function CardapioPage() {
   // =========================
 
   return (
-    <main className="min-h-screen bg-background pb-32 text-foreground">
+    <main
+      className="min-h-screen bg-background pb-32 text-foreground"
+      style={{
+        "--primary": primaryColor,
+        "--secondary": secondaryColor,
+      } as React.CSSProperties}
+    >
 
       {/* =========================
           HEADER
@@ -1259,9 +1353,19 @@ export default function CardapioPage() {
             }
             className="flex min-w-0 items-center gap-3 text-left"
           >
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary font-display text-xl text-primary-foreground shadow-[0_3px_0_0] shadow-foreground/20">
-              {brandInitial}
-            </span>
+            {logoUrl ? (
+              <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-border bg-white p-1 shadow-[0_3px_0_0] shadow-foreground/20">
+                <img
+                  src={logoUrl}
+                  alt={`Logo ${storeName}`}
+                  className="max-h-full max-w-full object-contain"
+                />
+              </span>
+            ) : (
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary font-display text-xl text-primary-foreground shadow-[0_3px_0_0] shadow-foreground/20">
+                {brandInitial}
+              </span>
+            )}
 
             <span className="min-w-0">
               <span className="block truncate font-display text-2xl leading-none tracking-tight sm:text-3xl">
@@ -1272,7 +1376,8 @@ export default function CardapioPage() {
               </span>
 
               <span className="mt-1 hidden font-mono-brand text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:block">
-                Pedidos online
+                {storeProfile?.footerTagline ||
+                  "Pedidos online"}
               </span>
             </span>
           </button>
@@ -1404,6 +1509,13 @@ export default function CardapioPage() {
 
       </header>
 
+      {storeProfile?.marqueeEnabled === true &&
+        Boolean(storeProfile?.marqueeMessage?.trim()) && (
+          <div className="border-b border-border bg-secondary px-4 py-2 text-center font-mono-brand text-[11px] font-bold uppercase tracking-[0.12em] text-foreground">
+            {storeProfile.marqueeMessage}
+          </div>
+        )}
+
       {/* =========================
           CONTEÚDO
           ========================= */}
@@ -1432,22 +1544,28 @@ export default function CardapioPage() {
               />
 
               {storeStatus?.open
-                ? "Recebendo pedidos"
-                : "Pedidos encerrados"}
+                ? storeProfile?.heroOpenStatusText ||
+                  "Recebendo pedidos"
+                : storeProfile?.heroClosedStatusText ||
+                  "Pedidos encerrados"}
             </div>
 
             <h1 className="mt-4 font-display text-[clamp(3.2rem,7.5vw,6.25rem)] leading-[0.86] tracking-[-0.035em]">
-              ESCOLHA.
+              {storeProfile?.heroTitleLine1 ||
+                "ESCOLHA."}
               <br />
-              PEÇA.
+              {storeProfile?.heroTitleLine2 ||
+                "PEÇA."}
               <br />
               <span className="text-primary">
-                APROVEITE.
+                {storeProfile?.heroTitleLine3 ||
+                  "APROVEITE."}
               </span>
             </h1>
 
             <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
-              Escolha seus favoritos, monte seu pedido e acompanhe tudo pelo site.
+              {storeProfile?.heroDescription ||
+                "Escolha seus favoritos, monte seu pedido e acompanhe tudo pelo site."}
             </p>
 
             {!storeStatus?.open && (
@@ -1471,7 +1589,8 @@ export default function CardapioPage() {
                 href="#menu"
                 className="brand-button min-h-12 rounded-full px-7"
               >
-                Ver cardápio
+                {storeProfile?.heroPrimaryButtonText ||
+                  "Ver cardápio"}
 
                 <ArrowRightIcon className="h-4 w-4" />
               </a>
@@ -1486,7 +1605,8 @@ export default function CardapioPage() {
                   }
                   className="min-h-12 rounded-full border-2 border-foreground bg-transparent px-6 font-bold transition-colors hover:bg-foreground hover:text-cream"
                 >
-                  Ver meu pedido
+                  {storeProfile?.heroSecondaryButtonText ||
+                    "Ver meu pedido"}
                 </button>
               )}
 
@@ -1499,7 +1619,7 @@ export default function CardapioPage() {
             <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-[0_18px_60px_-30px] shadow-foreground/35">
 
               <img
-                src="/pizzasystem/hero.jpg"
+                src={coverImageUrl}
                 alt="Destaque do cardápio"
                 className="aspect-[16/10] w-full object-cover"
               />
@@ -1507,13 +1627,16 @@ export default function CardapioPage() {
             </div>
 
             <div className="animate-floaty absolute -left-2 top-5 rounded-full bg-butter px-4 py-2 font-mono-brand text-xs font-bold shadow-[0_3px_0_0] shadow-foreground/15 sm:-left-4">
-              CARDÁPIO ONLINE
+              {storeProfile?.heroBadgeText ||
+                "CARDÁPIO ONLINE"}
             </div>
 
             <div className="absolute -bottom-3 right-4 rounded-full bg-foreground px-5 py-2.5 font-display text-lg tracking-wide text-cream shadow-[0_4px_0_0] shadow-primary/50">
               {storeStatus?.open
-                ? "ABERTO"
-                : "FECHADO"}
+                ? storeProfile?.heroOpenStatusText ||
+                  "ABERTO"
+                : storeProfile?.heroClosedStatusText ||
+                  "FECHADO"}
             </div>
 
           </div>
@@ -1534,11 +1657,13 @@ export default function CardapioPage() {
             <div>
 
               <p className="font-mono-brand text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                O cardápio
+                {storeProfile?.menuTitle ||
+                  "O cardápio"}
               </p>
 
               <h2 className="mt-1 font-display text-4xl tracking-tight sm:text-5xl">
-                Escolha o seu
+                {storeProfile?.menuSubtitle ||
+                  "Escolha o seu"}
               </h2>
 
             </div>
@@ -1559,7 +1684,7 @@ export default function CardapioPage() {
                     event.target.value
                   )
                 }
-                placeholder="Buscar no cardápio"
+                placeholder={storeProfile?.menuSearchPlaceholder || "Buscar no cardápio"}
                 className="h-12 w-full rounded-full border border-border bg-white/70 pl-11 pr-5 text-sm font-semibold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
               />
 
@@ -1587,11 +1712,13 @@ export default function CardapioPage() {
               <div className="mt-8 rounded-3xl border border-border bg-card p-10 text-center">
 
                 <p className="font-display text-3xl">
-                  Nenhum item encontrado
+                  {storeProfile?.menuEmptyTitle ||
+                    "Nenhum item encontrado"}
                 </p>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                  Tente outra categoria ou altere sua busca.
+                  {storeProfile?.menuEmptyDescription ||
+                    "Tente outra categoria ou altere sua busca."}
                 </p>
 
                 {(search ||
@@ -1758,7 +1885,8 @@ export default function CardapioPage() {
             </p>
 
             <p className="mt-1 font-mono-brand text-xs uppercase tracking-[0.15em] text-muted-foreground">
-              Pedidos online
+              {storeProfile?.footerTagline ||
+                "Pedidos online"}
             </p>
 
           </div>

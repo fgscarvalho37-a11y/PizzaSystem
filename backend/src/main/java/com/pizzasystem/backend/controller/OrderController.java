@@ -270,12 +270,24 @@ public class OrderController {
                         false
                 );
 
+        System.out.println("[ORDER] requestedSessionId = "
+                + servletRequest.getRequestedSessionId());
+        System.out.println("[ORDER] sessionId = "
+                + (customerSession != null ? customerSession.getId() : null));
+
         if (customerSession != null) {
 
             Object customerIdObject =
                     customerSession.getAttribute(
                             SESSION_CUSTOMER_ID
                     );
+
+            System.out.println("[ORDER] CUSTOMER_ID = "
+                    + customerIdObject
+                    + " | tipo = "
+                    + (customerIdObject != null
+                    ? customerIdObject.getClass().getName()
+                    : null));
 
             if (customerIdObject
                     instanceof Long customerId) {
@@ -293,6 +305,9 @@ public class OrderController {
                     order.setCustomer(
                             customer
                     );
+
+                    System.out.println("[ORDER] Cliente vinculado | customerId = "
+                            + customer.getId());
 
                 } else {
 
@@ -312,6 +327,11 @@ public class OrderController {
                 }
             }
         }
+
+        System.out.println("[ORDER] customer antes do save = "
+                + (order.getCustomer() != null
+                ? order.getCustomer().getId()
+                : null));
 
         order.setCustomerName(
                 request

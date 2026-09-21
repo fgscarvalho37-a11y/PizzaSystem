@@ -5,6 +5,7 @@ import com.pizzasystem.backend.entity.LoyaltyEarningType;
 import com.pizzasystem.backend.entity.Store;
 
 import com.pizzasystem.backend.service.CurrentStoreService;
+import com.pizzasystem.backend.service.PublicStoreService;
 import com.pizzasystem.backend.service.StoreStatusService;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -22,9 +23,13 @@ public class StoreSettingsController {
     private final StoreStatusService
             storeStatusService;
 
+    private final PublicStoreService
+            publicStoreService;
+
     public StoreSettingsController(
             CurrentStoreService currentStoreService,
-            StoreStatusService storeStatusService
+            StoreStatusService storeStatusService,
+            PublicStoreService publicStoreService
     ) {
 
         this.currentStoreService =
@@ -32,6 +37,9 @@ public class StoreSettingsController {
 
         this.storeStatusService =
                 storeStatusService;
+
+        this.publicStoreService =
+                publicStoreService;
     }
 
     // =========================
@@ -91,14 +99,44 @@ public class StoreSettingsController {
 
     @GetMapping("/profile")
     @Transactional(readOnly = true)
-    public StoreProfileResponse getProfile() {
+    public StoreProfileResponse getProfile(
+            @RequestParam(
+                    required = false
+            )
+            String store
+    ) {
 
-        Store store =
+        /*
+         * Quando o slug vem na URL, este GET é usado
+         * pelo cardápio público.
+         *
+         * Exemplo:
+         * /api/store/profile?store=minha-pizzaria
+         */
+        if (store != null
+                && !store.isBlank()) {
+
+            Store publicStore =
+                    publicStoreService
+                            .getBySlug(
+                                    store.trim()
+                            );
+
+            return toProfileResponse(
+                    publicStore
+            );
+        }
+
+        /*
+         * Sem slug continua sendo o endpoint usado
+         * pelo painel administrativo.
+         */
+        Store currentStore =
                 currentStoreService
                         .getCurrentStore();
 
         return toProfileResponse(
-                store
+                currentStore
         );
     }
 

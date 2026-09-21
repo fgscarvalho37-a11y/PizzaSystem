@@ -4,14 +4,30 @@ import {
   FormEvent,
   Suspense,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
+import Script from "next/script";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:8080";
+
+const GOOGLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ??
+  "833087922183-krk0sjmge2rhdpotcs0alq9ooof48umv.apps.googleusercontent.com";
+
+type GoogleCredentialResponse = {
+  credential?: string;
+};
+
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
 
 type Customer = {
   authenticated: boolean;
@@ -37,6 +53,53 @@ type CustomerOrder = {
   paymentMethod: string | null;
   createdAt: string;
   publicAccessToken: string;
+};
+
+type LoyaltyTransaction = {
+  id: number;
+  points: number;
+  type: string;
+  description: string | null;
+  createdAt: string;
+  orderId: number | null;
+};
+
+type LoyaltyAccount = {
+  id: number;
+  storeId: number;
+  storeName: string | null;
+  points: number;
+  lifetimePoints: number;
+  rewardsRedeemed: number;
+  createdAt: string;
+  updatedAt: string | null;
+  loyaltyEnabled: boolean;
+  stampGoal: number;
+  rewardDescription: string | null;
+  rewardAvailable: boolean;
+  pointsMissing: number;
+  transactions: LoyaltyTransaction[];
+};
+
+type LoyaltyRedemption = {
+  id: number;
+  storeId: number;
+  storeName: string | null;
+  pointsUsed: number;
+  rewardDescription: string;
+  status: string;
+  createdAt: string;
+  usedAt: string | null;
+  cancelledAt: string | null;
+};
+
+type LoyaltyResponse = {
+  customerId: number;
+  totalPoints: number;
+  totalLifetimePoints: number;
+  totalRewardsRedeemed: number;
+  accounts: LoyaltyAccount[];
+  redemptions?: LoyaltyRedemption[];
 };
 
 function ContaContent() {
@@ -79,6 +142,9 @@ function ContaContent() {
   const [error, setError] =
     useState("");
 
+  const googleButtonRef =
+    useRef<HTMLDivElement | null>(null);
+
   const [orders, setOrders] =
     useState<CustomerOrder[]>([]);
 
@@ -89,6 +155,27 @@ function ContaContent() {
     useState(false);
 
   const [ordersError, setOrdersError] =
+    useState("");
+
+  const [loyalty, setLoyalty] =
+    useState<LoyaltyResponse | null>(null);
+
+  const [loyaltyOpen, setLoyaltyOpen] =
+    useState(false);
+
+  const [loadingLoyalty, setLoadingLoyalty] =
+    useState(false);
+
+  const [loyaltyError, setLoyaltyError] =
+    useState("");
+
+  const [redeemingStoreId, setRedeemingStoreId] =
+    useState<number | null>(null);
+
+  const [redeemMessage, setRedeemMessage] =
+    useState("");
+
+  const [redeemError, setRedeemError] =
     useState("");
 
   const [name, setName] =
@@ -103,6 +190,174 @@ function ContaContent() {
   const [password, setPassword] =
     useState("");
 
+  const [profileOpen, setProfileOpen] =
+    useState(false);
+
+  const [profileName, setProfileName] =
+    useState("");
+
+  const [profileEmail, setProfileEmail] =
+    useState("");
+
+  const [profilePhone, setProfilePhone] =
+    useState("");
+
+  const [currentPassword, setCurrentPassword] =
+    useState("");
+
+  const [newPassword, setNewPassword] =
+    useState("");
+
+  const [confirmNewPassword, setConfirmNewPassword] =
+    useState("");
+
+  const [savingProfile, setSavingProfile] =
+    useState(false);
+
+  const [profileError, setProfileError] =
+    useState("");
+
+  const [profileMessage, setProfileMessage] =
+    useState("");
+
+  function openProfile() {
+    if (!customer) {
+      return;
+    }
+
+    setProfileName(customer.name ?? "");
+    setProfileEmail(customer.email ?? "");
+    setProfilePhone(customer.phone ?? "");
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setProfileError("");
+    setProfileMessage("");
+    setProfileOpen(true);
+  }
+
+  async function saveProfile() {
+    if (!customer || savingProfile) {
+      return;
+    }
+
+    setProfileError("");
+    setProfileMessage("");
+
+    if (!profileName.trim()) {
+      setProfileError("Informe seu nome.");
+      return;
+    }
+
+    if (!profileEmail.trim()) {
+      setProfileError("Informe seu e-mail.");
+      return;
+    }
+
+    if (
+      newPassword &&
+      newPassword.length < 8
+    ) {
+      setProfileError(
+        "A nova senha deve ter pelo menos 8 caracteres."
+      );
+      return;
+    }
+
+    if (
+      newPassword !==
+      confirmNewPassword
+    ) {
+      setProfileError(
+        "A confirmação da nova senha não confere."
+      );
+      return;
+    }
+
+    try {
+      setSavingProfile(true);
+
+      const csrfResponse = await fetch(
+        `${API_URL}/api/auth/csrf`,
+        {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        }
+      );
+
+      if (!csrfResponse.ok) {
+        throw new Error(
+          "Não foi possível validar a segurança da sessão."
+        );
+      }
+
+      const csrf = await csrfResponse.json();
+
+      const response = await fetch(
+        `${API_URL}/api/customer-auth/me`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: {
+            "Content-Type":
+              "application/json",
+            [csrf.headerName]:
+              csrf.token,
+          },
+          body: JSON.stringify({
+            name: profileName.trim(),
+            email: profileEmail.trim(),
+            phone: profilePhone.trim(),
+            currentPassword,
+            newPassword,
+          }),
+        }
+      );
+
+      const responseText =
+        await response.text();
+
+      let data: any = {};
+
+      if (responseText) {
+        try {
+          data =
+            JSON.parse(responseText);
+        } catch {
+          // O backend pode responder sem JSON em alguns erros.
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ??
+            `Não foi possível atualizar seus dados (${response.status}).`
+        );
+      }
+
+      setCustomer(data);
+      setProfileName(data.name ?? "");
+      setProfileEmail(data.email ?? "");
+      setProfilePhone(data.phone ?? "");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setProfileMessage(
+        data?.message ??
+          "Dados atualizados com sucesso."
+      );
+    } catch (err) {
+      setProfileError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível atualizar seus dados."
+      );
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
   function formatMoney(
     value: number | null
   ) {
@@ -115,7 +370,7 @@ function ContaContent() {
     ).format(value ?? 0);
   }
 
-  function formatOrderDate(
+  function formatDate(
     value: string
   ) {
     const date =
@@ -138,6 +393,12 @@ function ContaContent() {
     ).format(date);
   }
 
+  function formatOrderDate(
+    value: string
+  ) {
+    return formatDate(value);
+  }
+
   function orderStatusLabel(
     status: string
   ) {
@@ -157,6 +418,39 @@ function ContaContent() {
           "Entregue",
         CANCELLED:
           "Cancelado",
+      };
+
+    return labels[status] ?? status;
+  }
+
+  function transactionTypeLabel(
+    type: string
+  ) {
+    const labels:
+      Record<string, string> = {
+        ORDER_REWARD:
+          "Pontos do pedido",
+        REWARD_REDEMPTION:
+          "Resgate de recompensa",
+        REWARD_REFUND:
+          "Pontos devolvidos",
+        MANUAL_CREDIT:
+          "Crédito manual",
+        MANUAL_DEBIT:
+          "Débito manual",
+      };
+
+    return labels[type] ?? type;
+  }
+
+  function redemptionStatusLabel(
+    status: string
+  ) {
+    const labels:
+      Record<string, string> = {
+        PENDING: "Aguardando utilização",
+        USED: "Utilizada",
+        CANCELLED: "Cancelada",
       };
 
     return labels[status] ?? status;
@@ -207,6 +501,122 @@ function ContaContent() {
 
     } finally {
       setLoadingOrders(false);
+    }
+  }
+
+  async function loadLoyalty() {
+    if (loadingLoyalty) {
+      return;
+    }
+
+    setLoyaltyOpen(true);
+    setLoadingLoyalty(true);
+    setLoyaltyError("");
+
+    try {
+      const response =
+        await fetch(
+          `${API_URL}/api/customer/loyalty`,
+          {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+          }
+        );
+
+      let data: LoyaltyResponse & {
+        message?: string;
+      };
+
+      try {
+        data =
+          await response.json();
+      } catch {
+        throw new Error(
+          "Não foi possível carregar sua fidelidade."
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ??
+            "Não foi possível carregar sua fidelidade."
+        );
+      }
+
+      setLoyalty(data);
+
+    } catch (error) {
+      setLoyalty(null);
+
+      setLoyaltyError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível carregar sua fidelidade."
+      );
+
+    } finally {
+      setLoadingLoyalty(false);
+    }
+  }
+
+  async function redeemReward(
+    account: LoyaltyAccount
+  ) {
+    if (redeemingStoreId !== null) {
+      return;
+    }
+
+    setRedeemingStoreId(account.storeId);
+    setRedeemMessage("");
+    setRedeemError("");
+
+    try {
+      const response =
+        await fetch(
+          `${API_URL}/api/customer/loyalty/${account.storeId}/redeem`,
+          {
+            method: "POST",
+            credentials: "include",
+          }
+        );
+
+      let data: {
+        success?: boolean;
+        message?: string;
+      };
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          "Não foi possível processar o resgate."
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ??
+            "Não foi possível resgatar a recompensa."
+        );
+      }
+
+      setRedeemMessage(
+        data?.message ??
+          "Recompensa resgatada com sucesso."
+      );
+
+      await loadLoyalty();
+
+    } catch (error) {
+      setRedeemError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível resgatar a recompensa."
+      );
+
+    } finally {
+      setRedeemingStoreId(null);
     }
   }
 
@@ -271,6 +681,151 @@ function ContaContent() {
   useEffect(() => {
     void loadSession();
   }, []);
+
+  // =========================
+  // GOOGLE LOGIN
+  // =========================
+
+  async function handleGoogleCredential(
+    googleResponse: GoogleCredentialResponse
+  ) {
+    const credential =
+      googleResponse?.credential;
+
+    if (!credential) {
+      setError(
+        "O Google não retornou uma credencial válida."
+      );
+      return;
+    }
+
+    if (submitting) {
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const csrfResponse =
+        await fetch(
+          `${API_URL}/api/auth/csrf`,
+          {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+          }
+        );
+
+      if (!csrfResponse.ok) {
+        throw new Error(
+          "Não foi possível validar a segurança da sessão."
+        );
+      }
+
+      const csrf =
+        await csrfResponse.json();
+
+      const response =
+        await fetch(
+          `${API_URL}/api/customer-auth/google`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type":
+                "application/json",
+              [csrf.headerName]:
+                csrf.token,
+            },
+            body: JSON.stringify({
+              credential,
+            }),
+          }
+        );
+
+      const responseText =
+        await response.text();
+
+      let data: any = {};
+
+      if (responseText) {
+        try {
+          data =
+            JSON.parse(
+              responseText
+            );
+        } catch {
+          // Mantém mensagem genérica abaixo.
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ??
+            "Não foi possível entrar com Google."
+        );
+      }
+
+      setCustomer(data);
+      setPassword("");
+
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível entrar com Google."
+      );
+
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function initializeGoogleSignIn() {
+    if (
+      !window.google?.accounts?.id ||
+      !googleButtonRef.current
+    ) {
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id:
+        GOOGLE_CLIENT_ID,
+      callback:
+        handleGoogleCredential,
+      auto_select:
+        false,
+      cancel_on_tap_outside:
+        true,
+    });
+
+    googleButtonRef.current.innerHTML =
+      "";
+
+    window.google.accounts.id.renderButton(
+      googleButtonRef.current,
+      {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+        shape: "pill",
+        width: 400,
+        logo_alignment: "left",
+      }
+    );
+  }
+
+  useEffect(() => {
+    if (
+      !customer &&
+      window.google?.accounts?.id
+    ) {
+      initializeGoogleSignIn();
+    }
+  }, [customer, mode]);
 
   // =========================
   // LOGIN
@@ -410,6 +965,17 @@ function ContaContent() {
     } finally {
       setCustomer(null);
       setMode("login");
+
+      setOrders([]);
+      setOrdersOpen(false);
+      setOrdersError("");
+
+      setLoyalty(null);
+      setLoyaltyOpen(false);
+      setLoyaltyError("");
+      setRedeemMessage("");
+      setRedeemError("");
+      setRedeemingStoreId(null);
     }
   }
 
@@ -526,23 +1092,40 @@ function ContaContent() {
 
             <button
               type="button"
-              className="rounded-[26px] border border-border bg-card p-6 text-left shadow-[0_14px_45px_-30px] shadow-foreground/40 transition-transform hover:-translate-y-0.5"
+              onClick={() =>
+                void loadLoyalty()
+              }
+              className="relative overflow-hidden rounded-[26px] border border-border bg-card p-6 text-left shadow-[0_14px_45px_-30px] shadow-foreground/40 transition-transform hover:-translate-y-0.5"
             >
+              <div className="absolute -right-4 -top-6 text-7xl opacity-[0.06]">
+                ★
+              </div>
+
               <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                 Fidelidade
               </p>
 
               <h2 className="mt-2 font-display text-2xl tracking-tight">
-                Selos
+                Meus pontos
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Veja seus benefícios em cada loja.
-              </p>
+              {loyalty ? (
+                <p className="mt-2 font-display text-3xl tracking-tight text-primary">
+                  {loyalty.totalPoints}{" "}
+                  {loyalty.totalPoints === 1
+                    ? "ponto"
+                    : "pontos"}
+                </p>
+              ) : (
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Veja seus pontos e benefícios em cada loja.
+                </p>
+              )}
             </button>
 
             <button
               type="button"
+              onClick={openProfile}
               className="rounded-[26px] border border-border bg-card p-6 text-left shadow-[0_14px_45px_-30px] shadow-foreground/40 transition-transform hover:-translate-y-0.5"
             >
               <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
@@ -554,10 +1137,701 @@ function ContaContent() {
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Nome, telefone, endereços e preferências.
+                Altere seu nome, telefone, e-mail e senha.
               </p>
             </button>
           </div>
+
+          {profileOpen && (
+            <section className="mt-6 rounded-[28px] border border-border bg-card p-6 sm:p-7">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+                    Perfil
+                  </p>
+
+                  <h2 className="mt-1 font-display text-3xl tracking-tight">
+                    Meus dados
+                  </h2>
+
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Atualize as informações usadas na sua conta.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen(false)}
+                  className="self-start rounded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary"
+                >
+                  Fechar
+                </button>
+              </div>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-sm font-bold">
+                    Nome
+                  </span>
+                  <input
+                    value={profileName}
+                    onChange={(event) =>
+                      setProfileName(event.target.value)
+                    }
+                    autoComplete="name"
+                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary"
+                    placeholder="Seu nome"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-bold">
+                    Telefone
+                  </span>
+                  <input
+                    value={profilePhone}
+                    onChange={(event) =>
+                      setProfilePhone(event.target.value)
+                    }
+                    autoComplete="tel"
+                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary"
+                    placeholder="(19) 99999-9999"
+                  />
+                </label>
+
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-bold">
+                    E-mail
+                  </span>
+                  <input
+                    type="email"
+                    value={profileEmail}
+                    onChange={(event) =>
+                      setProfileEmail(event.target.value)
+                    }
+                    autoComplete="email"
+                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary"
+                    placeholder="voce@email.com"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-7 border-t border-border pt-6">
+                <div>
+                  <p className="font-display text-xl tracking-tight">
+                    Alterar senha
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Deixe estes campos vazios se não quiser trocar sua senha.
+                  </p>
+                </div>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                  <label className="block">
+                    <span className="text-sm font-bold">
+                      Senha atual
+                    </span>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(event) =>
+                        setCurrentPassword(event.target.value)
+                      }
+                      autoComplete="current-password"
+                      className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary"
+                      placeholder="Sua senha atual"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-bold">
+                      Nova senha
+                    </span>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(event) =>
+                        setNewPassword(event.target.value)
+                      }
+                      autoComplete="new-password"
+                      className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary"
+                      placeholder="Mínimo 8 caracteres"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-bold">
+                      Confirmar nova senha
+                    </span>
+                    <input
+                      type="password"
+                      value={confirmNewPassword}
+                      onChange={(event) =>
+                        setConfirmNewPassword(event.target.value)
+                      }
+                      autoComplete="new-password"
+                      className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary"
+                      placeholder="Repita a nova senha"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {profileError && (
+                <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm font-semibold text-red-600">
+                  {profileError}
+                </div>
+              )}
+
+              {profileMessage && (
+                <div className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">
+                  {profileMessage}
+                </div>
+              )}
+
+              <div className="mt-6 flex flex-wrap justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen(false)}
+                  disabled={savingProfile}
+                  className="rounded-full border border-border px-5 py-3 text-sm font-bold transition-colors hover:bg-secondary disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => void saveProfile()}
+                  disabled={savingProfile}
+                  className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {savingProfile
+                    ? "Salvando..."
+                    : "Salvar alterações"}
+                </button>
+              </div>
+            </section>
+          )}
+
+          {loyaltyOpen && (
+            <section className="mt-6 rounded-[28px] border border-border bg-card p-6 sm:p-7">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+                    Fidelidade
+                  </p>
+
+                  <h2 className="mt-1 font-display text-3xl tracking-tight">
+                    Meus pontos
+                  </h2>
+
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Acompanhe seus pontos e o histórico de cada loja.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLoyaltyOpen(false)
+                  }
+                  className="self-start rounded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary"
+                >
+                  Fechar
+                </button>
+              </div>
+
+              {loadingLoyalty ? (
+                <div className="mt-6">
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="skeleton h-28 rounded-2xl" />
+                    <div className="skeleton h-28 rounded-2xl" />
+                    <div className="skeleton h-28 rounded-2xl" />
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    <div className="skeleton h-24 rounded-2xl" />
+                    <div className="skeleton h-24 rounded-2xl" />
+                  </div>
+                </div>
+              ) : loyaltyError ? (
+                <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                  <p className="text-sm font-semibold text-primary">
+                    {loyaltyError}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void loadLoyalty()
+                    }
+                    className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              ) : !loyalty ? (
+                <div className="mt-6 rounded-2xl bg-secondary p-5">
+                  <p className="font-bold">
+                    Não foi possível encontrar seus pontos.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                    <div className="rounded-[22px] bg-primary p-5 text-primary-foreground">
+                      <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] opacity-80">
+                        Saldo atual
+                      </p>
+
+                      <p className="mt-2 font-display text-4xl tracking-tight">
+                        {loyalty.totalPoints}
+                      </p>
+
+                      <p className="mt-1 text-sm font-semibold opacity-90">
+                        {loyalty.totalPoints === 1
+                          ? "ponto disponível"
+                          : "pontos disponíveis"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-[22px] bg-secondary p-5">
+                      <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                        Total conquistado
+                      </p>
+
+                      <p className="mt-2 font-display text-4xl tracking-tight">
+                        {loyalty.totalLifetimePoints}
+                      </p>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        pontos desde o início
+                      </p>
+                    </div>
+
+                    <div className="rounded-[22px] bg-secondary p-5">
+                      <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                        Recompensas
+                      </p>
+
+                      <p className="mt-2 font-display text-4xl tracking-tight">
+                        {loyalty.totalRewardsRedeemed}
+                      </p>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        resgatadas até agora
+                      </p>
+                    </div>
+                  </div>
+
+                  {redeemMessage && (
+                    <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                      <p className="text-sm font-semibold text-primary">
+                        {redeemMessage}
+                      </p>
+                    </div>
+                  )}
+
+                  {redeemError && (
+                    <div className="mt-6 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+                      <p className="text-sm font-semibold text-destructive">
+                        {redeemError}
+                      </p>
+                    </div>
+                  )}
+
+                  {loyalty.accounts.length === 0 ? (
+                    <div className="mt-6 rounded-2xl bg-secondary p-5">
+                      <p className="font-bold">
+                        Você ainda não possui pontos.
+                      </p>
+
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                        Quando um pedido elegível for aprovado, seus pontos aparecerão aqui.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-6 space-y-5">
+                      {loyalty.accounts.map(
+                        (account) => (
+                          <article
+                            key={account.id}
+                            className="overflow-hidden rounded-[24px] border border-border bg-background"
+                          >
+                            <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
+                              <div>
+                                <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                                  Loja
+                                </p>
+
+                                <h3 className="mt-1 font-display text-2xl tracking-tight">
+                                  {account.storeName ??
+                                    "Loja"}
+                                </h3>
+                              </div>
+
+                              <div className="sm:text-right">
+                                <p className="font-display text-3xl tracking-tight text-primary">
+                                  {account.points}{" "}
+                                  {account.points === 1
+                                    ? "ponto"
+                                    : "pontos"}
+                                </p>
+
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {account.lifetimePoints} conquistados no total
+                                </p>
+                              </div>
+                            </div>
+
+                            {account.loyaltyEnabled && (
+                              <div className="border-b border-border p-5">
+                                <div className="rounded-[22px] bg-secondary p-5">
+                                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                      <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                                        Recompensa
+                                      </p>
+
+                                      <h4 className="mt-1 font-display text-2xl tracking-tight">
+                                        {account.rewardDescription?.trim() ||
+                                          "Recompensa da fidelidade"}
+                                      </h4>
+
+                                      <p className="mt-2 text-sm text-muted-foreground">
+                                        {account.rewardAvailable
+                                          ? `Você completou ${account.stampGoal} pontos e já pode resgatar.`
+                                          : `Faltam ${account.pointsMissing} ${
+                                              account.pointsMissing === 1
+                                                ? "ponto"
+                                                : "pontos"
+                                            } para resgatar.`}
+                                      </p>
+
+                                      <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-background">
+                                        <div
+                                          className="h-full rounded-full bg-primary transition-all"
+                                          style={{
+                                            width: `${Math.min(
+                                              100,
+                                              account.stampGoal > 0
+                                                ? (account.points / account.stampGoal) * 100
+                                                : 0
+                                            )}%`,
+                                          }}
+                                        />
+                                      </div>
+
+                                      <p className="mt-2 text-xs font-semibold text-muted-foreground">
+                                        {Math.min(account.points, account.stampGoal)}/{account.stampGoal} pontos
+                                      </p>
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      disabled={
+                                        !account.rewardAvailable ||
+                                        redeemingStoreId !== null
+                                      }
+                                      onClick={() =>
+                                        void redeemReward(account)
+                                      }
+                                      className="min-h-12 shrink-0 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      {redeemingStoreId === account.storeId
+                                        ? "Resgatando..."
+                                        : account.rewardAvailable
+                                          ? "Resgatar recompensa"
+                                          : "Ainda não disponível"}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {(loyalty.redemptions ?? []).filter(
+                              (redemption) =>
+                                redemption.storeId === account.storeId
+                            ).length > 0 && (
+                              <div className="border-t border-border p-5">
+                                <div className="flex items-end justify-between gap-3">
+                                  <div>
+                                    <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                                      Resgates
+                                    </p>
+
+                                    <h4 className="mt-1 font-display text-xl tracking-tight">
+                                      Minhas recompensas
+                                    </h4>
+                                  </div>
+
+                                  <span className="text-xs font-semibold text-muted-foreground">
+                                    {
+                                      (loyalty.redemptions ?? []).filter(
+                                        (redemption) =>
+                                          redemption.storeId === account.storeId
+                                      ).length
+                                    }{" "}
+                                    resgate(s)
+                                  </span>
+                                </div>
+
+                                <div className="mt-4 space-y-3">
+                                  {[...(loyalty.redemptions ?? [])]
+                                    .filter(
+                                      (redemption) =>
+                                        redemption.storeId === account.storeId
+                                    )
+                                    .sort((a, b) => {
+                                      if (
+                                        a.status === "PENDING" &&
+                                        b.status !== "PENDING"
+                                      ) {
+                                        return -1;
+                                      }
+
+                                      if (
+                                        b.status === "PENDING" &&
+                                        a.status !== "PENDING"
+                                      ) {
+                                        return 1;
+                                      }
+
+                                      return (
+                                        new Date(b.createdAt).getTime() -
+                                        new Date(a.createdAt).getTime()
+                                      );
+                                    })
+                                    .map((redemption) => {
+                                      const isPending =
+                                        redemption.status === "PENDING";
+
+                                      const isUsed =
+                                        redemption.status === "USED";
+
+                                      const isCancelled =
+                                        redemption.status === "CANCELLED";
+
+                                      if (isPending) {
+                                        return (
+                                          <article
+                                            key={redemption.id}
+                                            className="rounded-[20px] border border-primary/20 bg-secondary p-4"
+                                          >
+                                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                              <div className="min-w-0">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                  <span className="rounded-full bg-primary px-3 py-1 font-mono-brand text-[9px] font-bold uppercase tracking-wider text-primary-foreground">
+                                                    Aguardando utilização
+                                                  </span>
+                                                </div>
+
+                                                <h5 className="mt-3 font-display text-xl tracking-tight">
+                                                  {redemption.rewardDescription}
+                                                </h5>
+
+                                                <p className="mt-1 text-xs text-muted-foreground">
+                                                  Resgatada em{" "}
+                                                  {formatDate(
+                                                    redemption.createdAt
+                                                  )}
+                                                </p>
+
+                                                <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                                                  Apresente esta recompensa à loja para utilizar o benefício.
+                                                </p>
+                                              </div>
+
+                                              <div className="shrink-0 sm:text-right">
+                                                <p className="font-display text-2xl tracking-tight">
+                                                  -{redemption.pointsUsed}
+                                                </p>
+
+                                                <p className="text-[11px] font-semibold text-muted-foreground">
+                                                  pontos utilizados
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </article>
+                                        );
+                                      }
+
+                                      return (
+                                        <article
+                                          key={redemption.id}
+                                          className="rounded-[18px] bg-secondary px-4 py-3"
+                                        >
+                                          <div className="flex items-start justify-between gap-4">
+                                            <div className="min-w-0">
+                                              <div className="flex flex-wrap items-center gap-2">
+                                                <span className="rounded-full bg-background px-2.5 py-1 font-mono-brand text-[8px] font-bold uppercase tracking-wider text-muted-foreground">
+                                                  {isUsed
+                                                    ? "Utilizada"
+                                                    : isCancelled
+                                                      ? "Cancelada"
+                                                      : redemptionStatusLabel(
+                                                          redemption.status
+                                                        )}
+                                                </span>
+                                              </div>
+
+                                              <h5 className="mt-2 font-display text-lg tracking-tight">
+                                                {redemption.rewardDescription}
+                                              </h5>
+
+                                              <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                                                <span>
+                                                  Resgatada em{" "}
+                                                  {formatDate(
+                                                    redemption.createdAt
+                                                  )}
+                                                </span>
+
+                                                {isUsed &&
+                                                  redemption.usedAt && (
+                                                    <span>
+                                                      • Utilizada em{" "}
+                                                      {formatDate(
+                                                        redemption.usedAt
+                                                      )}
+                                                    </span>
+                                                  )}
+
+                                                {isCancelled &&
+                                                  redemption.cancelledAt && (
+                                                    <span>
+                                                      • Cancelada em{" "}
+                                                      {formatDate(
+                                                        redemption.cancelledAt
+                                                      )}
+                                                    </span>
+                                                  )}
+                                              </div>
+                                            </div>
+
+                                            <div className="shrink-0 text-right">
+                                              {isCancelled ? (
+                                                <>
+                                                  <p className="font-display text-2xl tracking-tight text-primary">
+                                                    +{redemption.pointsUsed}
+                                                  </p>
+
+                                                  <p className="text-[11px] font-semibold text-primary">
+                                                    pontos devolvidos
+                                                  </p>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <p className="font-display text-2xl tracking-tight">
+                                                    -{redemption.pointsUsed}
+                                                  </p>
+
+                                                  <p className="text-[11px] font-semibold text-muted-foreground">
+                                                    pontos utilizados
+                                                  </p>
+                                                </>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </article>
+                                      );
+                                    })}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="p-5">
+                              <div className="flex items-center justify-between gap-3">
+                                <h4 className="font-display text-xl tracking-tight">
+                                  Histórico de pontos
+                                </h4>
+
+                                <span className="text-xs font-semibold text-muted-foreground">
+                                  {account.transactions.length}{" "}
+                                  {account.transactions.length === 1
+                                    ? "movimentação"
+                                    : "movimentações"}
+                                </span>
+                              </div>
+
+                              {account.transactions.length === 0 ? (
+                                <div className="mt-4 rounded-2xl bg-secondary p-4">
+                                  <p className="text-sm text-muted-foreground">
+                                    Nenhuma movimentação registrada ainda.
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="mt-4 space-y-3">
+                                  {account.transactions.map(
+                                    (transaction) => (
+                                      <div
+                                        key={transaction.id}
+                                        className="flex flex-col gap-4 rounded-2xl bg-secondary p-4 sm:flex-row sm:items-center sm:justify-between"
+                                      >
+                                        <div className="min-w-0">
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <span className="rounded-full bg-background px-3 py-1 font-mono-brand text-[9px] font-bold uppercase tracking-wider">
+                                              {transactionTypeLabel(
+                                                transaction.type
+                                              )}
+                                            </span>
+
+                                            {transaction.orderId != null && (
+                                              <span className="text-xs font-bold text-muted-foreground">
+                                                Pedido #{transaction.orderId}
+                                              </span>
+                                            )}
+                                          </div>
+
+                                          <p className="mt-3 text-sm font-semibold">
+                                            {transaction.description ??
+                                              "Movimentação de pontos"}
+                                          </p>
+
+                                          <p className="mt-1 text-xs text-muted-foreground">
+                                            {formatDate(
+                                              transaction.createdAt
+                                            )}
+                                          </p>
+                                        </div>
+
+                                        <div className="shrink-0 sm:text-right">
+                                          <p
+                                            className={`font-display text-3xl tracking-tight ${
+                                              transaction.points >= 0
+                                                ? "text-primary"
+                                                : "text-foreground"
+                                            }`}
+                                          >
+                                            {transaction.points > 0
+                                              ? "+"
+                                              : ""}
+                                            {transaction.points}
+                                          </p>
+
+                                          <p className="text-xs font-semibold text-muted-foreground">
+                                            {Math.abs(
+                                              transaction.points
+                                            ) === 1
+                                              ? "ponto"
+                                              : "pontos"}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </article>
+                        )
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
+          )}
 
           {ordersOpen && (
             <section className="mt-6 rounded-[28px] border border-border bg-card p-6 sm:p-7">
@@ -708,6 +1982,12 @@ function ContaContent() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-10 text-foreground sm:px-6">
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="afterInteractive"
+        onLoad={initializeGoogleSignIn}
+      />
+
       <div className="mx-auto max-w-lg">
         <button
           type="button"
@@ -877,22 +2157,29 @@ function ContaContent() {
 
           <div className="my-6 flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />
+
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               ou
             </span>
+
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          <button
-            type="button"
-            disabled
-            className="flex min-h-12 w-full items-center justify-center rounded-2xl border-2 border-border px-5 text-sm font-bold opacity-60"
+          <div
+            className={`flex min-h-12 w-full items-center justify-center ${
+              submitting
+                ? "pointer-events-none opacity-50"
+                : ""
+            }`}
           >
-            Continuar com Google
-          </button>
+            <div
+              ref={googleButtonRef}
+              className="flex w-full justify-center"
+            />
+          </div>
 
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            Login com Google entra na próxima etapa.
+            Use sua conta Google para entrar ou criar sua conta automaticamente.
           </p>
         </div>
       </div>

@@ -669,6 +669,155 @@ public ResponseEntity<?> syncPaymentDev(
             );
 }
     // =========================
+    // DEV - APROVAR PAGAMENTO
+    // =========================
+
+    @PostMapping(
+            value = "/dev/approve/{orderId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<?> approvePaymentDev(
+            @PathVariable Long orderId
+    ) {
+
+        /*
+         * Endpoint temporário para desenvolvimento.
+         * Aprova o pedido localmente sem pagamento real.
+         * Só funciona com administrador autenticado
+         * e respeita a Store do administrador.
+         */
+
+        if (!isAdminAuthenticated()) {
+            return errorResponse(
+                    HttpStatus.UNAUTHORIZED,
+                    "Administrador não autenticado."
+            );
+        }
+
+        Order order =
+                getOrderForAccess(
+                        orderId,
+                        null
+                );
+
+        PaymentStatus previousPaymentStatus =
+                order.getPaymentStatus();
+
+        order.setPaymentStatus(
+                PaymentStatus.APPROVED
+        );
+
+        order.setStatus(
+                OrderStatus.RECEIVED
+        );
+
+        order =
+                orderRepository.save(
+                        order
+                );
+
+        if (previousPaymentStatus != PaymentStatus.APPROVED) {
+
+            couponService.registerUsageForOrder(
+                    order
+            );
+
+            loyaltyService.registerForOrder(
+                    order
+            );
+        }
+
+        Map<String, Object> response =
+                new HashMap<>();
+
+        response.put("success", true);
+        response.put("orderId", order.getId());
+        response.put(
+                "storeId",
+                order.getStore() != null
+                        ? order.getStore().getId()
+                        : null
+        );
+        response.put(
+                "paymentStatus",
+                order.getPaymentStatus().name()
+        );
+        response.put(
+                "orderStatus",
+                order.getStatus().name()
+        );
+        response.put(
+                "loyaltyRegistered",
+                order.isLoyaltyRegistered()
+        );
+
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
+    }
+
+    // =========================
+    // DEV - REPROCESSAR FIDELIDADE
+    // =========================
+
+    @PostMapping(
+            value = "/dev/loyalty/{orderId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<?> reprocessLoyaltyDev(
+            @PathVariable Long orderId
+    ) {
+
+        if (!isAdminAuthenticated()) {
+            return errorResponse(
+                    HttpStatus.UNAUTHORIZED,
+                    "Administrador não autenticado."
+            );
+        }
+
+        Order order =
+                getOrderForAccess(
+                        orderId,
+                        null
+                );
+
+        loyaltyService.registerForOrder(
+                order
+        );
+
+        order =
+                orderRepository.findById(
+                        orderId
+                ).orElse(order);
+
+        Map<String, Object> response =
+                new HashMap<>();
+
+        response.put("success", true);
+        response.put("orderId", order.getId());
+        response.put(
+                "storeId",
+                order.getStore() != null
+                        ? order.getStore().getId()
+                        : null
+        );
+        response.put(
+                "paymentStatus",
+                order.getPaymentStatus().name()
+        );
+        response.put(
+                "loyaltyRegistered",
+                order.isLoyaltyRegistered()
+        );
+
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
+    }
+
+    // =========================
     // AUXILIARES
     // =========================
 

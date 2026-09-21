@@ -51,18 +51,28 @@ public class LoyaltyTransaction {
     // =========================
 
     /*
-     * UNIQUE.
+     * Opcional.
      *
-     * Um pedido só pode gerar uma
-     * transação de fidelidade.
+     * Transações geradas por pedidos
+     * possuem um pedido associado.
+     *
+     * Outras movimentações, como
+     * resgates de recompensa, não
+     * precisam estar vinculadas
+     * diretamente a um pedido.
+     *
+     * Quando existir um pedido,
+     * ele continua sendo UNIQUE para
+     * impedir que o mesmo pedido gere
+     * pontos mais de uma vez.
      */
     @OneToOne(
             fetch = FetchType.LAZY,
-            optional = false
+            optional = true
     )
     @JoinColumn(
             name = "order_id",
-            nullable = false,
+            nullable = true,
             unique = true
     )
     private Order order;
@@ -75,18 +85,32 @@ public class LoyaltyTransaction {
      * Positivo:
      * crédito.
      *
-     * Negativo futuramente:
+     * Negativo:
      * resgate/estorno.
      */
     @Column(nullable = false)
     private Integer points;
 
+    // =========================
+    // TIPO
+    // =========================
+
+    /*
+     * Exemplos:
+     *
+     * ORDER_REWARD
+     * REWARD_REDEMPTION
+     */
     @Column(
             nullable = false,
             length = 40
     )
     private String type =
             "ORDER_REWARD";
+
+    // =========================
+    // DESCRIÇÃO
+    // =========================
 
     @Column(
             length = 250

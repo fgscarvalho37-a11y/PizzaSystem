@@ -47,6 +47,24 @@ type StoreProfile = {
   marqueeMessage: string | null;
   marqueeEnabled: boolean;
 
+  heroTitleLine1: string | null;
+  heroTitleLine2: string | null;
+  heroTitleLine3: string | null;
+  heroDescription: string | null;
+  heroPrimaryButtonText: string | null;
+  heroSecondaryButtonText: string | null;
+  heroBadgeText: string | null;
+  heroOpenStatusText: string | null;
+  heroClosedStatusText: string | null;
+
+  menuTitle: string | null;
+  menuSubtitle: string | null;
+  menuSearchPlaceholder: string | null;
+  menuEmptyTitle: string | null;
+  menuEmptyDescription: string | null;
+
+  footerTagline: string | null;
+
   whatsapp: string | null;
   phone: string | null;
   email: string | null;
@@ -81,6 +99,24 @@ type ProfileForm = {
 
   marqueeMessage: string;
   marqueeEnabled: boolean;
+
+  heroTitleLine1: string;
+  heroTitleLine2: string;
+  heroTitleLine3: string;
+  heroDescription: string;
+  heroPrimaryButtonText: string;
+  heroSecondaryButtonText: string;
+  heroBadgeText: string;
+  heroOpenStatusText: string;
+  heroClosedStatusText: string;
+
+  menuTitle: string;
+  menuSubtitle: string;
+  menuSearchPlaceholder: string;
+  menuEmptyTitle: string;
+  menuEmptyDescription: string;
+
+  footerTagline: string;
 
   whatsapp: string;
   phone: string;
@@ -206,6 +242,27 @@ export default function ConfiguracoesPage() {
     headline: "",
     marqueeMessage: "",
     marqueeEnabled: true,
+
+    heroTitleLine1: "ESCOLHA.",
+    heroTitleLine2: "PEÇA.",
+    heroTitleLine3: "APROVEITE.",
+    heroDescription:
+      "Escolha seus favoritos, monte seu pedido e acompanhe tudo pelo site.",
+    heroPrimaryButtonText: "Ver cardápio",
+    heroSecondaryButtonText: "Ver meu pedido",
+    heroBadgeText: "CARDÁPIO ONLINE",
+    heroOpenStatusText: "ABERTO",
+    heroClosedStatusText: "FECHADO",
+
+    menuTitle: "O cardápio",
+    menuSubtitle: "Escolha o seu",
+    menuSearchPlaceholder: "Buscar no cardápio",
+    menuEmptyTitle: "Nenhum produto encontrado",
+    menuEmptyDescription:
+      "Tente buscar por outro termo ou escolha outra categoria.",
+
+    footerTagline: "Pedidos online",
+
     whatsapp: "",
     phone: "",
     email: "",
@@ -236,6 +293,12 @@ export default function ConfiguracoesPage() {
     changingStatus,
     setChangingStatus,
   ] = useState(false);
+
+  const [uploadingLogo, setUploadingLogo] =
+    useState(false);
+
+  const [uploadingCover, setUploadingCover] =
+    useState(false);
 
   const [
     errorMessage,
@@ -270,6 +333,41 @@ export default function ConfiguracoesPage() {
 
       marqueeEnabled:
         data.marqueeEnabled,
+
+      heroTitleLine1:
+        data.heroTitleLine1 ?? "ESCOLHA.",
+      heroTitleLine2:
+        data.heroTitleLine2 ?? "PEÇA.",
+      heroTitleLine3:
+        data.heroTitleLine3 ?? "APROVEITE.",
+      heroDescription:
+        data.heroDescription ??
+        "Escolha seus favoritos, monte seu pedido e acompanhe tudo pelo site.",
+      heroPrimaryButtonText:
+        data.heroPrimaryButtonText ?? "Ver cardápio",
+      heroSecondaryButtonText:
+        data.heroSecondaryButtonText ?? "Ver meu pedido",
+      heroBadgeText:
+        data.heroBadgeText ?? "CARDÁPIO ONLINE",
+      heroOpenStatusText:
+        data.heroOpenStatusText ?? "ABERTO",
+      heroClosedStatusText:
+        data.heroClosedStatusText ?? "FECHADO",
+
+      menuTitle:
+        data.menuTitle ?? "O cardápio",
+      menuSubtitle:
+        data.menuSubtitle ?? "Escolha o seu",
+      menuSearchPlaceholder:
+        data.menuSearchPlaceholder ?? "Buscar no cardápio",
+      menuEmptyTitle:
+        data.menuEmptyTitle ?? "Nenhum produto encontrado",
+      menuEmptyDescription:
+        data.menuEmptyDescription ??
+        "Tente buscar por outro termo ou escolha outra categoria.",
+
+      footerTagline:
+        data.footerTagline ?? "Pedidos online",
 
       whatsapp:
         data.whatsapp ?? "",
@@ -573,6 +671,177 @@ export default function ConfiguracoesPage() {
     }
   }
 
+  function publicImageUrl(
+    value: string | null | undefined
+  ) {
+    if (!value) {
+      return "";
+    }
+
+    if (
+      value.startsWith("http://") ||
+      value.startsWith("https://") ||
+      value.startsWith("data:")
+    ) {
+      return value;
+    }
+
+    return `${API_URL}${value.startsWith("/") ? "" : "/"}${value}`;
+  }
+
+  async function uploadStoreImage(
+    kind: "logo" | "cover",
+    file: File
+  ) {
+    if (!file) {
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage(
+        "A imagem deve ter no máximo 5 MB."
+      );
+      return;
+    }
+
+    if (
+      ![
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+      ].includes(file.type)
+    ) {
+      setErrorMessage(
+        "Formato inválido. Use JPG, PNG ou WebP."
+      );
+      return;
+    }
+
+    const setUploading =
+      kind === "logo"
+        ? setUploadingLogo
+        : setUploadingCover;
+
+    try {
+      setUploading(true);
+      setErrorMessage("");
+      setSuccessMessage("");
+
+      const body = new FormData();
+      body.append("file", file);
+
+      const response = await adminFetch(
+        `${API_URL}/api/store/images/${kind}`,
+        {
+          method: "POST",
+          body,
+        }
+      );
+
+      if (!response.ok) {
+        let message =
+          "Não foi possível enviar a imagem.";
+
+        try {
+          const data = await response.json();
+
+          if (
+            typeof data?.message === "string" &&
+            data.message
+          ) {
+            message = data.message;
+          }
+        } catch {
+          // mantém mensagem padrão
+        }
+
+        throw new Error(message);
+      }
+
+      const data: {
+        url: string;
+        message?: string;
+      } = await response.json();
+
+      setProfile((current) =>
+        current
+          ? {
+              ...current,
+              ...(kind === "logo"
+                ? { logoUrl: data.url }
+                : { coverImageUrl: data.url }),
+            }
+          : current
+      );
+
+      setSuccessMessage(
+        data.message ??
+          "Imagem atualizada com sucesso."
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível enviar a imagem."
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function removeStoreImage(
+    kind: "logo" | "cover"
+  ) {
+    const setUploading =
+      kind === "logo"
+        ? setUploadingLogo
+        : setUploadingCover;
+
+    try {
+      setUploading(true);
+      setErrorMessage("");
+      setSuccessMessage("");
+
+      const response = await adminFetch(
+        `${API_URL}/api/store/images/${kind}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Não foi possível remover a imagem."
+        );
+      }
+
+      setProfile((current) =>
+        current
+          ? {
+              ...current,
+              ...(kind === "logo"
+                ? { logoUrl: null }
+                : { coverImageUrl: null }),
+            }
+          : current
+      );
+
+      setSuccessMessage(
+        kind === "logo"
+          ? "Logo removida com sucesso."
+          : "Imagem de capa removida com sucesso."
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível remover a imagem."
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function saveProfile(
     event: FormEvent<HTMLFormElement>
   ) {
@@ -690,6 +959,39 @@ export default function ConfiguracoesPage() {
 
               marqueeEnabled:
                 profileForm.marqueeEnabled,
+
+              heroTitleLine1:
+                profileForm.heroTitleLine1.trim(),
+              heroTitleLine2:
+                profileForm.heroTitleLine2.trim(),
+              heroTitleLine3:
+                profileForm.heroTitleLine3.trim(),
+              heroDescription:
+                profileForm.heroDescription.trim(),
+              heroPrimaryButtonText:
+                profileForm.heroPrimaryButtonText.trim(),
+              heroSecondaryButtonText:
+                profileForm.heroSecondaryButtonText.trim(),
+              heroBadgeText:
+                profileForm.heroBadgeText.trim(),
+              heroOpenStatusText:
+                profileForm.heroOpenStatusText.trim(),
+              heroClosedStatusText:
+                profileForm.heroClosedStatusText.trim(),
+
+              menuTitle:
+                profileForm.menuTitle.trim(),
+              menuSubtitle:
+                profileForm.menuSubtitle.trim(),
+              menuSearchPlaceholder:
+                profileForm.menuSearchPlaceholder.trim(),
+              menuEmptyTitle:
+                profileForm.menuEmptyTitle.trim(),
+              menuEmptyDescription:
+                profileForm.menuEmptyDescription.trim(),
+
+              footerTagline:
+                profileForm.footerTagline.trim(),
 
               whatsapp:
                 profileForm.whatsapp.trim(),
@@ -1225,6 +1527,156 @@ export default function ConfiguracoesPage() {
                 Informações básicas usadas no cardápio público.
               </p>
 
+              <div className="mt-6 grid gap-5 lg:grid-cols-2">
+                <div className="rounded-2xl border border-border bg-background p-4">
+                  <FieldLabel>Logo da loja</FieldLabel>
+
+                  <div className="mt-2 flex min-h-40 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-border bg-muted/30 p-4">
+                    {profile?.logoUrl ? (
+                      <img
+                        src={publicImageUrl(profile.logoUrl)}
+                        alt="Logo da loja"
+                        className="max-h-32 max-w-full object-contain"
+                      />
+                    ) : (
+                      <div
+                        className="grid h-24 w-24 place-items-center rounded-2xl text-4xl font-black text-white"
+                        style={{
+                          backgroundColor: previewPrimary,
+                        }}
+                      >
+                        {previewInitial}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground transition hover:opacity-90">
+                      {uploadingLogo
+                        ? "Enviando..."
+                        : profile?.logoUrl
+                          ? "Trocar logo"
+                          : "Enviar logo"}
+
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        disabled={uploadingLogo}
+                        className="hidden"
+                        onChange={(event) => {
+                          const file =
+                            event.target.files?.[0];
+
+                          if (file) {
+                            void uploadStoreImage(
+                              "logo",
+                              file
+                            );
+                          }
+
+                          event.currentTarget.value =
+                            "";
+                        }}
+                      />
+                    </label>
+
+                    {profile?.logoUrl && (
+                      <button
+                        type="button"
+                        disabled={uploadingLogo}
+                        onClick={() =>
+                          void removeStoreImage(
+                            "logo"
+                          )
+                        }
+                        className="h-10 rounded-xl border border-red-200 px-4 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                      >
+                        Remover
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    JPG, PNG ou WebP. Máximo de 5 MB.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-border bg-background p-4">
+                  <FieldLabel>Imagem de capa</FieldLabel>
+
+                  <div className="mt-2 flex min-h-40 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-border bg-muted/30">
+                    {profile?.coverImageUrl ? (
+                      <img
+                        src={publicImageUrl(
+                          profile.coverImageUrl
+                        )}
+                        alt="Capa da loja"
+                        className="h-40 w-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="flex h-40 w-full items-center justify-center px-6 text-center text-xs font-semibold text-muted-foreground"
+                        style={{
+                          background: `linear-gradient(135deg, ${previewPrimary}22, ${previewSecondary}55)`,
+                        }}
+                      >
+                        Nenhuma imagem de capa enviada
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground transition hover:opacity-90">
+                      {uploadingCover
+                        ? "Enviando..."
+                        : profile?.coverImageUrl
+                          ? "Trocar capa"
+                          : "Enviar capa"}
+
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        disabled={uploadingCover}
+                        className="hidden"
+                        onChange={(event) => {
+                          const file =
+                            event.target.files?.[0];
+
+                          if (file) {
+                            void uploadStoreImage(
+                              "cover",
+                              file
+                            );
+                          }
+
+                          event.currentTarget.value =
+                            "";
+                        }}
+                      />
+                    </label>
+
+                    {profile?.coverImageUrl && (
+                      <button
+                        type="button"
+                        disabled={uploadingCover}
+                        onClick={() =>
+                          void removeStoreImage(
+                            "cover"
+                          )
+                        }
+                        className="h-10 rounded-xl border border-red-200 px-4 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                      >
+                        Remover
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    Para capa, prefira uma imagem horizontal.
+                  </p>
+                </div>
+              </div>
+
               <div className="mt-6 grid gap-5 md:grid-cols-2">
 
                 <div className="md:col-span-2">
@@ -1358,6 +1810,279 @@ export default function ConfiguracoesPage() {
                     placeholder="Pizza feita do nosso jeito, do forno até você."
                   />
                 </div>
+              </div>
+            </section>
+
+            <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                Página pública
+              </p>
+
+              <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
+                Hero do cardápio
+              </h3>
+
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Personalize os textos principais que o cliente vê ao abrir o cardápio.
+              </p>
+
+              <div className="mt-6 grid gap-5 md:grid-cols-3">
+                {[
+                  ["heroTitleLine1", "Título — linha 1", 180],
+                  ["heroTitleLine2", "Título — linha 2", 180],
+                  ["heroTitleLine3", "Título — linha 3", 180],
+                ].map(([field, label, max]) => (
+                  <div key={String(field)}>
+                    <FieldLabel>{String(label)}</FieldLabel>
+                    <input
+                      value={
+                        profileForm[
+                          field as
+                            | "heroTitleLine1"
+                            | "heroTitleLine2"
+                            | "heroTitleLine3"
+                        ]
+                      }
+                      maxLength={Number(max)}
+                      onChange={(event) =>
+                        setProfileForm((current) => ({
+                          ...current,
+                          [field]: event.target.value,
+                        }))
+                      }
+                      className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    />
+                  </div>
+                ))}
+
+                <div className="md:col-span-3">
+                  <FieldLabel>Descrição</FieldLabel>
+                  <textarea
+                    value={profileForm.heroDescription}
+                    maxLength={500}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        heroDescription:
+                          event.target.value,
+                      }))
+                    }
+                    className="min-h-24 w-full resize-y rounded-xl border border-input bg-background px-3.5 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Botão principal</FieldLabel>
+                  <input
+                    value={
+                      profileForm.heroPrimaryButtonText
+                    }
+                    maxLength={80}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        heroPrimaryButtonText:
+                          event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Botão secundário</FieldLabel>
+                  <input
+                    value={
+                      profileForm.heroSecondaryButtonText
+                    }
+                    maxLength={80}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        heroSecondaryButtonText:
+                          event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Badge</FieldLabel>
+                  <input
+                    value={profileForm.heroBadgeText}
+                    maxLength={120}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        heroBadgeText:
+                          event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Status aberto</FieldLabel>
+                  <input
+                    value={
+                      profileForm.heroOpenStatusText
+                    }
+                    maxLength={80}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        heroOpenStatusText:
+                          event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Status fechado</FieldLabel>
+                  <input
+                    value={
+                      profileForm.heroClosedStatusText
+                    }
+                    maxLength={80}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        heroClosedStatusText:
+                          event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                Cardápio
+              </p>
+
+              <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
+                Textos do menu
+              </h3>
+
+              <div className="mt-6 grid gap-5 md:grid-cols-2">
+                <div>
+                  <FieldLabel>Título</FieldLabel>
+                  <input
+                    value={profileForm.menuTitle}
+                    maxLength={180}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        menuTitle: event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Subtítulo</FieldLabel>
+                  <input
+                    value={profileForm.menuSubtitle}
+                    maxLength={250}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        menuSubtitle:
+                          event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <FieldLabel>Placeholder da busca</FieldLabel>
+                  <input
+                    value={
+                      profileForm.menuSearchPlaceholder
+                    }
+                    maxLength={180}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        menuSearchPlaceholder:
+                          event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Título quando não houver resultado
+                  </FieldLabel>
+                  <input
+                    value={profileForm.menuEmptyTitle}
+                    maxLength={180}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        menuEmptyTitle:
+                          event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Descrição sem resultado
+                  </FieldLabel>
+                  <input
+                    value={
+                      profileForm.menuEmptyDescription
+                    }
+                    maxLength={300}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        menuEmptyDescription:
+                          event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                Rodapé
+              </p>
+
+              <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
+                Texto do rodapé
+              </h3>
+
+              <div className="mt-6">
+                <FieldLabel>Frase do rodapé</FieldLabel>
+                <input
+                  value={profileForm.footerTagline}
+                  maxLength={250}
+                  onChange={(event) =>
+                    setProfileForm((current) => ({
+                      ...current,
+                      footerTagline:
+                        event.target.value,
+                    }))
+                  }
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                />
               </div>
             </section>
 

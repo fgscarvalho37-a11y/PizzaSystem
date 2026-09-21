@@ -52,6 +52,7 @@ public class SecurityConfig {
             AdminSessionAuthenticationFilter
                     adminSessionAuthenticationFilter
     ) {
+
         this.adminSessionAuthenticationFilter =
                 adminSessionAuthenticationFilter;
     }
@@ -62,7 +63,8 @@ public class SecurityConfig {
     ) throws Exception {
 
         CookieCsrfTokenRepository csrfRepository =
-                CookieCsrfTokenRepository.withHttpOnlyFalse();
+                CookieCsrfTokenRepository
+                        .withHttpOnlyFalse();
 
         csrfRepository.setCookiePath("/");
 
@@ -103,9 +105,7 @@ public class SecurityConfig {
                                         csrfHandler
                                 )
 
-                                // =========================
                                 // AUTH ADMIN
-                                // =========================
 
                                 .ignoringRequestMatchers(
                                         "/api/auth/login"
@@ -115,9 +115,7 @@ public class SecurityConfig {
                                         "/api/auth/logout"
                                 )
 
-                                // =========================
                                 // AUTH CLIENTE
-                                // =========================
 
                                 .ignoringRequestMatchers(
                                         "/api/customer-auth/register",
@@ -125,18 +123,20 @@ public class SecurityConfig {
                                         "/api/customer-auth/logout"
                                 )
 
-                                // =========================
+                                // FIDELIDADE CLIENTE
+
+                                .ignoringRequestMatchers(
+                                        "/api/customer/loyalty/*/redeem"
+                                )
+
                                 // PEDIDOS PÚBLICOS
-                                // =========================
 
                                 .ignoringRequestMatchers(
                                         "/api/orders",
                                         "/api/orders/*/cancel"
                                 )
 
-                                // =========================
                                 // PAGAMENTOS
-                                // =========================
 
                                 .ignoringRequestMatchers(
                                         "/api/payments/**"
@@ -155,7 +155,8 @@ public class SecurityConfig {
                                     HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain
-                            ) throws ServletException, IOException {
+                            ) throws ServletException,
+                                    IOException {
 
                                 filterChain.doFilter(
                                         request,
@@ -163,9 +164,11 @@ public class SecurityConfig {
                                 );
 
                                 CsrfToken csrfToken =
-                                        (CsrfToken) request.getAttribute(
-                                                CsrfToken.class.getName()
-                                        );
+                                        (CsrfToken)
+                                                request.getAttribute(
+                                                        CsrfToken.class
+                                                                .getName()
+                                                );
 
                                 if (csrfToken != null) {
                                     csrfToken.getToken();
@@ -188,6 +191,10 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
+                                // =========================
+                                // AUTENTICAÇÃO
+                                // =========================
+
                                 .requestMatchers(
                                         "/api/auth/**"
                                 )
@@ -198,11 +205,41 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
+                                // =========================
+                                // ÁREA DO CLIENTE
+                                // =========================
+
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/customer/orders"
                                 )
                                 .permitAll()
+
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/customer/loyalty"
+                                )
+                                .permitAll()
+
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/customer/loyalty/*/redeem"
+                                )
+                                .permitAll()
+
+                                // =========================
+                                // IMAGENS PÚBLICAS
+                                // =========================
+
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/uploads/**"
+                                )
+                                .permitAll()
+
+                                // =========================
+                                // ROTAS PÚBLICAS
+                                // =========================
 
                                 .requestMatchers(
                                         HttpMethod.GET,
@@ -281,6 +318,10 @@ public class SecurityConfig {
                                         "/api/payments/**"
                                 )
                                 .permitAll()
+
+                                // =========================
+                                // RESTANTE = ADMIN
+                                // =========================
 
                                 .anyRequest()
                                 .hasRole("ADMIN")

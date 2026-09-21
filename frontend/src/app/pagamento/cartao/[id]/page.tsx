@@ -91,6 +91,14 @@ export default function CardPaymentPage() {
   const tokenFromUrl =
     searchParams.get("token");
 
+  const storeSlug =
+    searchParams.get("store");
+
+  const menuUrl =
+    storeSlug
+      ? `/cardapio/${encodeURIComponent(storeSlug)}`
+      : "/";
+
   const [accessToken, setAccessToken] =
     useState<string | null>(null);
 
@@ -354,8 +362,14 @@ export default function CardPaymentPage() {
 
       await response.json();
 
+      const successUrl =
+        `/pagamento/sucesso/${order.id}?token=${encodeURIComponent(accessToken ?? "")}` +
+        (storeSlug
+          ? `&store=${encodeURIComponent(storeSlug)}`
+          : "");
+
       router.push(
-        `/pagamento/sucesso/${order.id}?token=${encodeURIComponent(accessToken ?? "")}`
+        successUrl
       );
 
     } catch {
@@ -572,7 +586,7 @@ export default function CardPaymentPage() {
             type="button"
             onClick={() =>
               router.push(
-                "/cardapio"
+                menuUrl
               )
             }
             className="brand-button mt-6 w-full rounded-2xl px-5 py-3.5"
@@ -638,7 +652,7 @@ export default function CardPaymentPage() {
             type="button"
             onClick={() =>
               router.push(
-                "/cardapio"
+                menuUrl
               )
             }
             className="flex items-center gap-2.5"

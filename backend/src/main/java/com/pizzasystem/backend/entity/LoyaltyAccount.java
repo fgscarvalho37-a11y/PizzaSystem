@@ -64,62 +64,66 @@ public class LoyaltyAccount {
     private Store store;
 
     // =========================
-    // SALDO
+    // PONTOS
     // =========================
 
-    /*
-     * Chamamos internamente de points
-     * mesmo quando a interface mostrar
-     * "selos".
-     *
-     * Isso deixa o sistema flexível.
-     */
     @Column(nullable = false)
-    private Integer points =
-            0;
+    private Integer points = 0;
 
-    /*
-     * Total acumulado durante toda
-     * a vida da conta.
-     *
-     * Mesmo que futuramente o cliente
-     * troque pontos por recompensa,
-     * esse valor não diminui.
-     */
-    @Column(nullable = false)
-    private Integer lifetimePoints =
-            0;
+    @Column(
+            name = "lifetime_points",
+            nullable = false
+    )
+    private Integer lifetimePoints = 0;
 
-    // =========================
-    // RECOMPENSAS
-    // =========================
-
-    /*
-     * Quantas recompensas o cliente
-     * já resgatou nessa loja.
-     */
-    @Column(nullable = false)
-    private Integer rewardsRedeemed =
-            0;
+    @Column(
+            name = "rewards_redeemed",
+            nullable = false
+    )
+    private Integer rewardsRedeemed = 0;
 
     // =========================
     // DATAS
     // =========================
 
-    @Column(nullable = false)
+    @Column(
+            name = "created_at",
+            nullable = false
+    )
     private LocalDateTime createdAt =
             LocalDateTime.now();
 
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     public LoyaltyAccount() {
     }
 
-    @PreUpdate
-    private void updateTimestamp() {
+    @PrePersist
+    private void onCreate() {
 
-        updatedAt =
-                LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+
+        updatedAt = LocalDateTime.now();
+
+        if (points == null) {
+            points = 0;
+        }
+
+        if (lifetimePoints == null) {
+            lifetimePoints = 0;
+        }
+
+        if (rewardsRedeemed == null) {
+            rewardsRedeemed = 0;
+        }
+    }
+
+    @PreUpdate
+    private void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     // =========================
@@ -137,8 +141,7 @@ public class LoyaltyAccount {
     public void setCustomer(
             Customer customer
     ) {
-        this.customer =
-                customer;
+        this.customer = customer;
     }
 
     public Store getStore() {
@@ -148,8 +151,7 @@ public class LoyaltyAccount {
     public void setStore(
             Store store
     ) {
-        this.store =
-                store;
+        this.store = store;
     }
 
     public Integer getPoints() {
@@ -159,8 +161,7 @@ public class LoyaltyAccount {
     public void setPoints(
             Integer points
     ) {
-        this.points =
-                points;
+        this.points = points;
     }
 
     public Integer getLifetimePoints() {
@@ -170,8 +171,7 @@ public class LoyaltyAccount {
     public void setLifetimePoints(
             Integer lifetimePoints
     ) {
-        this.lifetimePoints =
-                lifetimePoints;
+        this.lifetimePoints = lifetimePoints;
     }
 
     public Integer getRewardsRedeemed() {
@@ -181,8 +181,7 @@ public class LoyaltyAccount {
     public void setRewardsRedeemed(
             Integer rewardsRedeemed
     ) {
-        this.rewardsRedeemed =
-                rewardsRedeemed;
+        this.rewardsRedeemed = rewardsRedeemed;
     }
 
     public LocalDateTime getCreatedAt() {

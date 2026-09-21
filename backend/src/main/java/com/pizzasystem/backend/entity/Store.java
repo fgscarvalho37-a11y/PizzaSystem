@@ -24,7 +24,7 @@ public class Store {
     private Long id;
 
     // =========================
-    // IDENTIFICAÇÃO
+    // IDENTIFICAÃ‡ÃƒO
     // =========================
 
     @Column(
@@ -55,7 +55,7 @@ public class Store {
     private String secondaryColor;
 
     // =========================
-    // CONTEÚDO DO CARDÁPIO
+    // CONTEÃšDO DO CARDÃPIO
     // =========================
 
     @Column(length = 180)
@@ -69,6 +69,55 @@ public class Store {
             true;
 
     // =========================
+    // PERSONALIZAÇÃO DA PÁGINA
+    // =========================
+
+    @Column(length = 180)
+    private String heroTitleLine1;
+
+    @Column(length = 180)
+    private String heroTitleLine2;
+
+    @Column(length = 180)
+    private String heroTitleLine3;
+
+    @Column(length = 500)
+    private String heroDescription;
+
+    @Column(length = 80)
+    private String heroPrimaryButtonText;
+
+    @Column(length = 80)
+    private String heroSecondaryButtonText;
+
+    @Column(length = 120)
+    private String heroBadgeText;
+
+    @Column(length = 120)
+    private String heroOpenStatusText;
+
+    @Column(length = 120)
+    private String heroClosedStatusText;
+
+    @Column(length = 180)
+    private String menuTitle;
+
+    @Column(length = 250)
+    private String menuSubtitle;
+
+    @Column(length = 180)
+    private String menuSearchPlaceholder;
+
+    @Column(length = 180)
+    private String menuEmptyTitle;
+
+    @Column(length = 300)
+    private String menuEmptyDescription;
+
+    @Column(length = 250)
+    private String footerTagline;
+
+    // =========================
     // CONTATO
     // =========================
 
@@ -79,7 +128,7 @@ public class Store {
     private String email;
 
     // =========================
-    // OPERAÇÃO
+    // OPERAÃ‡ÃƒO
     // =========================
 
     @Column(nullable = false)
@@ -98,10 +147,10 @@ public class Store {
             false;
 
     /*
-     * Nome histórico mantido.
+     * Nome histÃ³rico mantido.
      *
      * Funciona como meta de pontos/selos
-     * necessária para liberar a recompensa.
+     * necessÃ¡ria para liberar a recompensa.
      */
     private Integer loyaltyStampGoal =
             10;
@@ -149,7 +198,7 @@ public class Store {
             );
 
     /*
-     * Quantos pontos são ganhos
+     * Quantos pontos sÃ£o ganhos
      * a cada faixa de valor.
      *
      * Exemplo:
@@ -163,7 +212,7 @@ public class Store {
      * Pedido precisa atingir esse
      * valor para participar.
      *
-     * null = sem mínimo.
+     * null = sem mÃnimo.
      */
     @Column(
             precision = 12,
@@ -458,6 +507,51 @@ public class Store {
         this.loyaltyMinimumOrderValue =
                 loyaltyMinimumOrderValue;
     }
+
+    public String getHeroTitleLine1() { return heroTitleLine1; }
+    public void setHeroTitleLine1(String value) { this.heroTitleLine1 = value; }
+
+    public String getHeroTitleLine2() { return heroTitleLine2; }
+    public void setHeroTitleLine2(String value) { this.heroTitleLine2 = value; }
+
+    public String getHeroTitleLine3() { return heroTitleLine3; }
+    public void setHeroTitleLine3(String value) { this.heroTitleLine3 = value; }
+
+    public String getHeroDescription() { return heroDescription; }
+    public void setHeroDescription(String value) { this.heroDescription = value; }
+
+    public String getHeroPrimaryButtonText() { return heroPrimaryButtonText; }
+    public void setHeroPrimaryButtonText(String value) { this.heroPrimaryButtonText = value; }
+
+    public String getHeroSecondaryButtonText() { return heroSecondaryButtonText; }
+    public void setHeroSecondaryButtonText(String value) { this.heroSecondaryButtonText = value; }
+
+    public String getHeroBadgeText() { return heroBadgeText; }
+    public void setHeroBadgeText(String value) { this.heroBadgeText = value; }
+
+    public String getHeroOpenStatusText() { return heroOpenStatusText; }
+    public void setHeroOpenStatusText(String value) { this.heroOpenStatusText = value; }
+
+    public String getHeroClosedStatusText() { return heroClosedStatusText; }
+    public void setHeroClosedStatusText(String value) { this.heroClosedStatusText = value; }
+
+    public String getMenuTitle() { return menuTitle; }
+    public void setMenuTitle(String value) { this.menuTitle = value; }
+
+    public String getMenuSubtitle() { return menuSubtitle; }
+    public void setMenuSubtitle(String value) { this.menuSubtitle = value; }
+
+    public String getMenuSearchPlaceholder() { return menuSearchPlaceholder; }
+    public void setMenuSearchPlaceholder(String value) { this.menuSearchPlaceholder = value; }
+
+    public String getMenuEmptyTitle() { return menuEmptyTitle; }
+    public void setMenuEmptyTitle(String value) { this.menuEmptyTitle = value; }
+
+    public String getMenuEmptyDescription() { return menuEmptyDescription; }
+    public void setMenuEmptyDescription(String value) { this.menuEmptyDescription = value; }
+
+    public String getFooterTagline() { return footerTagline; }
+    public void setFooterTagline(String value) { this.footerTagline = value; }
 
     public boolean isActive() {
         return active;

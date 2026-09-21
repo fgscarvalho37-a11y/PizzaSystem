@@ -319,7 +319,7 @@ export default function AdminLoginPage() {
             type="button"
             onClick={() =>
               router.push(
-                "/cardapio"
+                "/"
               )
             }
             className="
