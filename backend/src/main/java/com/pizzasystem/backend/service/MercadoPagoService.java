@@ -1,15 +1,30 @@
 package com.pizzasystem.backend.service;
 
+import com.pizzasystem.backend.entity.Order;
+
+import com.pizzasystem.backend.repository.OrderRepository;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+
 import org.springframework.stereotype.Service;
+
+import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +38,14 @@ public class MercadoPagoService {
                     MercadoPagoService.class
             );
 
-    @Value("${mercadopago.access-token}")
-    private String accessToken;
+    private final OrderRepository
+            orderRepository;
+
+    private final MercadoPagoOAuthService
+            mercadoPagoOAuthService;
+
+    private final RestTemplate
+            restTemplate;
 
     @Value("${mercadopago.pix-payer-email:test_user_br@testuser.com}")
     private String pixPayerEmail;
@@ -32,9 +53,17 @@ public class MercadoPagoService {
     @Value("${mercadopago.test-auto-approve-pix:false}")
     private boolean testAutoApprovePix;
 
-    private final RestTemplate restTemplate;
+    public MercadoPagoService(
+            OrderRepository orderRepository,
+            MercadoPagoOAuthService mercadoPagoOAuthService
+    ) {
 
-    public MercadoPagoService() {
+        this.orderRepository =
+                orderRepository;
+
+        this.mercadoPagoOAuthService =
+                mercadoPagoOAuthService;
+
         this.restTemplate =
                 new RestTemplate();
     }
@@ -43,6 +72,7 @@ public class MercadoPagoService {
     // PIX
     // =========================
 
+    @Transactional(readOnly = true)
     public MercadoPagoResult createPixOrder(
             Long orderId,
             BigDecimal amount
@@ -89,6 +119,7 @@ public class MercadoPagoService {
     // CARTÃO
     // =========================
 
+    @Transactional(readOnly = true)
     public MercadoPagoResult createCardOrder(
             Long orderId,
             BigDecimal amount,
@@ -101,39 +132,17 @@ public class MercadoPagoService {
             String identificationNumber
     ) {
 
-        String finalPaymentMethodId =
-                paymentMethodId;
-
-        String paymentType;
-
-        if (debit) {
-
-            if ("elo".equalsIgnoreCase(
-                    paymentMethodId
-            )
-                    || "debelo".equalsIgnoreCase(
-                            paymentMethodId
-                    )) {
-
-                finalPaymentMethodId =
-                        "debelo";
-            }
-
-            paymentType =
-                    "debit_card";
-
-        } else {
-
-            paymentType =
-                    "credit_card";
-        }
+        String paymentType =
+                debit
+                        ? "debit_card"
+                        : "credit_card";
 
         Map<String, Object> paymentMethod =
                 new HashMap<>();
 
         paymentMethod.put(
                 "id",
-                finalPaymentMethodId
+                paymentMethodId
         );
 
         paymentMethod.put(
@@ -182,7 +191,7 @@ public class MercadoPagoService {
     }
 
     // =========================
-    // CRIAR ORDER
+    // CRIAR ORDER NO MP
     // =========================
 
     private MercadoPagoResult createOrder(
@@ -194,6 +203,23 @@ public class MercadoPagoService {
             Map<String, Object> payment,
             boolean pix
     ) {
+
+        if (orderId == null) {
+
+            throw new IllegalArgumentException(
+                    "Pedido não informado."
+            );
+        }
+
+        if (amount == null
+                || amount.compareTo(
+                        BigDecimal.ZERO
+                ) <= 0) {
+
+            throw new IllegalArgumentException(
+                    "Valor do pagamento inválido."
+            );
+        }
 
         String url =
                 "https://api.mercadopago.com/v1/orders";
@@ -250,12 +276,12 @@ public class MercadoPagoService {
 
             identification.put(
                     "type",
-                    identificationType
+                    identificationType.trim()
             );
 
             identification.put(
                     "number",
-                    identificationNumber
+                    identificationNumber.trim()
             );
 
             payer.put(
@@ -308,8 +334,19 @@ public class MercadoPagoService {
                 transactions
         );
 
+        /*
+         * Aqui está a mudança principal:
+         *
+         * o Access Token NÃO vem mais de
+         * mercadopago.access-token global.
+         *
+         * Descobrimos a loja pelo pedido e usamos
+         * o token OAuth daquela loja.
+         */
         HttpHeaders headers =
-                createHeaders();
+                createHeadersForOrder(
+                        orderId
+                );
 
         headers.set(
                 "X-Idempotency-Key",
@@ -348,21 +385,24 @@ public class MercadoPagoService {
                     response.getBody()
             );
 
-        } catch (HttpStatusCodeException e) {
+        } catch (HttpStatusCodeException exception) {
 
             String responseBody =
-                    e.getResponseBodyAsString();
+                    exception
+                            .getResponseBodyAsString();
 
             logger.warn(
                     "Mercado Pago recusou criação da order do pedido {}. HTTP {}. Resposta: {}",
                     orderId,
-                    e.getStatusCode()
+                    exception
+                            .getStatusCode()
                             .value(),
                     responseBody
             );
 
             return new MercadoPagoResult(
-                    e.getStatusCode()
+                    exception
+                            .getStatusCode()
                             .value(),
                     responseBody
             );
@@ -370,9 +410,10 @@ public class MercadoPagoService {
     }
 
     // =========================
-    // CONSULTAR ORDER
+    // CONSULTAR ORDER DO MP
     // =========================
 
+    @Transactional(readOnly = true)
     public String getOrder(
             String mercadoPagoOrderId
     ) {
@@ -385,12 +426,23 @@ public class MercadoPagoService {
             );
         }
 
+        String normalizedExternalId =
+                mercadoPagoOrderId.trim();
+
         String url =
                 "https://api.mercadopago.com/v1/orders/"
-                        + mercadoPagoOrderId;
+                        + normalizedExternalId;
 
+        /*
+         * Para consultar um pagamento já criado,
+         * localizamos o pedido pelo paymentExternalId
+         * e novamente usamos o Access Token da loja
+         * dona daquele pedido.
+         */
         HttpHeaders headers =
-                createHeaders();
+                createHeadersForExternalPayment(
+                        normalizedExternalId
+                );
 
         HttpEntity<Void> request =
                 new HttpEntity<>(
@@ -409,32 +461,128 @@ public class MercadoPagoService {
 
             return response.getBody();
 
-        } catch (HttpStatusCodeException e) {
+        } catch (HttpStatusCodeException exception) {
 
             logger.warn(
-                    "Falha ao consultar order do Mercado Pago. HTTP {}.",
-                    e.getStatusCode()
+                    "Falha ao consultar order do Mercado Pago {}. HTTP {}.",
+                    normalizedExternalId,
+                    exception
+                            .getStatusCode()
                             .value()
             );
 
             throw new RuntimeException(
                     "Não foi possível consultar o pagamento no Mercado Pago.",
-                    e
+                    exception
             );
         }
+    }
+
+    // =========================
+    // HEADERS POR PEDIDO
+    // =========================
+
+    private HttpHeaders createHeadersForOrder(
+            Long orderId
+    ) {
+
+        Order order =
+                orderRepository
+                        .findById(
+                                orderId
+                        )
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Pedido não encontrado."
+                                )
+                        );
+
+        Long storeId =
+                getStoreId(
+                        order
+                );
+
+        String accessToken =
+                mercadoPagoOAuthService
+                        .getAccessTokenForStore(
+                                storeId
+                        );
+
+        return createHeaders(
+                accessToken
+        );
+    }
+
+    // =========================
+    // HEADERS POR PAGAMENTO
+    // =========================
+
+    private HttpHeaders createHeadersForExternalPayment(
+            String mercadoPagoOrderId
+    ) {
+
+        Order order =
+                orderRepository
+                        .findByPaymentExternalId(
+                                mercadoPagoOrderId
+                        )
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Pagamento não está vinculado a um pedido local."
+                                )
+                        );
+
+        Long storeId =
+                getStoreId(
+                        order
+                );
+
+        String accessToken =
+                mercadoPagoOAuthService
+                        .getAccessTokenForStore(
+                                storeId
+                        );
+
+        return createHeaders(
+                accessToken
+        );
+    }
+
+    // =========================
+    // STORE DO PEDIDO
+    // =========================
+
+    private Long getStoreId(
+            Order order
+    ) {
+
+        if (order == null
+                || order.getStore() == null
+                || order.getStore().getId() == null) {
+
+            throw new IllegalStateException(
+                    "Loja do pedido não encontrada."
+            );
+        }
+
+        return order
+                .getStore()
+                .getId();
     }
 
     // =========================
     // HEADERS
     // =========================
 
-    private HttpHeaders createHeaders() {
+    private HttpHeaders createHeaders(
+            String accessToken
+    ) {
 
         if (accessToken == null
                 || accessToken.isBlank()) {
 
             throw new IllegalStateException(
-                    "MERCADOPAGO_ACCESS_TOKEN não configurado."
+                    "Access Token do Mercado Pago não disponível."
             );
         }
 

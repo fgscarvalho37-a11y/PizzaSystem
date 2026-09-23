@@ -7,12 +7,13 @@ import {
   useState,
 } from "react";
 
-import { useRouter } from "next/navigation";
+import {
+  useRouter,
+} from "next/navigation";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:8080";
-
 
 type Product = {
   id: number;
@@ -29,11 +30,20 @@ type Crust = {
   sortOrder: number;
 };
 
+type Addon = {
+  id: number;
+  name: string;
+  price: number;
+  active?: boolean;
+  sortOrder?: number;
+};
+
 type CartItem = {
   product: Product;
   quantity: number;
   observation: string;
   crust: Crust | null;
+  addons: Addon[];
 };
 
 type DeliveryArea = {
@@ -59,21 +69,178 @@ type CouponValidationResponse = {
   valid: boolean;
   couponId: number;
   code: string;
-  discountType: "PERCENTAGE" | "FIXED_AMOUNT";
+  discountType:
+    | "PERCENTAGE"
+    | "FIXED_AMOUNT";
   discountValue: number;
   discount: number;
   originalValue: number;
   finalValue: number;
 };
 
+function formatMoney(
+  value: number
+) {
+  return new Intl.NumberFormat(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL",
+    }
+  ).format(value);
+}
+
+function getItemAddonsTotal(
+  item: CartItem
+) {
+  return (
+    item.addons ??
+    []
+  ).reduce(
+    (
+      total,
+      addon
+    ) =>
+      total +
+      Number(
+        addon.price
+      ),
+    0
+  );
+}
+
+function getItemUnitPrice(
+  item: CartItem
+) {
+  return (
+    Number(
+      item.product.price
+    ) +
+    Number(
+      item.crust?.price ??
+        0
+    ) +
+    getItemAddonsTotal(
+      item
+    )
+  );
+}
+
 export default function CheckoutPage() {
-  const router = useRouter();
+  const router =
+    useRouter();
 
-  const [storeSlug, setStoreSlug] =
-    useState("");
+  const [
+    storeSlug,
+    setStoreSlug,
+  ] = useState("");
 
-  const [storeResolved, setStoreResolved] =
-    useState(false);
+  const [
+    storeResolved,
+    setStoreResolved,
+  ] = useState(false);
+
+  const [
+    cart,
+    setCart,
+  ] = useState<CartItem[]>(
+    []
+  );
+
+  const [
+    deliveryAreas,
+    setDeliveryAreas,
+  ] = useState<
+    DeliveryArea[]
+  >([]);
+
+  const [
+    storeStatus,
+    setStoreStatus,
+  ] = useState<
+    StoreStatus | null
+  >(null);
+
+  const [
+    loaded,
+    setLoaded,
+  ] = useState(false);
+
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
+
+  const [
+    checkoutError,
+    setCheckoutError,
+  ] = useState("");
+
+  const [
+    customerName,
+    setCustomerName,
+  ] = useState("");
+
+  const [
+    customerPhone,
+    setCustomerPhone,
+  ] = useState("");
+
+  const [
+    street,
+    setStreet,
+  ] = useState("");
+
+  const [
+    number,
+    setNumber,
+  ] = useState("");
+
+  const [
+    neighborhood,
+    setNeighborhood,
+  ] = useState("");
+
+  const [
+    complement,
+    setComplement,
+  ] = useState("");
+
+  const [
+    paymentMethod,
+    setPaymentMethod,
+  ] =
+    useState<
+      PaymentMethod | ""
+    >("");
+
+  const [
+    couponInput,
+    setCouponInput,
+  ] = useState("");
+
+  const [
+    appliedCoupon,
+    setAppliedCoupon,
+  ] =
+    useState<
+      CouponValidationResponse | null
+    >(null);
+
+  const [
+    couponLoading,
+    setCouponLoading,
+  ] = useState(false);
+
+  const [
+    couponMessage,
+    setCouponMessage,
+  ] = useState("");
+
+  const [
+    couponError,
+    setCouponError,
+  ] = useState("");
 
   useEffect(() => {
     const params =
@@ -82,75 +249,23 @@ export default function CheckoutPage() {
       );
 
     setStoreSlug(
-      params.get("store")?.trim() ?? ""
+      params
+        .get(
+          "store"
+        )
+        ?.trim() ??
+        ""
     );
 
-    setStoreResolved(true);
+    setStoreResolved(
+      true
+    );
   }, []);
 
-  const cartKey = storeSlug
-    ? `pizzasystem-cart:${storeSlug}`
-    : "";
-
-  const [cart, setCart] =
-    useState<CartItem[]>([]);
-
-  const [deliveryAreas, setDeliveryAreas] =
-    useState<DeliveryArea[]>([]);
-
-  const [storeStatus, setStoreStatus] =
-    useState<StoreStatus | null>(null);
-
-  const [loaded, setLoaded] =
-    useState(false);
-
-  const [submitting, setSubmitting] =
-    useState(false);
-
-  const [checkoutError, setCheckoutError] =
-    useState("");
-
-  const [customerName, setCustomerName] =
-    useState("");
-
-  const [customerPhone, setCustomerPhone] =
-    useState("");
-
-  const [street, setStreet] =
-    useState("");
-
-  const [number, setNumber] =
-    useState("");
-
-  const [neighborhood, setNeighborhood] =
-    useState("");
-
-  const [complement, setComplement] =
-    useState("");
-
-  const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod | "">("");
-
-  // =========================
-  // CUPOM
-  // =========================
-
-  const [couponInput, setCouponInput] =
-    useState("");
-
-  const [appliedCoupon, setAppliedCoupon] =
-    useState<CouponValidationResponse | null>(
-      null
-    );
-
-  const [couponLoading, setCouponLoading] =
-    useState(false);
-
-  const [couponMessage, setCouponMessage] =
-    useState("");
-
-  const [couponError, setCouponError] =
-    useState("");
+  const cartKey =
+    storeSlug
+      ? `pizzasystem-cart:${storeSlug}`
+      : "";
 
   // =========================
   // CARRINHO
@@ -161,12 +276,20 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!storeSlug || !cartKey) {
-      setLoaded(true);
+    if (
+      !storeSlug ||
+      !cartKey
+    ) {
+      setLoaded(
+        true
+      );
+
       return;
     }
 
-    setLoaded(false);
+    setLoaded(
+      false
+    );
 
     const savedCart =
       localStorage.getItem(
@@ -175,75 +298,130 @@ export default function CheckoutPage() {
 
     if (savedCart) {
       try {
-        const parsed: CartItem[] =
-          JSON.parse(savedCart);
+        const parsed:
+          CartItem[] =
+          JSON.parse(
+            savedCart
+          );
 
         const normalized =
-          parsed.map((item) => ({
-            ...item,
-            observation:
-              item.observation || "",
-            crust:
-              item.crust ?? null,
-          }));
+          parsed.map(
+            (item) => ({
+              ...item,
 
-        setCart(normalized);
-      } catch (error) {
+              observation:
+                item.observation ??
+                "",
+
+              crust:
+                item.crust ??
+                null,
+
+              addons:
+                Array.isArray(
+                  item.addons
+                )
+                  ? item.addons
+                  : [],
+            })
+          );
+
+        setCart(
+          normalized
+        );
+      } catch (
+        error
+      ) {
         console.error(
           "Erro ao carregar carrinho:",
           error
         );
+
+        localStorage.removeItem(
+          cartKey
+        );
       }
     }
 
-    setLoaded(true);
-  }, [storeSlug, cartKey, storeResolved]);
+    setLoaded(
+      true
+    );
+  }, [
+    storeSlug,
+    cartKey,
+    storeResolved,
+  ]);
 
   // =========================
-  // DADOS DA LOJA
+  // LOJA
   // =========================
 
   useEffect(() => {
-    if (!storeResolved || !storeSlug) {
+    if (
+      !storeResolved ||
+      !storeSlug
+    ) {
       return;
     }
+
+    let mounted =
+      true;
 
     async function loadData() {
       try {
         const [
           areasResponse,
           statusResponse,
-        ] = await Promise.all([
-          fetch(
-            `${API_URL}/api/delivery-areas/active?store=${encodeURIComponent(
-              storeSlug
-            )}`
-          ),
+        ] =
+          await Promise.all([
+            fetch(
+              `${API_URL}/api/delivery-areas/active?store=${encodeURIComponent(
+                storeSlug
+              )}`,
+              {
+                cache:
+                  "no-store",
+              }
+            ),
 
-          fetch(
-            `${API_URL}/api/store/status?store=${encodeURIComponent(
-              storeSlug
-            )}`
-          ),
-        ]);
+            fetch(
+              `${API_URL}/api/store/status?store=${encodeURIComponent(
+                storeSlug
+              )}`,
+              {
+                cache:
+                  "no-store",
+              }
+            ),
+          ]);
 
-        if (!areasResponse.ok) {
+        if (
+          !areasResponse.ok
+        ) {
           throw new Error(
             "Erro ao carregar bairros"
           );
         }
 
-        if (!statusResponse.ok) {
+        if (
+          !statusResponse.ok
+        ) {
           throw new Error(
             "Erro ao carregar status"
           );
         }
 
-        const areasData: DeliveryArea[] =
+        const areasData:
+          DeliveryArea[] =
           await areasResponse.json();
 
-        const statusData: StoreStatus =
+        const statusData:
+          StoreStatus =
           await statusResponse.json();
+
+        if (!mounted) {
+          return;
+        }
 
         setDeliveryAreas(
           areasData
@@ -252,128 +430,163 @@ export default function CheckoutPage() {
         setStoreStatus(
           statusData
         );
-      } catch (error) {
-        console.error(error);
+      } catch (
+        error
+      ) {
+        console.error(
+          error
+        );
       }
     }
 
-    loadData();
+    void loadData();
 
     const interval =
-      setInterval(() => {
-        fetch(
-          `${API_URL}/api/store/status?store=${encodeURIComponent(
-              storeSlug
-            )}`
-        )
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(
-                "Erro ao atualizar status"
+      window.setInterval(
+        async () => {
+          try {
+            const response =
+              await fetch(
+                `${API_URL}/api/store/status?store=${encodeURIComponent(
+                  storeSlug
+                )}`,
+                {
+                  cache:
+                    "no-store",
+                }
               );
+
+            if (
+              !response.ok
+            ) {
+              return;
             }
 
-            return response.json();
-          })
-          .then(
-            (
-              data: StoreStatus
-            ) => {
+            const data:
+              StoreStatus =
+              await response.json();
+
+            if (mounted) {
               setStoreStatus(
                 data
               );
             }
-          )
-          .catch((error) => {
-            console.error(error);
-          });
-      }, 10000);
+          } catch (
+            error
+          ) {
+            console.error(
+              error
+            );
+          }
+        },
+        10000
+      );
 
-    return () =>
-      clearInterval(interval);
-  }, [storeSlug, storeResolved]);
+    return () => {
+      mounted =
+        false;
+
+      window.clearInterval(
+        interval
+      );
+    };
+  }, [
+    storeSlug,
+    storeResolved,
+  ]);
 
   // =========================
-  // OBSERVAÇÃO
+  // CARRINHO - AÇÕES
   // =========================
+
+  function saveCart(
+    nextCart:
+      CartItem[]
+  ) {
+    setCart(
+      nextCart
+    );
+
+    if (
+      cartKey
+    ) {
+      localStorage.setItem(
+        cartKey,
+        JSON.stringify(
+          nextCart
+        )
+      );
+    }
+  }
 
   function updateObservation(
     itemIndex: number,
     observation: string
   ) {
-    setCart((currentCart) => {
-      const updatedCart =
-        currentCart.map(
-          (item, index) =>
-            index === itemIndex
-              ? {
-                  ...item,
-                  observation,
-                }
-              : item
-        );
-
-      localStorage.setItem(
-        cartKey,
-        JSON.stringify(
-          updatedCart
-        )
+    const nextCart =
+      cart.map(
+        (
+          item,
+          index
+        ) =>
+          index ===
+          itemIndex
+            ? {
+                ...item,
+                observation,
+              }
+            : item
       );
 
-      return updatedCart;
-    });
+    saveCart(
+      nextCart
+    );
   }
 
   function setItemQuantity(
     itemIndex: number,
     nextQuantity: number
   ) {
-    setCart((currentCart) => {
-      const updatedCart =
-        currentCart
-          .map((item, index) =>
-            index === itemIndex
+    const nextCart =
+      cart
+        .map(
+          (
+            item,
+            index
+          ) =>
+            index ===
+            itemIndex
               ? {
                   ...item,
-                  quantity: nextQuantity,
+                  quantity:
+                    nextQuantity,
                 }
               : item
-          )
-          .filter(
-            (item) =>
-              item.quantity > 0
-          );
-
-      localStorage.setItem(
-        cartKey,
-        JSON.stringify(
-          updatedCart
         )
-      );
+        .filter(
+          (item) =>
+            item.quantity >
+            0
+        );
 
-      return updatedCart;
-    });
+    saveCart(
+      nextCart
+    );
   }
 
   function removeItem(
     itemIndex: number
   ) {
-    setCart((currentCart) => {
-      const updatedCart =
-        currentCart.filter(
-          (_, index) =>
-            index !== itemIndex
-        );
-
-      localStorage.setItem(
-        cartKey,
-        JSON.stringify(
-          updatedCart
-        )
-      );
-
-      return updatedCart;
-    });
+    saveCart(
+      cart.filter(
+        (
+          _,
+          index
+        ) =>
+          index !==
+          itemIndex
+      )
+    );
   }
 
   // =========================
@@ -381,22 +594,22 @@ export default function CheckoutPage() {
   // =========================
 
   const subtotal =
-    useMemo(() => {
-      return cart.reduce(
-        (total, item) =>
-          total +
+    useMemo(
+      () =>
+        cart.reduce(
           (
-            Number(
-              item.product.price
-            ) +
-            Number(
-              item.crust?.price ?? 0
-            )
-          ) *
-            item.quantity,
-        0
-      );
-    }, [cart]);
+            total,
+            item
+          ) =>
+            total +
+            getItemUnitPrice(
+              item
+            ) *
+              item.quantity,
+          0
+        ),
+      [cart]
+    );
 
   const selectedArea =
     deliveryAreas.find(
@@ -413,7 +626,8 @@ export default function CheckoutPage() {
       : 0;
 
   const totalBeforeDiscount =
-    subtotal + deliveryFee;
+    subtotal +
+    deliveryFee;
 
   const discountAmount =
     appliedCoupon
@@ -429,27 +643,48 @@ export default function CheckoutPage() {
         discountAmount
     );
 
+  const totalItems =
+    useMemo(
+      () =>
+        cart.reduce(
+          (
+            count,
+            item
+          ) =>
+            count +
+            item.quantity,
+          0
+        ),
+      [cart]
+    );
+
   // =========================
-  // INVALIDAR CUPOM
-  // SE O VALOR MUDAR
+  // CUPOM - INVALIDAR
   // =========================
 
   useEffect(() => {
-    if (!appliedCoupon) {
+    if (
+      !appliedCoupon
+    ) {
       return;
     }
 
     if (
       Number(
-        appliedCoupon.originalValue
+        appliedCoupon
+          .originalValue
       ) !==
       Number(
         totalBeforeDiscount
       )
     ) {
-      setAppliedCoupon(null);
+      setAppliedCoupon(
+        null
+      );
 
-      setCouponMessage("");
+      setCouponMessage(
+        ""
+      );
 
       setCouponError(
         "O valor do pedido mudou. Aplique o cupom novamente."
@@ -461,7 +696,7 @@ export default function CheckoutPage() {
   ]);
 
   // =========================
-  // APLICAR CUPOM
+  // CUPOM - APLICAR
   // =========================
 
   async function handleApplyCoupon() {
@@ -470,8 +705,13 @@ export default function CheckoutPage() {
         .trim()
         .toUpperCase();
 
-    setCouponMessage("");
-    setCouponError("");
+    setCouponMessage(
+      ""
+    );
+
+    setCouponError(
+      ""
+    );
 
     if (!code) {
       setCouponError(
@@ -482,7 +722,8 @@ export default function CheckoutPage() {
     }
 
     if (
-      totalBeforeDiscount <= 0
+      totalBeforeDiscount <=
+      0
     ) {
       setCouponError(
         "Não há valor para aplicar o cupom."
@@ -492,7 +733,9 @@ export default function CheckoutPage() {
     }
 
     try {
-      setCouponLoading(true);
+      setCouponLoading(
+        true
+      );
 
       const response =
         await fetch(
@@ -507,7 +750,9 @@ export default function CheckoutPage() {
           )}`
         );
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
         let message =
           "Cupom inválido ou indisponível.";
 
@@ -516,7 +761,8 @@ export default function CheckoutPage() {
             await response.json();
 
           if (
-            typeof data?.message ===
+            typeof data
+              ?.message ===
               "string" &&
             data.message
           ) {
@@ -524,7 +770,7 @@ export default function CheckoutPage() {
               data.message;
           }
         } catch {
-          // mantém mensagem padrão
+          // mantém padrão
         }
 
         setAppliedCoupon(
@@ -538,7 +784,8 @@ export default function CheckoutPage() {
         return;
       }
 
-      const data: CouponValidationResponse =
+      const data:
+        CouponValidationResponse =
         await response.json();
 
       if (!data.valid) {
@@ -564,7 +811,9 @@ export default function CheckoutPage() {
       setCouponMessage(
         `Cupom ${data.code} aplicado com sucesso.`
       );
-    } catch (error) {
+    } catch (
+      error
+    ) {
       console.error(
         "Erro ao validar cupom:",
         error
@@ -584,41 +833,64 @@ export default function CheckoutPage() {
     }
   }
 
-  // =========================
-  // REMOVER CUPOM
-  // =========================
-
   function handleRemoveCoupon() {
-    setAppliedCoupon(null);
+    setAppliedCoupon(
+      null
+    );
 
-    setCouponInput("");
+    setCouponInput(
+      ""
+    );
 
-    setCouponMessage("");
+    setCouponMessage(
+      ""
+    );
 
-    setCouponError("");
+    setCouponError(
+      ""
+    );
   }
 
   // =========================
-  // FINALIZAR PEDIDO
+  // FINALIZAR
   // =========================
 
   async function handleSubmit(
-    event: FormEvent<HTMLFormElement>
+    event:
+      FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    setCheckoutError("");
+    setCheckoutError(
+      ""
+    );
 
-    if (!storeStatus?.open) {
+    if (
+      paymentMethod ===
+      "DEBIT_CARD"
+    ) {
       setCheckoutError(
-        storeStatus?.message ||
-          "A pizzaria não está recebendo pedidos agora."
+        "O pagamento com cartão de débito está temporariamente indisponível."
       );
 
       return;
     }
 
-    if (cart.length === 0) {
+    if (
+      !storeStatus?.open
+    ) {
+      setCheckoutError(
+        storeStatus?.message ||
+          "O estabelecimento não está recebendo pedidos agora."
+      );
+
+      return;
+    }
+
+    if (
+      cart.length ===
+      0
+    ) {
       setCheckoutError(
         "Seu carrinho está vazio."
       );
@@ -626,7 +898,9 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!neighborhood) {
+    if (
+      !neighborhood
+    ) {
       setCheckoutError(
         "Selecione o bairro para continuar."
       );
@@ -634,7 +908,9 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!paymentMethod) {
+    if (
+      !paymentMethod
+    ) {
       setCheckoutError(
         "Selecione a forma de pagamento."
       );
@@ -653,32 +929,26 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Proteção extra:
-    // débito temporariamente
-    // indisponível.
-
-    if (
-      paymentMethod ===
-      "DEBIT_CARD"
-    ) {
-      setCheckoutError(
-        "O pagamento com cartão de débito está temporariamente indisponível."
+    try {
+      setSubmitting(
+        true
       );
 
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-
       const payload = {
-        storeSlug: storeSlug,
+        storeSlug,
+
         customerName,
+
         customerPhone,
+
         street,
+
         number,
+
         neighborhood,
+
         complement,
+
         paymentMethod,
 
         couponCode:
@@ -686,31 +956,43 @@ export default function CheckoutPage() {
             ? appliedCoupon.code
             : null,
 
-        items: cart.map(
-          (item) => ({
-            productId:
-              item.product.id,
+        items:
+          cart.map(
+            (item) => ({
+              productId:
+                item.product.id,
 
-            quantity:
-              item.quantity,
+              quantity:
+                item.quantity,
 
-            observation:
-              item.observation,
+              observation:
+                item.observation,
 
-            crustId:
-              item.crust?.id ??
-              null,
-          })
-        ),
+              crustId:
+                item.crust?.id ??
+                null,
+
+              addonIds:
+                (
+                  item.addons ??
+                  []
+                ).map(
+                  (addon) =>
+                    addon.id
+                ),
+            })
+          ),
       };
 
       const orderResponse =
         await fetch(
           `${API_URL}/api/orders`,
           {
-            method: "POST",
+            method:
+              "POST",
 
-            credentials: "include",
+            credentials:
+              "include",
 
             headers: {
               "Content-Type":
@@ -724,7 +1006,9 @@ export default function CheckoutPage() {
           }
         );
 
-      if (!orderResponse.ok) {
+      if (
+        !orderResponse.ok
+      ) {
         const text =
           await orderResponse.text();
 
@@ -738,10 +1022,13 @@ export default function CheckoutPage() {
 
         try {
           const data =
-            JSON.parse(text);
+            JSON.parse(
+              text
+            );
 
           if (
-            typeof data?.message ===
+            typeof data
+              ?.message ===
               "string" &&
             data.message
           ) {
@@ -749,7 +1036,7 @@ export default function CheckoutPage() {
               data.message;
           }
         } catch {
-          // mantém mensagem padrão
+          // mantém padrão
         }
 
         throw new Error(
@@ -766,18 +1053,14 @@ export default function CheckoutPage() {
       const publicAccessToken =
         order.publicAccessToken;
 
-      if (!publicAccessToken) {
+      if (
+        !publicAccessToken
+      ) {
         throw new Error(
           "Pedido criado, mas o token de acesso não foi retornado."
         );
       }
 
-      /*
-       * O token fica associado somente a este pedido.
-       * Ele será usado pelas páginas públicas para
-       * consultar pedido e pagamento sem depender
-       * apenas do ID sequencial.
-       */
       sessionStorage.setItem(
         `pizzasystem-order-token:${order.id}`,
         publicAccessToken
@@ -788,10 +1071,6 @@ export default function CheckoutPage() {
           publicAccessToken
         );
 
-      // =========================
-      // PIX
-      // =========================
-
       if (
         paymentMethod ===
         "PIX"
@@ -800,7 +1079,8 @@ export default function CheckoutPage() {
           await fetch(
             `${API_URL}/api/payments/${order.id}/pix?token=${encodedToken}`,
             {
-              method: "POST",
+              method:
+                "POST",
             }
           );
 
@@ -825,26 +1105,28 @@ export default function CheckoutPage() {
         );
 
         router.push(
-          `/pagamento/${order.id}?token=${encodedToken}&store=${encodeURIComponent(storeSlug)}`
+          `/pagamento/${order.id}?token=${encodedToken}&store=${encodeURIComponent(
+            storeSlug
+          )}`
         );
 
         return;
       }
 
-      // =========================
-      // CARTÃO DE CRÉDITO
-      // =========================
-
       if (
         paymentMethod ===
-        "CREDIT_CARD"
+          "CREDIT_CARD" ||
+        paymentMethod ===
+          "DEBIT_CARD"
       ) {
         localStorage.removeItem(
           cartKey
         );
 
         router.push(
-          `/pagamento/cartao/${order.id}?token=${encodedToken}&store=${encodeURIComponent(storeSlug)}`
+          `/pagamento/cartao/${order.id}?token=${encodedToken}&store=${encodeURIComponent(
+            storeSlug
+          )}`
         );
 
         return;
@@ -855,90 +1137,114 @@ export default function CheckoutPage() {
       );
 
       router.push(
-        `/pedido/${order.id}?token=${encodedToken}&store=${encodeURIComponent(storeSlug)}`
+        `/pedido/${order.id}?token=${encodedToken}&store=${encodeURIComponent(
+          storeSlug
+        )}`
       );
-    } catch (error) {
-      console.error(error);
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Não foi possível finalizar o pedido.";
+    } catch (
+      error
+    ) {
+      console.error(
+        error
+      );
 
       setCheckoutError(
-        message
+        error instanceof
+          Error
+          ? error.message
+          : "Não foi possível finalizar o pedido."
       );
     } finally {
-      setSubmitting(false);
+      setSubmitting(
+        false
+      );
     }
   }
 
   // =========================
-  // STORE INVÁLIDA
+  // ESTADOS DE TELA
   // =========================
 
-  if (storeResolved && !storeSlug) {
+  if (
+    storeResolved &&
+    !storeSlug
+  ) {
     return (
       <main className="min-h-screen bg-background px-4 py-16 text-foreground">
+
         <div className="mx-auto max-w-xl rounded-2xl bg-card p-8 text-center ring-1 ring-black/5">
+
           <h1 className="font-display text-3xl tracking-tight">
             Loja não informada
           </h1>
+
           <p className="mt-2 text-sm text-muted-foreground">
             Abra o checkout a partir do cardápio da loja.
           </p>
+
         </div>
+
       </main>
     );
   }
 
-  // =========================
-  // CARREGANDO
-  // =========================
-
-  if (!storeResolved || !loaded) {
+  if (
+    !storeResolved ||
+    !loaded
+  ) {
     return (
       <main className="min-h-screen bg-background pb-16 text-foreground">
+
         <header className="border-b border-border bg-background/85 backdrop-blur-md">
+
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
             <div className="skeleton h-9 w-40 rounded-xl" />
             <div className="skeleton h-9 w-24 rounded-full" />
           </div>
+
         </header>
 
         <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+
           <div className="skeleton h-4 w-28" />
           <div className="skeleton mt-3 h-12 w-72" />
 
           <div className="mt-7 grid gap-6 lg:grid-cols-5">
+
             <div className="space-y-6 lg:col-span-3">
               <div className="skeleton h-44 rounded-2xl" />
               <div className="skeleton h-72 rounded-2xl" />
               <div className="skeleton h-44 rounded-2xl" />
             </div>
+
             <div className="skeleton h-80 rounded-2xl lg:col-span-2" />
+
           </div>
+
         </div>
+
       </main>
     );
   }
 
-  // =========================
-  // CARRINHO VAZIO
-  // =========================
-
   if (
-    cart.length === 0
+    cart.length ===
+    0
   ) {
     return (
       <main className="min-h-screen bg-background pb-16 text-foreground">
+
         <header className="border-b border-border bg-background/85 backdrop-blur-md">
+
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+
             <button
               type="button"
               onClick={() =>
                 router.push(
-                  `/cardapio/${encodeURIComponent(storeSlug)}`
+                  `/cardapio/${encodeURIComponent(
+                    storeSlug
+                  )}`
                 )
               }
               className="flex items-center gap-2.5"
@@ -946,14 +1252,21 @@ export default function CheckoutPage() {
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary font-display text-lg text-primary-foreground shadow-[0_2px_0_0] shadow-foreground/30">
                 P
               </span>
+
               <span className="font-display text-2xl leading-none tracking-tight">
-                PizzaSystem<span className="text-primary">.</span>
+                PizzaSystem
+                <span className="text-primary">
+                  .
+                </span>
               </span>
             </button>
+
           </div>
+
         </header>
 
         <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+
           <span className="font-mono-brand text-xs uppercase tracking-[0.2em] text-muted-foreground">
             (b) Finalizar
           </span>
@@ -963,6 +1276,7 @@ export default function CheckoutPage() {
           </h1>
 
           <div className="mt-8 rounded-2xl bg-card p-8 text-center ring-1 ring-black/5">
+
             <p className="font-display text-2xl tracking-tight">
               Carrinho vazio
             </p>
@@ -975,33 +1289,22 @@ export default function CheckoutPage() {
               type="button"
               onClick={() =>
                 router.push(
-                  `/cardapio/${encodeURIComponent(storeSlug)}`
+                  `/cardapio/${encodeURIComponent(
+                    storeSlug
+                  )}`
                 )
               }
               className="mt-5 inline-block rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-[0_4px_0_0] shadow-foreground/30 transition-transform active:scale-95"
             >
               Ver cardápio
             </button>
+
           </div>
+
         </div>
+
       </main>
     );
-  }
-
-  // =========================
-  // CHECKOUT
-  // =========================
-
-  function formatMoney(
-    value: number
-  ) {
-    return new Intl.NumberFormat(
-      "pt-BR",
-      {
-        style: "currency",
-        currency: "BRL",
-      }
-    ).format(value);
   }
 
   const inputClass =
@@ -1014,7 +1317,9 @@ export default function CheckoutPage() {
   const brandInitial =
     storeName
       .trim()
-      .charAt(0)
+      .charAt(
+        0
+      )
       .toUpperCase() ||
     "P";
 
@@ -1022,17 +1327,20 @@ export default function CheckoutPage() {
     <main className="min-h-screen bg-background pb-16 font-body text-foreground antialiased selection:bg-butter">
 
       {/* =========================
-          HEADER — ESTILO LOVABLE
-          ========================= */}
+          HEADER
+      ========================= */}
 
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
+
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
 
           <button
             type="button"
             onClick={() =>
               router.push(
-                `/cardapio/${encodeURIComponent(storeSlug)}`
+                `/cardapio/${encodeURIComponent(
+                  storeSlug
+                )}`
               )
             }
             className="flex items-center gap-2.5"
@@ -1047,6 +1355,7 @@ export default function CheckoutPage() {
                 .
               </span>
             </span>
+
           </button>
 
           <nav className="flex items-center gap-3 text-sm font-medium text-muted-foreground sm:gap-5">
@@ -1055,7 +1364,9 @@ export default function CheckoutPage() {
               type="button"
               onClick={() =>
                 router.push(
-                  `/cardapio/${encodeURIComponent(storeSlug)}`
+                  `/cardapio/${encodeURIComponent(
+                    storeSlug
+                  )}`
                 )
               }
               className="hidden transition-colors hover:text-foreground sm:block"
@@ -1064,20 +1375,17 @@ export default function CheckoutPage() {
             </button>
 
             <span className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-cream">
-              {cart.reduce(
-                (
-                  count,
-                  item
-                ) =>
-                  count +
-                  item.quantity,
-                0
-              )}{" "}
-              itens
+              {totalItems}{" "}
+              {totalItems ===
+              1
+                ? "item"
+                : "itens"}
             </span>
 
           </nav>
+
         </div>
+
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
@@ -1096,14 +1404,16 @@ export default function CheckoutPage() {
 
         {!storeStatus?.open && (
           <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+
             <p className="font-bold text-primary">
               Pedidos encerrados no momento
             </p>
 
             <p className="mt-1 text-sm text-muted-foreground">
               {storeStatus?.message ||
-                "A pizzaria não está recebendo novos pedidos."}
+                "O estabelecimento não está recebendo novos pedidos."}
             </p>
+
           </div>
         )}
 
@@ -1112,7 +1422,9 @@ export default function CheckoutPage() {
             role="alert"
             className="mt-6 flex items-start justify-between gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-4"
           >
+
             <div>
+
               <p className="font-bold text-primary">
                 Não foi possível continuar
               </p>
@@ -1120,18 +1432,22 @@ export default function CheckoutPage() {
               <p className="mt-1 text-sm text-muted-foreground">
                 {checkoutError}
               </p>
+
             </div>
 
             <button
               type="button"
               onClick={() =>
-                setCheckoutError("")
+                setCheckoutError(
+                  ""
+                )
               }
               className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border bg-card text-sm font-bold"
               aria-label="Fechar mensagem"
             >
               ×
             </button>
+
           </div>
         )}
 
@@ -1143,8 +1459,8 @@ export default function CheckoutPage() {
         >
 
           {/* =========================
-              ITENS + FORMULÁRIO
-              ========================= */}
+              ESQUERDA
+          ========================= */}
 
           <div className="space-y-6 lg:col-span-3">
 
@@ -1153,7 +1469,9 @@ export default function CheckoutPage() {
             <section className="rounded-2xl bg-card p-4 ring-1 ring-black/5">
 
               <div className="flex items-end justify-between gap-4">
+
                 <div>
+
                   <p className="font-mono-brand text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                     Carrinho
                   </p>
@@ -1161,19 +1479,23 @@ export default function CheckoutPage() {
                   <h2 className="mt-1 font-display text-xl tracking-tight">
                     Itens
                   </h2>
+
                 </div>
 
                 <button
                   type="button"
                   onClick={() =>
                     router.push(
-                      `/cardapio/${encodeURIComponent(storeSlug)}`
+                      `/cardapio/${encodeURIComponent(
+                        storeSlug
+                      )}`
                     )
                   }
                   className="font-mono-brand text-[11px] uppercase tracking-wider text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
                 >
                   Adicionar mais
                 </button>
+
               </div>
 
               <ul className="mt-3 divide-y divide-border">
@@ -1185,36 +1507,60 @@ export default function CheckoutPage() {
                   ) => {
 
                     const unitPrice =
-                      Number(
-                        item.product.price
-                      ) +
-                      Number(
-                        item.crust?.price ??
-                        0
+                      getItemUnitPrice(
+                        item
                       );
 
                     return (
                       <li
-                        key={`${item.product.id}-${item.crust?.id ?? "no-crust"}-${itemIndex}`}
+                        key={`${item.product.id}-${item.crust?.id ?? "no-crust"}-${(
+                          item.addons ??
+                          []
+                        )
+                          .map(
+                            (
+                              addon
+                            ) =>
+                              addon.id
+                          )
+                          .sort(
+                            (
+                              a,
+                              b
+                            ) =>
+                              a -
+                              b
+                          )
+                          .join(
+                            "-"
+                          )}-${itemIndex}`}
                         className="py-3.5"
                       >
 
                         <div className="flex items-start gap-3">
 
                           <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-secondary sm:h-16 sm:w-16">
+
                             {item.product.imageUrl ? (
                               <img
-                                src={item.product.imageUrl}
-                                alt={item.product.name}
+                                src={
+                                  item.product.imageUrl
+                                }
+                                alt={
+                                  item.product.name
+                                }
                                 className="h-full w-full object-cover"
                               />
                             ) : (
                               <div className="grid h-full w-full place-items-center font-display text-xl text-muted-foreground">
                                 {item.product.name
-                                  .charAt(0)
+                                  .charAt(
+                                    0
+                                  )
                                   .toUpperCase()}
                               </div>
                             )}
+
                           </div>
 
                           <div className="min-w-0 flex-1">
@@ -1225,13 +1571,40 @@ export default function CheckoutPage() {
 
                             {item.crust && (
                               <p className="mt-1 font-mono-brand text-[11px] text-muted-foreground">
-                                Borda {item.crust.name} · +{" "}
+                                Borda{" "}
+                                {item.crust.name}
+                                {" · + "}
                                 {formatMoney(
                                   Number(
                                     item.crust.price
                                   )
                                 )}
                               </p>
+                            )}
+
+                            {(item.addons ?? []).map(
+                              (
+                                addon
+                              ) => (
+                                <p
+                                  key={
+                                    addon.id
+                                  }
+                                  className="mt-1 font-mono-brand text-[11px] text-muted-foreground"
+                                >
+                                  {addon.name}
+                                  {Number(
+                                    addon.price
+                                  ) >
+                                  0
+                                    ? ` · + ${formatMoney(
+                                        Number(
+                                          addon.price
+                                        )
+                                      )}`
+                                    : " · Grátis"}
+                                </p>
+                              )
                             )}
 
                             <p className="mt-1 font-mono-brand text-xs text-muted-foreground">
@@ -1263,7 +1636,8 @@ export default function CheckoutPage() {
                               onClick={() =>
                                 setItemQuantity(
                                   itemIndex,
-                                  item.quantity - 1
+                                  item.quantity -
+                                    1
                                 )
                               }
                               className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-sm font-bold active:scale-95"
@@ -1281,7 +1655,8 @@ export default function CheckoutPage() {
                               onClick={() =>
                                 setItemQuantity(
                                   itemIndex,
-                                  item.quantity + 1
+                                  item.quantity +
+                                    1
                                 )
                               }
                               className="grid h-7 w-7 place-items-center rounded-full bg-foreground text-sm font-bold text-cream active:scale-95"
@@ -1301,6 +1676,7 @@ export default function CheckoutPage() {
                         </div>
 
                         <label className="mt-2.5 block">
+
                           <span className="font-mono-brand text-[10px] uppercase tracking-wider text-muted-foreground">
                             Observação
                           </span>
@@ -1309,7 +1685,9 @@ export default function CheckoutPage() {
                             value={
                               item.observation
                             }
-                            onChange={(event) =>
+                            onChange={(
+                              event
+                            ) =>
                               updateObservation(
                                 itemIndex,
                                 event.target.value
@@ -1319,6 +1697,7 @@ export default function CheckoutPage() {
                             rows={1}
                             className="mt-1.5 min-h-11 w-full resize-y rounded-xl border border-border bg-white/60 px-3 py-2.5 text-sm outline-none transition focus:border-foreground"
                           />
+
                         </label>
 
                       </li>
@@ -1327,6 +1706,7 @@ export default function CheckoutPage() {
                 )}
 
               </ul>
+
             </section>
 
             {/* ENTREGA */}
@@ -1352,7 +1732,9 @@ export default function CheckoutPage() {
                   value={
                     customerName
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setCustomerName(
                       event.target.value
                     )
@@ -1368,7 +1750,9 @@ export default function CheckoutPage() {
                   value={
                     customerPhone
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setCustomerPhone(
                       event.target.value
                     )
@@ -1384,7 +1768,9 @@ export default function CheckoutPage() {
                   value={
                     street
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setStreet(
                       event.target.value
                     )
@@ -1400,7 +1786,9 @@ export default function CheckoutPage() {
                   value={
                     number
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setNumber(
                       event.target.value
                     )
@@ -1412,7 +1800,9 @@ export default function CheckoutPage() {
                   value={
                     neighborhood
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setNeighborhood(
                       event.target.value
                     )
@@ -1421,12 +1811,15 @@ export default function CheckoutPage() {
                     inputClass
                   }
                 >
+
                   <option value="">
                     Selecione o bairro
                   </option>
 
                   {deliveryAreas.map(
-                    (area) => (
+                    (
+                      area
+                    ) => (
                       <option
                         key={
                           area.id
@@ -1435,7 +1828,8 @@ export default function CheckoutPage() {
                           area.neighborhood
                         }
                       >
-                        {area.neighborhood} —{" "}
+                        {area.neighborhood}
+                        {" — "}
                         {formatMoney(
                           Number(
                             area.fee
@@ -1444,6 +1838,7 @@ export default function CheckoutPage() {
                       </option>
                     )
                   )}
+
                 </select>
 
                 <input
@@ -1454,7 +1849,9 @@ export default function CheckoutPage() {
                   value={
                     complement
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setComplement(
                       event.target.value
                     )
@@ -1462,6 +1859,7 @@ export default function CheckoutPage() {
                 />
 
               </div>
+
             </section>
 
             {/* PAGAMENTO */}
@@ -1513,13 +1911,14 @@ export default function CheckoutPage() {
                 </span>
 
               </div>
+
             </section>
 
           </div>
 
           {/* =========================
               RESUMO
-              ========================= */}
+          ========================= */}
 
           <aside className="lg:col-span-2">
 
@@ -1545,7 +1944,9 @@ export default function CheckoutPage() {
                     disabled={
                       couponLoading
                     }
-                    onChange={(event) => {
+                    onChange={(
+                      event
+                    ) => {
                       setCouponInput(
                         event.target.value.toUpperCase()
                       );
@@ -1566,7 +1967,7 @@ export default function CheckoutPage() {
                         ""
                       );
                     }}
-                    placeholder="PIZZA10"
+                    placeholder="DESCONTO10"
                     className="min-w-0 flex-1 rounded-xl border border-cream/15 bg-white/10 px-3 py-2.5 text-sm font-bold uppercase text-cream outline-none placeholder:text-cream/30 focus:border-cream/40"
                   />
 
@@ -1616,6 +2017,7 @@ export default function CheckoutPage() {
               <dl className="mt-4 space-y-2 text-sm">
 
                 <div className="flex justify-between">
+
                   <dt className="text-cream/70">
                     Subtotal
                   </dt>
@@ -1625,9 +2027,11 @@ export default function CheckoutPage() {
                       subtotal
                     )}
                   </dd>
+
                 </div>
 
                 <div className="flex justify-between">
+
                   <dt className="text-cream/70">
                     Entrega
                   </dt>
@@ -1639,12 +2043,15 @@ export default function CheckoutPage() {
                         )
                       : "—"}
                   </dd>
+
                 </div>
 
                 {appliedCoupon && (
                   <div className="flex justify-between">
+
                     <dt className="text-butter">
-                      Cupom {appliedCoupon.code}
+                      Cupom{" "}
+                      {appliedCoupon.code}
                     </dt>
 
                     <dd className="font-mono-brand text-butter">
@@ -1653,6 +2060,7 @@ export default function CheckoutPage() {
                         discountAmount
                       )}
                     </dd>
+
                   </div>
                 )}
 
@@ -1697,7 +2105,9 @@ export default function CheckoutPage() {
                 type="button"
                 onClick={() =>
                   router.push(
-                    `/cardapio/${encodeURIComponent(storeSlug)}`
+                    `/cardapio/${encodeURIComponent(
+                      storeSlug
+                    )}`
                   )
                 }
                 className="mt-3 block w-full text-center font-mono-brand text-xs text-cream/60 transition-colors hover:text-cream"
@@ -1706,10 +2116,13 @@ export default function CheckoutPage() {
               </button>
 
             </div>
+
           </aside>
 
         </form>
+
       </div>
+
     </main>
   );
 }

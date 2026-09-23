@@ -3,17 +3,21 @@ package com.pizzasystem.backend.controller;
 import com.pizzasystem.backend.dto.OrderItemRequest;
 import com.pizzasystem.backend.dto.OrderRequest;
 
+import com.pizzasystem.backend.entity.Addon;
+import com.pizzasystem.backend.entity.AddonGroup;
 import com.pizzasystem.backend.entity.Coupon;
 import com.pizzasystem.backend.entity.Customer;
 import com.pizzasystem.backend.entity.Crust;
 import com.pizzasystem.backend.entity.DeliveryArea;
 import com.pizzasystem.backend.entity.Order;
 import com.pizzasystem.backend.entity.OrderItem;
+import com.pizzasystem.backend.entity.OrderItemAddon;
 import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentStatus;
 import com.pizzasystem.backend.entity.Product;
 import com.pizzasystem.backend.entity.Store;
 
+import com.pizzasystem.backend.repository.AddonRepository;
 import com.pizzasystem.backend.repository.CrustRepository;
 import com.pizzasystem.backend.repository.CustomerRepository;
 import com.pizzasystem.backend.repository.DeliveryAreaRepository;
@@ -42,22 +46,50 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
 
-    private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
-    private final ProductRepository productRepository;
-    private final DeliveryAreaRepository deliveryAreaRepository;
-    private final StoreStatusService storeStatusService;
-    private final CouponService couponService;
-    private final CrustRepository crustRepository;
-    private final PublicStoreService publicStoreService;
-    private final CurrentStoreService currentStoreService;
-    private final CustomerRepository customerRepository;
+    private final OrderRepository
+            orderRepository;
+
+    private final OrderItemRepository
+            orderItemRepository;
+
+    private final ProductRepository
+            productRepository;
+
+    private final DeliveryAreaRepository
+            deliveryAreaRepository;
+
+    private final StoreStatusService
+            storeStatusService;
+
+    private final CouponService
+            couponService;
+
+    private final CrustRepository
+            crustRepository;
+
+    private final AddonRepository
+            addonRepository;
+
+    private final PublicStoreService
+            publicStoreService;
+
+    private final CurrentStoreService
+            currentStoreService;
+
+    private final CustomerRepository
+            customerRepository;
 
     private static final String SESSION_CUSTOMER_ID =
             "CUSTOMER_ID";
@@ -70,20 +102,44 @@ public class OrderController {
             StoreStatusService storeStatusService,
             CouponService couponService,
             CrustRepository crustRepository,
+            AddonRepository addonRepository,
             PublicStoreService publicStoreService,
             CurrentStoreService currentStoreService,
             CustomerRepository customerRepository
     ) {
-        this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
-        this.productRepository = productRepository;
-        this.deliveryAreaRepository = deliveryAreaRepository;
-        this.storeStatusService = storeStatusService;
-        this.couponService = couponService;
-        this.crustRepository = crustRepository;
-        this.publicStoreService = publicStoreService;
-        this.currentStoreService = currentStoreService;
-        this.customerRepository = customerRepository;
+
+        this.orderRepository =
+                orderRepository;
+
+        this.orderItemRepository =
+                orderItemRepository;
+
+        this.productRepository =
+                productRepository;
+
+        this.deliveryAreaRepository =
+                deliveryAreaRepository;
+
+        this.storeStatusService =
+                storeStatusService;
+
+        this.couponService =
+                couponService;
+
+        this.crustRepository =
+                crustRepository;
+
+        this.addonRepository =
+                addonRepository;
+
+        this.publicStoreService =
+                publicStoreService;
+
+        this.currentStoreService =
+                currentStoreService;
+
+        this.customerRepository =
+                customerRepository;
     }
 
     // =========================
@@ -147,7 +203,9 @@ public class OrderController {
     // =========================
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(
+            HttpStatus.CREATED
+    )
     @Transactional
     public Order create(
             @RequestBody OrderRequest request,
@@ -178,10 +236,12 @@ public class OrderController {
         }
 
         if (!storeStatusService
-                .canReceiveOrders(store)) {
+                .canReceiveOrders(
+                        store
+                )) {
 
             throw new RuntimeException(
-                    "A pizzaria não está recebendo pedidos neste momento"
+                    "O estabelecimento não está recebendo pedidos neste momento"
             );
         }
 
@@ -239,55 +299,39 @@ public class OrderController {
                         );
 
         BigDecimal deliveryFee =
-                deliveryArea.getFee();
+                deliveryArea
+                        .getFee();
 
         if (deliveryFee == null) {
-            deliveryFee = BigDecimal.ZERO;
+
+            deliveryFee =
+                    BigDecimal.ZERO;
         }
 
         Order order =
                 new Order();
 
-        order.setStore(store);
+        order.setStore(
+                store
+        );
 
         // =========================
-        // CONTA DO CLIENTE - OPCIONAL
+        // CONTA DO CLIENTE
         // =========================
 
-        /*
-         * Visitante:
-         * não existe CUSTOMER_ID na sessão e
-         * o pedido continua com customer = null.
-         *
-         * Cliente logado:
-         * vinculamos a conta ao pedido.
-         *
-         * Nome e telefone continuam sendo salvos
-         * como snapshot do checkout.
-         */
         HttpSession customerSession =
-                servletRequest.getSession(
-                        false
-                );
-
-        System.out.println("[ORDER] requestedSessionId = "
-                + servletRequest.getRequestedSessionId());
-        System.out.println("[ORDER] sessionId = "
-                + (customerSession != null ? customerSession.getId() : null));
+                servletRequest
+                        .getSession(
+                                false
+                        );
 
         if (customerSession != null) {
 
             Object customerIdObject =
-                    customerSession.getAttribute(
-                            SESSION_CUSTOMER_ID
-                    );
-
-            System.out.println("[ORDER] CUSTOMER_ID = "
-                    + customerIdObject
-                    + " | tipo = "
-                    + (customerIdObject != null
-                    ? customerIdObject.getClass().getName()
-                    : null));
+                    customerSession
+                            .getAttribute(
+                                    SESSION_CUSTOMER_ID
+                            );
 
             if (customerIdObject
                     instanceof Long customerId) {
@@ -297,7 +341,9 @@ public class OrderController {
                                 .findById(
                                         customerId
                                 )
-                                .orElse(null);
+                                .orElse(
+                                        null
+                                );
 
                 if (customer != null
                         && customer.isActive()) {
@@ -306,32 +352,20 @@ public class OrderController {
                             customer
                     );
 
-                    System.out.println("[ORDER] Cliente vinculado | customerId = "
-                            + customer.getId());
-
                 } else {
 
-                    /*
-                     * Sessão antiga/inválida.
-                     * Limpamos somente os dados
-                     * da conta do cliente e o pedido
-                     * segue normalmente como visitante.
-                     */
-                    customerSession.removeAttribute(
-                            SESSION_CUSTOMER_ID
-                    );
+                    customerSession
+                            .removeAttribute(
+                                    SESSION_CUSTOMER_ID
+                            );
 
-                    customerSession.removeAttribute(
-                            "CUSTOMER_EMAIL"
-                    );
+                    customerSession
+                            .removeAttribute(
+                                    "CUSTOMER_EMAIL"
+                            );
                 }
             }
         }
-
-        System.out.println("[ORDER] customer antes do save = "
-                + (order.getCustomer() != null
-                ? order.getCustomer().getId()
-                : null));
 
         order.setCustomerName(
                 request
@@ -354,7 +388,8 @@ public class OrderController {
         );
 
         order.setNeighborhood(
-                deliveryArea.getNeighborhood()
+                deliveryArea
+                        .getNeighborhood()
         );
 
         order.setComplement(
@@ -373,7 +408,9 @@ public class OrderController {
                 BigDecimal.ZERO
         );
 
-        order.setCouponCode(null);
+        order.setCouponCode(
+                null
+        );
 
         order.setCouponUsageRegistered(
                 false
@@ -392,20 +429,28 @@ public class OrderController {
         );
 
         order =
-                orderRepository.save(
-                        order
-                );
+                orderRepository
+                        .save(
+                                order
+                        );
 
         BigDecimal productsTotal =
                 BigDecimal.ZERO;
 
-        for (OrderItemRequest itemRequest
-                : request.getItems()) {
+        // =========================
+        // ITENS
+        // =========================
+
+        for (
+                OrderItemRequest itemRequest
+                : request.getItems()
+        ) {
 
             Product product =
                     productRepository
                             .findByIdAndStoreId(
-                                    itemRequest.getProductId(),
+                                    itemRequest
+                                            .getProductId(),
                                     store.getId()
                             )
                             .orElseThrow(() ->
@@ -432,10 +477,12 @@ public class OrderController {
             }
 
             int quantity =
-                    itemRequest.getQuantity();
+                    itemRequest
+                            .getQuantity();
 
             BigDecimal unitPrice =
-                    product.getPrice();
+                    product
+                            .getPrice();
 
             if (unitPrice == null) {
 
@@ -445,13 +492,213 @@ public class OrderController {
                 );
             }
 
+            unitPrice =
+                    normalizeMoney(
+                            unitPrice
+                    );
+
+            // =========================
+            // ADICIONAIS
+            // =========================
+
+            Set<AddonGroup> productGroups =
+                    product
+                            .getAddonGroups() != null
+                            ? product.getAddonGroups()
+                            : new LinkedHashSet<>();
+
+            Map<Long, AddonGroup>
+                    activeGroupsById =
+                    new HashMap<>();
+
+            for (
+                    AddonGroup group
+                    : productGroups
+            ) {
+
+                if (group == null
+                        || group.getId() == null
+                        || !group.isActive()) {
+
+                    continue;
+                }
+
+                activeGroupsById.put(
+                        group.getId(),
+                        group
+                );
+            }
+
+            /*
+             * HashSet também impede que o
+             * mesmo adicional seja enviado
+             * várias vezes no mesmo item.
+             */
+            Set<Long> requestedAddonIds =
+                    new LinkedHashSet<>();
+
+            if (itemRequest
+                    .getAddonIds() != null) {
+
+                for (
+                        Long addonId
+                        : itemRequest
+                        .getAddonIds()
+                ) {
+
+                    if (addonId != null) {
+
+                        requestedAddonIds.add(
+                                addonId
+                        );
+                    }
+                }
+            }
+
+            if (!requestedAddonIds.isEmpty()
+                    && activeGroupsById.isEmpty()) {
+
+                throw new RuntimeException(
+                        "O produto "
+                                + product.getName()
+                                + " não possui grupos de adicionais disponíveis"
+                );
+            }
+
+            Map<Long, Integer>
+                    selectionsByGroup =
+                    new HashMap<>();
+
+            List<Addon>
+                    selectedAddons =
+                    new java.util.ArrayList<>();
+
+            for (
+                    Long addonId
+                    : requestedAddonIds
+            ) {
+
+                Addon addon =
+                        addonRepository
+                                .findByIdAndStoreId(
+                                        addonId,
+                                        store.getId()
+                                )
+                                .orElseThrow(() ->
+                                        new RuntimeException(
+                                                "Adicional não encontrado"
+                                        )
+                                );
+
+                if (!addon.isActive()) {
+
+                    throw new RuntimeException(
+                            "Adicional indisponível: "
+                                    + addon.getName()
+                    );
+                }
+
+                AddonGroup group =
+                        addon.getGroup();
+
+                if (group == null
+                        || group.getId() == null) {
+
+                    throw new RuntimeException(
+                            "Grupo do adicional inválido"
+                    );
+                }
+
+                if (!group.isActive()) {
+
+                    throw new RuntimeException(
+                            "O grupo "
+                                    + group.getName()
+                                    + " não está disponível"
+                    );
+                }
+
+                if (!activeGroupsById
+                        .containsKey(
+                                group.getId()
+                        )) {
+
+                    throw new RuntimeException(
+                            "O adicional "
+                                    + addon.getName()
+                                    + " não está disponível para "
+                                    + product.getName()
+                    );
+                }
+
+                int currentCount =
+                        selectionsByGroup
+                                .getOrDefault(
+                                        group.getId(),
+                                        0
+                                );
+
+                selectionsByGroup.put(
+                        group.getId(),
+                        currentCount + 1
+                );
+
+                selectedAddons.add(
+                        addon
+                );
+            }
+
+            // =========================
+            // MÍNIMO / MÁXIMO
+            // =========================
+
+            for (
+                    AddonGroup group
+                    : activeGroupsById.values()
+            ) {
+
+                int selectedCount =
+                        selectionsByGroup
+                                .getOrDefault(
+                                        group.getId(),
+                                        0
+                                );
+
+                if (selectedCount
+                        < group.getMinSelections()) {
+
+                    throw new RuntimeException(
+                            "Selecione pelo menos "
+                                    + group.getMinSelections()
+                                    + " opção(ões) em "
+                                    + group.getName()
+                    );
+                }
+
+                if (selectedCount
+                        > group.getMaxSelections()) {
+
+                    throw new RuntimeException(
+                            "Selecione no máximo "
+                                    + group.getMaxSelections()
+                                    + " opção(ões) em "
+                                    + group.getName()
+                    );
+                }
+            }
+
+            // =========================
+            // BORDA LEGADA
+            // =========================
+
             String crustName =
                     null;
 
             BigDecimal crustPrice =
                     null;
 
-            if (itemRequest.getCrustId() != null) {
+            if (itemRequest
+                    .getCrustId() != null) {
 
                 if (!product.isAllowCrust()) {
 
@@ -465,7 +712,8 @@ public class OrderController {
                 Crust crust =
                         crustRepository
                                 .findByIdAndStoreId(
-                                        itemRequest.getCrustId(),
+                                        itemRequest
+                                                .getCrustId(),
                                         store.getId()
                                 )
                                 .orElseThrow(() ->
@@ -489,9 +737,15 @@ public class OrderController {
                         crust.getPrice();
 
                 if (crustPrice == null) {
+
                     crustPrice =
                             BigDecimal.ZERO;
                 }
+
+                crustPrice =
+                        normalizeMoney(
+                                crustPrice
+                        );
 
                 unitPrice =
                         unitPrice.add(
@@ -499,12 +753,56 @@ public class OrderController {
                         );
             }
 
-            BigDecimal subtotal =
-                    unitPrice.multiply(
-                            BigDecimal.valueOf(
-                                    quantity
-                            )
+            // =========================
+            // PREÇO DOS ADICIONAIS
+            // =========================
+
+            for (
+                    Addon addon
+                    : selectedAddons
+            ) {
+
+                BigDecimal addonPrice =
+                        addon.getPrice();
+
+                if (addonPrice == null) {
+
+                    addonPrice =
+                            BigDecimal.ZERO;
+                }
+
+                addonPrice =
+                        normalizeMoney(
+                                addonPrice
+                        );
+
+                unitPrice =
+                        unitPrice.add(
+                                addonPrice
+                        );
+            }
+
+            unitPrice =
+                    normalizeMoney(
+                            unitPrice
                     );
+
+            BigDecimal subtotal =
+                    unitPrice
+                            .multiply(
+                                    BigDecimal.valueOf(
+                                            quantity
+                                    )
+                            );
+
+            subtotal =
+                    normalizeMoney(
+                            subtotal
+                    );
+
+            // =========================
+            // CRIAR ITEM
+            // =========================
 
             OrderItem item =
                     new OrderItem();
@@ -534,18 +832,99 @@ public class OrderController {
             );
 
             item.setObservation(
-                    itemRequest.getObservation()
+                    normalizeNullable(
+                            itemRequest
+                                    .getObservation()
+                    )
             );
 
-            orderItemRepository.save(
-                    item
-            );
+            // =========================
+            // SNAPSHOT DOS ADICIONAIS
+            // =========================
+
+            for (
+                    Addon addon
+                    : selectedAddons
+            ) {
+
+                AddonGroup group =
+                        addon.getGroup();
+
+                BigDecimal addonPrice =
+                        addon.getPrice() != null
+                                ? normalizeMoney(
+                                        addon.getPrice()
+                                )
+                                : BigDecimal.ZERO
+                                        .setScale(
+                                                2,
+                                                RoundingMode.HALF_UP
+                                        );
+
+                OrderItemAddon
+                        orderItemAddon =
+                        new OrderItemAddon();
+
+                orderItemAddon
+                        .setSourceAddonId(
+                                addon.getId()
+                        );
+
+                orderItemAddon
+                        .setGroupName(
+                                group.getName()
+                        );
+
+                orderItemAddon
+                        .setAddonName(
+                                addon.getName()
+                        );
+
+                orderItemAddon
+                        .setAddonPrice(
+                                addonPrice
+                        );
+
+                /*
+                 * Grupo primeiro,
+                 * adicional depois.
+                 */
+                int snapshotSortOrder =
+                        (
+                                group.getSortOrder()
+                                        * 1000
+                        )
+                                + addon
+                                .getSortOrder();
+
+                orderItemAddon
+                        .setSortOrder(
+                                snapshotSortOrder
+                        );
+
+                item.addAddon(
+                        orderItemAddon
+                );
+            }
+
+            /*
+             * CascadeType.ALL salva também
+             * os OrderItemAddon.
+             */
+            orderItemRepository
+                    .save(
+                            item
+                    );
 
             productsTotal =
                     productsTotal.add(
                             subtotal
                     );
         }
+
+        // =========================
+        // CUPOM
+        // =========================
 
         BigDecimal orderValueBeforeDiscount =
                 productsTotal.add(
@@ -600,18 +979,18 @@ public class OrderController {
         }
 
         finalTotal =
-                finalTotal.setScale(
-                        2,
-                        RoundingMode.HALF_UP
+                normalizeMoney(
+                        finalTotal
                 );
 
         order.setTotal(
                 finalTotal
         );
 
-        return orderRepository.save(
-                order
-        );
+        return orderRepository
+                .save(
+                        order
+                );
     }
 
     // =========================
@@ -665,9 +1044,10 @@ public class OrderController {
                 status
         );
 
-        return orderRepository.save(
-                order
-        );
+        return orderRepository
+                .save(
+                        order
+                );
     }
 
     // =========================
@@ -711,11 +1091,6 @@ public class OrderController {
             return order;
         }
 
-        /*
-         * O cancelamento público é destinado ao fluxo
-         * de pagamento pendente. Depois que a produção
-         * começou, o cliente não pode cancelar sozinho.
-         */
         if (!isAdminAuthenticated()
                 && order.getStatus()
                 != OrderStatus.PENDING_PAYMENT) {
@@ -730,9 +1105,10 @@ public class OrderController {
                 OrderStatus.CANCELLED
         );
 
-        return orderRepository.save(
-                order
-        );
+        return orderRepository
+                .save(
+                        order
+                );
     }
 
     // =========================
@@ -794,9 +1170,11 @@ public class OrderController {
                 .stream()
                 .anyMatch(
                         authority ->
-                                "ROLE_ADMIN".equals(
-                                        authority.getAuthority()
-                                )
+                                "ROLE_ADMIN"
+                                        .equals(
+                                                authority
+                                                        .getAuthority()
+                                        )
                 );
     }
 
@@ -806,5 +1184,38 @@ public class OrderController {
                 HttpStatus.NOT_FOUND,
                 "Pedido não encontrado"
         );
+    }
+
+    // =========================
+    // NORMALIZAR DINHEIRO
+    // =========================
+
+    private BigDecimal normalizeMoney(
+            BigDecimal value
+    ) {
+
+        return value
+                .setScale(
+                        2,
+                        RoundingMode.HALF_UP
+                );
+    }
+
+    // =========================
+    // STRING OPCIONAL
+    // =========================
+
+    private String normalizeNullable(
+            String value
+    ) {
+
+        if (value == null
+                || value.isBlank()) {
+
+            return null;
+        }
+
+        return value
+                .trim();
     }
 }

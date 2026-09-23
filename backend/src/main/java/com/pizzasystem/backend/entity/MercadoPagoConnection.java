@@ -57,6 +57,25 @@ public class MercadoPagoConnection {
     )
     private String mercadoPagoUserId;
 
+    /*
+     * Chave pública retornada pelo OAuth
+     * do Mercado Pago.
+     *
+     * Pode ser enviada ao frontend para
+     * inicializar o SDK e tokenizar cartão.
+     */
+    @Column(
+            name = "public_key",
+            length = 255
+    )
+    private String publicKey;
+
+    /*
+     * Nunca deve ser enviado ao frontend.
+     *
+     * Usado somente pelo backend para criar
+     * e consultar pagamentos em nome da loja.
+     */
     @Column(
             name = "access_token",
             columnDefinition = "TEXT"
@@ -69,40 +88,54 @@ public class MercadoPagoConnection {
     )
     private String refreshToken;
 
-    @Column(length = 50)
+    @Column(
+            length = 50
+    )
     private String tokenType;
 
-    @Column(length = 500)
+    @Column(
+            length = 500
+    )
     private String scope;
 
-    private LocalDateTime tokenExpiresAt;
+    private LocalDateTime
+            tokenExpiresAt;
 
     // =========================
     // STATUS
     // =========================
 
-    @Column(nullable = false)
-    private boolean connected = false;
+    @Column(
+            nullable = false
+    )
+    private boolean connected =
+            false;
 
-    private LocalDateTime connectedAt;
+    private LocalDateTime
+            connectedAt;
 
-    private LocalDateTime disconnectedAt;
+    private LocalDateTime
+            disconnectedAt;
 
     // =========================
     // DATAS
     // =========================
 
-    @Column(nullable = false)
+    @Column(
+            nullable = false
+    )
     private LocalDateTime createdAt =
             LocalDateTime.now();
 
-    private LocalDateTime updatedAt;
+    private LocalDateTime
+            updatedAt;
 
     public MercadoPagoConnection() {
     }
 
     @PreUpdate
     private void updateTimestamp() {
+
         updatedAt =
                 LocalDateTime.now();
     }
@@ -135,6 +168,17 @@ public class MercadoPagoConnection {
     ) {
         this.mercadoPagoUserId =
                 mercadoPagoUserId;
+    }
+
+    public String getPublicKey() {
+        return publicKey;
+    }
+
+    public void setPublicKey(
+            String publicKey
+    ) {
+        this.publicKey =
+                publicKey;
     }
 
     public String getAccessToken() {

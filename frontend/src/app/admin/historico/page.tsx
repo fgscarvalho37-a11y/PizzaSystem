@@ -35,6 +35,15 @@ type Product = {
   name: string;
 };
 
+type OrderItemAddon = {
+  id: number;
+  sourceAddonId: number | null;
+  groupName: string | null;
+  addonName: string;
+  addonPrice: number;
+  sortOrder: number;
+};
+
 type OrderItem = {
   id: number;
   quantity: number;
@@ -42,27 +51,23 @@ type OrderItem = {
   observation: string | null;
   crustName: string | null;
   crustPrice: number | null;
+  addons?: OrderItemAddon[];
   product: Product;
 };
 
 type Order = {
   id: number;
-
   customerName: string;
   customerPhone: string;
-
   street: string;
   number: string;
   neighborhood: string;
   complement: string;
-
   deliveryFee: number;
   total: number;
-
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;
-
   createdAt: string;
 };
 
@@ -77,17 +82,9 @@ type HistoryFilter =
   | "CANCELLED"
   | "REJECTED";
 
-type IconProps = {
-  className?: string;
-};
-
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:8080";
-
-/* =========================
-   HELPERS
-========================= */
 
 function currency(
   value: number
@@ -107,25 +104,18 @@ function orderStatusName(
   switch (status) {
     case "DELIVERED":
       return "Entregue";
-
     case "CANCELLED":
       return "Cancelado";
-
     case "PENDING_PAYMENT":
       return "Aguardando pagamento";
-
     case "RECEIVED":
       return "Recebido";
-
     case "PREPARING":
       return "Preparando";
-
     case "READY":
       return "Pronto";
-
     case "OUT_FOR_DELIVERY":
       return "Saiu para entrega";
-
     default:
       return status;
   }
@@ -137,19 +127,14 @@ function paymentStatusName(
   switch (status) {
     case "APPROVED":
       return "Aprovado";
-
     case "PENDING":
       return "Pendente";
-
     case "REJECTED":
       return "Recusado";
-
     case "CANCELLED":
       return "Cancelado";
-
     case "REFUNDED":
       return "Estornado";
-
     default:
       return status;
   }
@@ -161,13 +146,10 @@ function paymentMethodName(
   switch (method) {
     case "PIX":
       return "Pix";
-
     case "CREDIT_CARD":
       return "Cartão de crédito";
-
     case "DEBIT_CARD":
       return "Cartão de débito";
-
     default:
       return method;
   }
@@ -179,10 +161,8 @@ function orderStatusClass(
   switch (status) {
     case "DELIVERED":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
-
     case "CANCELLED":
       return "border-red-200 bg-red-50 text-red-700";
-
     default:
       return "border-border bg-muted text-muted-foreground";
   }
@@ -194,31 +174,39 @@ function paymentStatusClass(
   switch (status) {
     case "APPROVED":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
-
     case "PENDING":
       return "border-amber-200 bg-amber-50 text-amber-700";
-
     case "REJECTED":
       return "border-red-200 bg-red-50 text-red-700";
-
-    case "CANCELLED":
-      return "border-border bg-muted text-muted-foreground";
-
     case "REFUNDED":
       return "border-violet-200 bg-violet-50 text-violet-700";
-
     default:
       return "border-border bg-muted text-muted-foreground";
   }
 }
 
-/* =========================
-   ÍCONES
-========================= */
+function normalizeAddons(
+  addons:
+    OrderItemAddon[] |
+    null |
+    undefined
+) {
+  if (!Array.isArray(addons)) {
+    return [];
+  }
 
-function SearchIcon({
-  className = "h-5 w-5",
-}: IconProps) {
+  return [...addons].sort(
+    (a, b) =>
+      Number(
+        a.sortOrder ?? 0
+      ) -
+      Number(
+        b.sortOrder ?? 0
+      )
+  );
+}
+
+function SearchIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -227,22 +215,16 @@ function SearchIcon({
       strokeWidth="1.9"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      className="h-5 w-5"
       aria-hidden="true"
     >
-      <circle
-        cx="11"
-        cy="11"
-        r="7"
-      />
+      <circle cx="11" cy="11" r="7" />
       <path d="m20 20-4-4" />
     </svg>
   );
 }
 
-function RefreshIcon({
-  className = "h-4 w-4",
-}: IconProps) {
+function RefreshIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -251,7 +233,7 @@ function RefreshIcon({
       strokeWidth="1.9"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      className="h-4 w-4"
       aria-hidden="true"
     >
       <path d="M20 11a8 8 0 1 0-2.3 5.7" />
@@ -261,8 +243,10 @@ function RefreshIcon({
 }
 
 function ChevronIcon({
-  className = "h-4 w-4",
-}: IconProps) {
+  expanded,
+}: {
+  expanded: boolean;
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -271,56 +255,14 @@ function ChevronIcon({
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      className={`h-4 w-4 transition-transform ${
+        expanded
+          ? "rotate-180"
+          : ""
+      }`}
       aria-hidden="true"
     >
       <path d="m6 9 6 6 6-6" />
-    </svg>
-  );
-}
-
-function ReceiptIcon({
-  className = "h-6 w-6",
-}: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
-      <path d="M9 8h6" />
-      <path d="M9 12h6" />
-    </svg>
-  );
-}
-
-function AlertIcon({
-  className = "h-5 w-5",
-}: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-      />
-      <path d="M12 8v5" />
-      <path d="M12 17h.01" />
     </svg>
   );
 }
@@ -341,7 +283,6 @@ function Spinner() {
         strokeWidth="3"
         opacity="0.2"
       />
-
       <path
         d="M21 12a9 9 0 0 0-9-9"
         fill="none"
@@ -352,53 +293,6 @@ function Spinner() {
     </svg>
   );
 }
-
-/* =========================
-   SKELETON
-========================= */
-
-function HistorySkeleton() {
-  return (
-    <div
-      className="mt-6 space-y-3"
-      role="status"
-      aria-label="Carregando histórico"
-    >
-      {[1, 2, 3].map(
-        (item) => (
-          <div
-            key={item}
-            className="rounded-2xl border border-border bg-card p-5"
-          >
-            <div className="animate-pulse">
-
-              <div className="flex items-center justify-between gap-6">
-
-                <div className="flex flex-1 gap-6">
-                  <div className="h-8 w-16 rounded-lg bg-muted" />
-                  <div className="hidden h-8 w-40 rounded-lg bg-muted sm:block" />
-                  <div className="hidden h-8 w-28 rounded-lg bg-muted lg:block" />
-                </div>
-
-                <div className="h-8 w-28 rounded-full bg-muted" />
-
-              </div>
-
-              <div className="mt-5 h-px bg-border" />
-
-              <div className="mt-4 h-9 w-28 rounded-lg bg-muted" />
-
-            </div>
-          </div>
-        )
-      )}
-    </div>
-  );
-}
-
-/* =========================
-   PÁGINA
-========================= */
 
 export default function AdminHistoricoPage() {
   const [
@@ -449,10 +343,6 @@ export default function AdminHistoricoPage() {
       number | null
     >(null);
 
-  /* =========================
-     CARREGAR HISTÓRICO
-  ========================= */
-
   async function loadHistory(
     manual = false
   ) {
@@ -467,7 +357,8 @@ export default function AdminHistoricoPage() {
         await adminFetch(
           `${API_URL}/api/orders`,
           {
-            cache: "no-store",
+            cache:
+              "no-store",
           }
         );
 
@@ -515,9 +406,22 @@ export default function AdminHistoricoPage() {
                   };
                 }
 
-                const items:
+                const rawItems:
                   OrderItem[] =
                   await itemsResponse.json();
+
+                const items =
+                  rawItems.map(
+                    (
+                      item
+                    ) => ({
+                      ...item,
+                      addons:
+                        normalizeAddons(
+                          item.addons
+                        ),
+                    })
+                  );
 
                 return {
                   ...order,
@@ -553,10 +457,6 @@ export default function AdminHistoricoPage() {
     loadHistory();
   }, []);
 
-  /* =========================
-     FILTROS
-  ========================= */
-
   const filteredOrders =
     useMemo(() => {
       const normalized =
@@ -566,7 +466,6 @@ export default function AdminHistoricoPage() {
 
       return orders.filter(
         (order) => {
-
           if (
             filter ===
               "DELIVERED" &&
@@ -598,20 +497,33 @@ export default function AdminHistoricoPage() {
             return true;
           }
 
+          const itemText =
+            order.items
+              .flatMap(
+                (item) => [
+                  item.product?.name ?? "",
+                  ...normalizeAddons(
+                    item.addons
+                  ).map(
+                    (addon) =>
+                      `${addon.groupName ?? ""} ${addon.addonName}`
+                  ),
+                ]
+              )
+              .join(" ");
+
           const searchable =
             [
               String(
                 order.id
               ),
-
               order.customerName ??
                 "",
-
               order.customerPhone ??
                 "",
-
               order.neighborhood ??
                 "",
+              itemText,
             ]
               .join(" ")
               .toLowerCase();
@@ -626,10 +538,6 @@ export default function AdminHistoricoPage() {
       search,
       filter,
     ]);
-
-  /* =========================
-     RESUMO
-  ========================= */
 
   const deliveredCount =
     orders.filter(
@@ -680,14 +588,10 @@ export default function AdminHistoricoPage() {
 
       <div className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8">
 
-        {/* CABEÇALHO */}
-
         <section className="border-b border-border pb-6">
-
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 
             <div>
-
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
                 Operação
               </p>
@@ -699,7 +603,6 @@ export default function AdminHistoricoPage() {
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                 Consulte pedidos entregues, cancelados e pagamentos recusados.
               </p>
-
             </div>
 
             <button
@@ -710,27 +613,11 @@ export default function AdminHistoricoPage() {
               disabled={
                 refreshing
               }
-              className="
-                inline-flex h-10
-                items-center justify-center
-                gap-2 rounded-full
-                border border-border
-                bg-card px-4
-                text-sm font-bold
-                text-foreground
-                transition
-                hover:-translate-y-0.5
-                hover:border-foreground/20
-                hover:shadow-sm
-                disabled:pointer-events-none
-                disabled:opacity-50
-              "
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-bold text-foreground transition hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50"
             >
-              {refreshing ? (
-                <Spinner />
-              ) : (
-                <RefreshIcon />
-              )}
+              {refreshing
+                ? <Spinner />
+                : <RefreshIcon />}
 
               {refreshing
                 ? "Atualizando"
@@ -738,106 +625,69 @@ export default function AdminHistoricoPage() {
             </button>
 
           </div>
-
         </section>
-
-        {/* RESUMO */}
 
         <section className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 
           <div className="rounded-2xl border border-border bg-card p-4">
-
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
               Entregues
             </p>
-
-            <div className="mt-2 flex items-end justify-between">
-
-              <p className="text-2xl font-bold text-emerald-700">
-                {deliveredCount}
-              </p>
-
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-
-            </div>
-
+            <p className="mt-2 text-2xl font-bold text-emerald-700">
+              {deliveredCount}
+            </p>
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-4">
-
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
               Cancelados
             </p>
-
-            <div className="mt-2 flex items-end justify-between">
-
-              <p className="text-2xl font-bold text-red-700">
-                {cancelledCount}
-              </p>
-
-              <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-
-            </div>
-
+            <p className="mt-2 text-2xl font-bold text-red-700">
+              {cancelledCount}
+            </p>
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-4">
-
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
               Recusados
             </p>
-
             <p className="mt-2 text-2xl font-bold text-foreground">
               {rejectedCount}
             </p>
-
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-4">
-
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
               Valor entregue
             </p>
-
             <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">
               {currency(
                 deliveredRevenue
               )}
             </p>
-
           </div>
 
         </section>
 
-        {/* ERRO */}
-
         {errorMessage && (
           <div
-            className="mt-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4"
             role="alert"
           >
-            <AlertIcon className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
-
-            <div>
-              <p className="text-sm font-bold text-red-800">
-                Não foi possível carregar
-              </p>
-
-              <p className="mt-1 text-sm text-red-700">
-                {errorMessage}
-              </p>
-            </div>
+            <p className="text-sm font-bold text-red-800">
+              Não foi possível carregar
+            </p>
+            <p className="mt-1 text-sm text-red-700">
+              {errorMessage}
+            </p>
           </div>
         )}
-
-        {/* FILTROS */}
 
         <section className="mt-6 rounded-2xl border border-border bg-card p-4">
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
 
             <div>
-
               <label
                 htmlFor="history-search"
                 className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
@@ -846,16 +696,9 @@ export default function AdminHistoricoPage() {
               </label>
 
               <div className="relative">
-
-                <SearchIcon
-                  className="
-                    pointer-events-none
-                    absolute left-4 top-1/2
-                    h-5 w-5
-                    -translate-y-1/2
-                    text-muted-foreground
-                  "
-                />
+                <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <SearchIcon />
+                </div>
 
                 <input
                   id="history-search"
@@ -870,29 +713,13 @@ export default function AdminHistoricoPage() {
                       event.target.value
                     )
                   }
-                  placeholder="Pedido, cliente, telefone ou bairro..."
-                  className="
-                    h-11 w-full
-                    rounded-xl
-                    border border-input
-                    bg-background
-                    pl-11 pr-4
-                    text-sm text-foreground
-                    outline-none
-                    transition
-                    placeholder:text-muted-foreground
-                    focus:border-primary
-                    focus:ring-2
-                    focus:ring-primary/10
-                  "
+                  placeholder="Pedido, cliente, telefone, bairro, produto ou adicional..."
+                  className="h-11 w-full rounded-xl border border-input bg-background pl-11 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
-
               </div>
-
             </div>
 
             <div>
-
               <label
                 htmlFor="history-filter"
                 className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
@@ -914,53 +741,34 @@ export default function AdminHistoricoPage() {
                       HistoryFilter
                   )
                 }
-                className="
-                  h-11 w-full
-                  rounded-xl
-                  border border-input
-                  bg-background px-4
-                  text-sm text-foreground
-                  outline-none
-                  transition
-                  focus:border-primary
-                  focus:ring-2
-                  focus:ring-primary/10
-                "
+                className="h-11 w-full rounded-xl border border-input bg-background px-4 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
               >
                 <option value="ALL">
                   Todos
                 </option>
-
                 <option value="DELIVERED">
                   Entregues
                 </option>
-
                 <option value="CANCELLED">
                   Cancelados
                 </option>
-
                 <option value="REJECTED">
                   Pagamento recusado
                 </option>
               </select>
-
             </div>
 
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-
             <p className="text-sm text-muted-foreground">
-
               <strong className="font-bold text-foreground">
                 {filteredOrders.length}
               </strong>{" "}
-
               {filteredOrders.length ===
               1
                 ? "registro encontrado"
                 : "registros encontrados"}
-
             </p>
 
             {(search ||
@@ -979,33 +787,35 @@ export default function AdminHistoricoPage() {
                 Limpar filtros
               </button>
             )}
-
           </div>
 
         </section>
 
-        {/* LISTA */}
-
         {loading ? (
-          <HistorySkeleton />
+          <div className="mt-6 space-y-3">
+            {[1, 2, 3].map(
+              (item) => (
+                <div
+                  key={
+                    item
+                  }
+                  className="h-32 animate-pulse rounded-2xl border border-border bg-card"
+                />
+              )
+            )}
+          </div>
 
         ) : filteredOrders.length ===
           0 ? (
 
           <div className="mt-6 rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
-
-            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-              <ReceiptIcon />
-            </div>
-
-            <h2 className="mt-4 text-lg font-bold text-foreground">
+            <h2 className="text-lg font-bold text-foreground">
               Nenhum registro encontrado
             </h2>
 
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground">
               Pedidos entregues, cancelados ou recusados aparecerão aqui.
             </p>
-
           </div>
 
         ) : (
@@ -1047,8 +857,6 @@ export default function AdminHistoricoPage() {
                     className="overflow-hidden rounded-2xl border border-border bg-card"
                   >
 
-                    {/* RESUMO */}
-
                     <div className="p-5">
 
                       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -1056,47 +864,36 @@ export default function AdminHistoricoPage() {
                         <div className="flex flex-wrap gap-x-8 gap-y-4">
 
                           <div>
-
                             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                               Pedido
                             </p>
-
                             <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
                               #{order.id}
                             </p>
-
                           </div>
 
                           <div className="min-w-40">
-
                             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                               Cliente
                             </p>
-
                             <p className="mt-1 font-bold text-foreground">
                               {order.customerName}
                             </p>
-
                             <p className="mt-0.5 text-sm text-muted-foreground">
                               {order.customerPhone}
                             </p>
-
                           </div>
 
                           <div>
-
                             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                               Data
                             </p>
-
                             <p className="mt-1 font-semibold text-foreground">
                               {date}
                             </p>
-
                             <p className="mt-0.5 text-sm text-muted-foreground">
                               {time}
                             </p>
-
                           </div>
 
                         </div>
@@ -1124,17 +921,14 @@ export default function AdminHistoricoPage() {
                           </span>
 
                           <div className="ml-0 min-w-28 sm:ml-3 sm:text-right">
-
                             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                               Total
                             </p>
-
                             <p className="mt-1 text-xl font-bold tracking-tight text-foreground">
                               {currency(
                                 order.total
                               )}
                             </p>
-
                           </div>
 
                         </div>
@@ -1155,29 +949,16 @@ export default function AdminHistoricoPage() {
                           aria-expanded={
                             expanded
                           }
-                          className="
-                            inline-flex h-9
-                            items-center gap-2
-                            rounded-lg
-                            border border-border
-                            bg-background
-                            px-3.5
-                            text-sm font-bold
-                            text-foreground
-                            transition
-                            hover:bg-muted
-                          "
+                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-background px-3.5 text-sm font-bold text-foreground transition hover:bg-muted"
                         >
                           {expanded
                             ? "Ocultar"
                             : "Detalhes"}
 
                           <ChevronIcon
-                            className={`h-4 w-4 transition-transform ${
+                            expanded={
                               expanded
-                                ? "rotate-180"
-                                : ""
-                            }`}
+                            }
                           />
                         </button>
 
@@ -1191,17 +972,12 @@ export default function AdminHistoricoPage() {
 
                     </div>
 
-                    {/* DETALHES */}
-
                     {expanded && (
                       <div className="border-t border-border bg-muted/30 p-5">
 
                         <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
 
-                          {/* ITENS */}
-
                           <section>
-
                             <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
                               Itens do pedido
                             </p>
@@ -1217,106 +993,150 @@ export default function AdminHistoricoPage() {
                               ) : (
 
                                 order.items.map(
-                                  (item) => (
-                                    <div
-                                      key={
-                                        item.id
-                                      }
-                                      className="rounded-xl border border-border bg-card p-4"
-                                    >
+                                  (item) => {
+                                    const addons =
+                                      normalizeAddons(
+                                        item.addons
+                                      );
 
-                                      <div className="flex justify-between gap-4">
+                                    return (
+                                      <div
+                                        key={
+                                          item.id
+                                        }
+                                        className="rounded-xl border border-border bg-card p-4"
+                                      >
 
-                                        <div>
+                                        <div className="flex justify-between gap-4">
+
+                                          <div>
+                                            <p className="font-bold text-foreground">
+                                              {item.quantity}x{" "}
+                                              {item.product.name}
+                                            </p>
+
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                              {currency(
+                                                item.unitPrice
+                                              )}{" "}
+                                              cada
+                                            </p>
+                                          </div>
 
                                           <p className="font-bold text-foreground">
-                                            {item.quantity}x{" "}
-                                            {
-                                              item
-                                                .product
-                                                .name
-                                            }
-                                          </p>
-
-                                          <p className="mt-1 text-sm text-muted-foreground">
                                             {currency(
-                                              item.unitPrice
-                                            )}{" "}
-                                            cada
+                                              Number(
+                                                item.unitPrice
+                                              ) *
+                                                item.quantity
+                                            )}
                                           </p>
 
                                         </div>
 
-                                        <p className="font-bold text-foreground">
-                                          {currency(
-                                            Number(
-                                              item.unitPrice
-                                            ) *
-                                              item.quantity
-                                          )}
-                                        </p>
+                                        {addons.length >
+                                          0 && (
+                                          <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
 
-                                      </div>
+                                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">
+                                              Adicionais
+                                            </p>
 
-                                      {item.crustName && (
-                                        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                            <div className="mt-2 space-y-1.5">
 
-                                          <div className="flex flex-wrap items-center justify-between gap-2">
+                                              {addons.map(
+                                                (addon) => (
+                                                  <div
+                                                    key={
+                                                      addon.id
+                                                    }
+                                                    className="flex items-start justify-between gap-3 text-sm"
+                                                  >
 
-                                            <div>
+                                                    <div className="min-w-0">
 
-                                              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
-                                                Borda recheada
-                                              </p>
+                                                      {addon.groupName && (
+                                                        <span className="mr-1 text-emerald-700">
+                                                          {addon.groupName}:
+                                                        </span>
+                                                      )}
 
-                                              <p className="mt-1 text-sm font-bold text-amber-900">
-                                                {item.crustName}
-                                              </p>
+                                                      <span className="font-bold text-emerald-950">
+                                                        {addon.addonName}
+                                                      </span>
+
+                                                    </div>
+
+                                                    <span className="shrink-0 font-bold text-emerald-700">
+                                                      +{" "}
+                                                      {currency(
+                                                        addon.addonPrice
+                                                      )}
+                                                    </span>
+
+                                                  </div>
+                                                )
+                                              )}
 
                                             </div>
 
-                                            {item.crustPrice !==
-                                              null && (
-                                              <p className="text-xs font-bold text-amber-700">
-                                                +{" "}
-                                                {currency(
-                                                  item.crustPrice
-                                                )}
-                                              </p>
-                                            )}
+                                          </div>
+                                        )}
+
+                                        {item.crustName && (
+                                          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+
+                                              <div>
+                                                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                                                  Borda recheada
+                                                </p>
+
+                                                <p className="mt-1 text-sm font-bold text-amber-900">
+                                                  {item.crustName}
+                                                </p>
+                                              </div>
+
+                                              {item.crustPrice !==
+                                                null && (
+                                                <p className="text-xs font-bold text-amber-700">
+                                                  +{" "}
+                                                  {currency(
+                                                    item.crustPrice
+                                                  )}
+                                                </p>
+                                              )}
+
+                                            </div>
 
                                           </div>
+                                        )}
 
-                                        </div>
-                                      )}
+                                        {item.observation && (
+                                          <div className="mt-3 rounded-lg border border-primary/15 bg-primary/5 p-3">
 
-                                      {item.observation && (
-                                        <div className="mt-3 rounded-lg border border-primary/15 bg-primary/5 p-3">
+                                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                                              Observação
+                                            </p>
 
-                                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-                                            Observação
-                                          </p>
+                                            <p className="mt-1 text-sm leading-6 text-foreground">
+                                              {item.observation}
+                                            </p>
 
-                                          <p className="mt-1 text-sm leading-6 text-foreground">
-                                            {item.observation}
-                                          </p>
+                                          </div>
+                                        )}
 
-                                        </div>
-                                      )}
-
-                                    </div>
-                                  )
+                                      </div>
+                                    );
+                                  }
                                 )
                               )}
 
                             </div>
-
                           </section>
 
-                          {/* ENTREGA */}
-
                           <section>
-
                             <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
                               Entrega
                             </p>
@@ -1339,7 +1159,6 @@ export default function AdminHistoricoPage() {
                               )}
 
                               <div className="mt-4 border-t border-border pt-4">
-
                                 <p className="text-xs text-muted-foreground">
                                   Taxa de entrega
                                 </p>
@@ -1349,11 +1168,9 @@ export default function AdminHistoricoPage() {
                                     order.deliveryFee
                                   )}
                                 </p>
-
                               </div>
 
                             </div>
-
                           </section>
 
                         </div>

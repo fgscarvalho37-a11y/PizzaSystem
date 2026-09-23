@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+
 import {
   usePathname,
   useRouter,
 } from "next/navigation";
+
 import {
   useEffect,
   useState,
@@ -264,6 +266,27 @@ function CategoryIcon({
   );
 }
 
+function AddonIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8v8" />
+      <path d="M8 12h8" />
+    </svg>
+  );
+}
+
 function CrustIcon({
   className = "h-5 w-5",
 }: IconProps) {
@@ -504,6 +527,11 @@ const sections = [
         icon: CategoryIcon,
       },
       {
+        label: "Adicionais",
+        href: "/admin/adicionais",
+        icon: AddonIcon,
+      },
+      {
         label: "Bordas",
         href: "/admin/bordas",
         icon: CrustIcon,
@@ -542,20 +570,26 @@ export default function AdminHeader() {
   const [
     loggingOut,
     setLoggingOut,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   const [
     mobileOpen,
     setMobileOpen,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   const [
     storeSlug,
     setStoreSlug,
-  ] = useState<string | null>(null);
+  ] =
+    useState<
+      string | null
+    >(null);
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled =
+      false;
 
     async function loadStoreSlug() {
       try {
@@ -563,7 +597,8 @@ export default function AdminHeader() {
           await adminFetch(
             `${API_URL}/api/store/profile`,
             {
-              cache: "no-store",
+              cache:
+                "no-store",
             }
           );
 
@@ -572,15 +607,23 @@ export default function AdminHeader() {
         }
 
         const data:
-          { slug?: string | null } =
+          {
+            slug?: string | null;
+          } =
           await response.json();
 
         const slug =
           data.slug?.trim();
 
-        if (!cancelled && slug) {
-          setStoreSlug(slug);
+        if (
+          !cancelled &&
+          slug
+        ) {
+          setStoreSlug(
+            slug
+          );
         }
+
       } catch {
         // O painel continua funcionando mesmo se o perfil não carregar.
       }
@@ -589,24 +632,35 @@ export default function AdminHeader() {
     loadStoreSlug();
 
     return () => {
-      cancelled = true;
+      cancelled =
+        true;
     };
   }, []);
 
   const publicMenuUrl =
     storeSlug
-      ? `/cardapio/${encodeURIComponent(storeSlug)}`
+      ? `/cardapio/${encodeURIComponent(
+          storeSlug
+        )}`
       : "/";
 
   function closeMobileMenu() {
-    setMobileOpen(false);
+    setMobileOpen(
+      false
+    );
   }
 
   function isActive(
     href: string
   ) {
-    if (href === "/admin") {
-      return pathname === "/admin";
+    if (
+      href ===
+      "/admin"
+    ) {
+      return (
+        pathname ===
+        "/admin"
+      );
     }
 
     return pathname.startsWith(
@@ -615,18 +669,23 @@ export default function AdminHeader() {
   }
 
   async function handleLogout() {
-    if (loggingOut) {
+    if (
+      loggingOut
+    ) {
       return;
     }
 
     try {
-      setLoggingOut(true);
+      setLoggingOut(
+        true
+      );
 
       const response =
         await adminFetch(
           `${API_URL}/api/auth/logout`,
           {
-            method: "POST",
+            method:
+              "POST",
           }
         );
 
@@ -651,12 +710,17 @@ export default function AdminHeader() {
       );
 
     } finally {
-      setLoggingOut(false);
+      setLoggingOut(
+        false
+      );
     }
   }
 
   return (
     <>
+
+      {/* DESKTOP */}
+
       <aside
         className="
           group/sidebar
@@ -671,9 +735,9 @@ export default function AdminHeader() {
           lg:hover:w-72
         "
       >
-        {/* LOGO */}
 
         <div className="flex h-20 shrink-0 items-center">
+
           <Link
             href="/admin"
             className="
@@ -683,12 +747,15 @@ export default function AdminHeader() {
               focus-visible:ring-ring
             "
           >
+
             <div className="flex w-20 shrink-0 items-center justify-center">
+
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_3px_0_0] shadow-primary/20">
                 <span className="font-display text-xl leading-none">
                   P
                 </span>
               </div>
+
             </div>
 
             <div
@@ -700,6 +767,7 @@ export default function AdminHeader() {
                 group-hover/sidebar:opacity-100
               "
             >
+
               <p className="whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
                 PizzaSystem
               </p>
@@ -707,11 +775,12 @@ export default function AdminHeader() {
               <p className="mt-0.5 whitespace-nowrap text-sm font-semibold text-foreground">
                 Administração
               </p>
-            </div>
-          </Link>
-        </div>
 
-        {/* NAVEGAÇÃO */}
+            </div>
+
+          </Link>
+
+        </div>
 
         <nav
           aria-label="Navegação administrativa"
@@ -722,14 +791,20 @@ export default function AdminHeader() {
             py-4
           "
         >
+
           <div className="space-y-5">
+
             {sections.map(
-              (section) => (
+              (
+                section
+              ) => (
+
                 <div
                   key={
                     section.title
                   }
                 >
+
                   <div
                     className="
                       mb-2 ml-20 h-4
@@ -747,8 +822,12 @@ export default function AdminHeader() {
                   </div>
 
                   <div className="space-y-1 px-3">
+
                     {section.items.map(
-                      (item) => {
+                      (
+                        item
+                      ) => {
+
                         const active =
                           isActive(
                             item.href
@@ -758,6 +837,7 @@ export default function AdminHeader() {
                           item.icon;
 
                         return (
+
                           <Link
                             key={
                               item.href
@@ -783,6 +863,7 @@ export default function AdminHeader() {
                               " "
                             )}
                           >
+
                             <div className="flex w-14 shrink-0 items-center justify-center">
                               <Icon className="h-5 w-5 shrink-0" />
                             </div>
@@ -810,24 +891,30 @@ export default function AdminHeader() {
                                 aria-hidden="true"
                               />
                             )}
+
                           </Link>
                         );
                       }
                     )}
+
                   </div>
+
                 </div>
               )
             )}
+
           </div>
+
         </nav>
 
-        {/* RODAPÉ */}
-
         <div className="shrink-0 border-t border-border bg-card/30 py-3">
+
           <div className="space-y-1 px-3">
 
             <Link
-              href={publicMenuUrl}
+              href={
+                publicMenuUrl
+              }
               target="_blank"
               rel="noreferrer"
               title="Ver cardápio"
@@ -845,6 +932,7 @@ export default function AdminHeader() {
                 focus-visible:ring-ring
               "
             >
+
               <div className="flex w-14 shrink-0 items-center justify-center">
                 <ExternalIcon className="h-5 w-5 shrink-0" />
               </div>
@@ -860,6 +948,7 @@ export default function AdminHeader() {
               >
                 Ver cardápio
               </span>
+
             </Link>
 
             <button
@@ -887,8 +976,11 @@ export default function AdminHeader() {
                 disabled:opacity-50
               "
             >
+
               <div className="flex w-14 shrink-0 items-center justify-center">
+
                 {loggingOut ? (
+
                   <div
                     className="
                       h-5 w-5
@@ -900,9 +992,13 @@ export default function AdminHeader() {
                     "
                     aria-hidden="true"
                   />
+
                 ) : (
+
                   <LogoutIcon className="h-5 w-5 shrink-0" />
+
                 )}
+
               </div>
 
               <span
@@ -918,10 +1014,13 @@ export default function AdminHeader() {
                   ? "Saindo..."
                   : "Sair"}
               </span>
+
             </button>
 
           </div>
+
         </div>
+
       </aside>
 
       {/* MOBILE */}
@@ -937,30 +1036,53 @@ export default function AdminHeader() {
           lg:hidden
         "
       >
+
         <Link
           href="/admin"
           className="flex items-center gap-3"
-          onClick={closeMobileMenu}
+          onClick={
+            closeMobileMenu
+          }
         >
+
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_3px_0_0] shadow-primary/20">
-            <span className="font-display text-lg">P</span>
+            <span className="font-display text-lg">
+              P
+            </span>
           </div>
 
           <div>
+
             <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary">
               PizzaSystem
             </p>
+
             <p className="text-sm font-semibold text-foreground">
               Administração
             </p>
+
           </div>
+
         </Link>
 
         <button
           type="button"
-          onClick={() => setMobileOpen((current) => !current)}
-          aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-          aria-expanded={mobileOpen}
+          onClick={() =>
+            setMobileOpen(
+              (
+                current
+              ) =>
+                !current
+            )
+          }
+          aria-label={
+            mobileOpen
+              ? "Fechar menu"
+              : "Abrir menu"
+          }
+          aria-expanded={
+            mobileOpen
+          }
           className="
             flex h-10 w-10 items-center justify-center
             rounded-xl border border-border bg-card
@@ -970,21 +1092,28 @@ export default function AdminHeader() {
             focus-visible:ring-2 focus-visible:ring-ring
           "
         >
+
           {mobileOpen ? (
             <CloseIcon className="h-5 w-5" />
           ) : (
             <MobileMenuIcon className="h-5 w-5" />
           )}
+
         </button>
+
       </header>
 
       {mobileOpen && (
+
         <div className="fixed inset-0 z-50 lg:hidden">
+
           <button
             type="button"
             aria-label="Fechar menu"
             className="absolute inset-0 bg-foreground/20 backdrop-blur-[2px]"
-            onClick={closeMobileMenu}
+            onClick={
+              closeMobileMenu
+            }
           />
 
           <aside
@@ -995,109 +1124,195 @@ export default function AdminHeader() {
               shadow-2xl
             "
           >
+
             <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4">
+
               <Link
                 href="/admin"
-                onClick={closeMobileMenu}
+                onClick={
+                  closeMobileMenu
+                }
                 className="flex items-center gap-3"
               >
+
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_3px_0_0] shadow-primary/20">
-                  <span className="font-display text-lg">P</span>
+                  <span className="font-display text-lg">
+                    P
+                  </span>
                 </div>
+
                 <div>
+
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary">
                     PizzaSystem
                   </p>
+
                   <p className="text-sm font-semibold text-foreground">
                     Administração
                   </p>
+
                 </div>
+
               </Link>
 
               <button
                 type="button"
-                onClick={closeMobileMenu}
+                onClick={
+                  closeMobileMenu
+                }
                 aria-label="Fechar menu"
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
               >
                 <CloseIcon className="h-5 w-5" />
               </button>
+
             </div>
 
             <nav
               aria-label="Navegação administrativa móvel"
               className="flex-1 overflow-y-auto px-3 py-4"
             >
+
               <div className="space-y-5">
-                {sections.map((section) => (
-                  <div key={section.title}>
-                    <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                      {section.title}
-                    </p>
 
-                    <div className="space-y-1">
-                      {section.items.map((item) => {
-                        const active = isActive(item.href);
-                        const Icon = item.icon;
+                {sections.map(
+                  (
+                    section
+                  ) => (
 
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={closeMobileMenu}
-                            aria-current={active ? "page" : undefined}
-                            className={[
-                              "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition",
-                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                              active
-                                ? "bg-primary/10 text-primary ring-1 ring-primary/15"
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                            ].join(" ")}
-                          >
-                            <Icon className="h-5 w-5 shrink-0" />
-                            <span>{item.label}</span>
-                          </Link>
-                        );
-                      })}
+                    <div
+                      key={
+                        section.title
+                      }
+                    >
+
+                      <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                        {section.title}
+                      </p>
+
+                      <div className="space-y-1">
+
+                        {section.items.map(
+                          (
+                            item
+                          ) => {
+
+                            const active =
+                              isActive(
+                                item.href
+                              );
+
+                            const Icon =
+                              item.icon;
+
+                            return (
+
+                              <Link
+                                key={
+                                  item.href
+                                }
+                                href={
+                                  item.href
+                                }
+                                onClick={
+                                  closeMobileMenu
+                                }
+                                aria-current={
+                                  active
+                                    ? "page"
+                                    : undefined
+                                }
+                                className={[
+                                  "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition",
+                                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                  active
+                                    ? "bg-primary/10 text-primary ring-1 ring-primary/15"
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                                ].join(
+                                  " "
+                                )}
+                              >
+
+                                <Icon className="h-5 w-5 shrink-0" />
+
+                                <span>
+                                  {item.label}
+                                </span>
+
+                              </Link>
+                            );
+                          }
+                        )}
+
+                      </div>
+
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
+
               </div>
+
             </nav>
 
             <div className="shrink-0 border-t border-border bg-card/30 p-3">
+
               <Link
-                href={publicMenuUrl}
+                href={
+                  publicMenuUrl
+                }
                 target="_blank"
                 rel="noreferrer"
-                onClick={closeMobileMenu}
+                onClick={
+                  closeMobileMenu
+                }
                 className="flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
               >
+
                 <ExternalIcon className="h-5 w-5" />
+
                 Ver cardápio
+
               </Link>
 
               <button
                 type="button"
-                onClick={handleLogout}
-                disabled={loggingOut}
+                onClick={
+                  handleLogout
+                }
+                disabled={
+                  loggingOut
+                }
                 className="mt-1 flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-50"
               >
+
                 {loggingOut ? (
+
                   <span
                     className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent"
                     aria-hidden="true"
                   />
+
                 ) : (
+
                   <LogoutIcon className="h-5 w-5" />
+
                 )}
-                <span>{loggingOut ? "Saindo..." : "Sair"}</span>
+
+                <span>
+                  {loggingOut
+                    ? "Saindo..."
+                    : "Sair"}
+                </span>
+
               </button>
+
             </div>
+
           </aside>
+
         </div>
       )}
+
     </>
   );
 }
-

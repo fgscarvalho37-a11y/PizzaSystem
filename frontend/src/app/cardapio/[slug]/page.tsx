@@ -4,6 +4,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type CSSProperties,
 } from "react";
 
 import {
@@ -11,10 +12,16 @@ import {
   useRouter,
 } from "next/navigation";
 
+import ProductAddonSelector, {
+  getSelectedAddonsPrice,
+  validateAddonSelections,
+  type ProductAddon,
+  type ProductAddonGroup,
+} from "@/components/ProductAddonSelector";
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:8080";
-
 
 type Category = {
   id: number;
@@ -30,6 +37,7 @@ type Product = {
   available: boolean;
   allowCrust: boolean;
   category: Category;
+  addonGroups?: ProductAddonGroup[];
 };
 
 type Crust = {
@@ -45,8 +53,8 @@ type CartItem = {
   quantity: number;
   observation: string;
   crust: Crust | null;
+  addons: ProductAddon[];
 };
-
 
 type StoreProfile = {
   id: number;
@@ -76,18 +84,6 @@ type StoreProfile = {
   footerTagline: string | null;
 };
 
-function resolveStoreImageUrl(value: string | null | undefined) {
-  if (!value) return "";
-  if (
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("data:")
-  ) {
-    return value;
-  }
-  return `${API_URL}${value.startsWith("/") ? "" : "/"}${value}`;
-}
-
 type StoreStatus = {
   storeName: string;
   manualOpen: boolean;
@@ -112,7 +108,25 @@ type CustomerSession = {
   googleConnected?: boolean;
 };
 
-function formatMoney(value: number) {
+function resolveStoreImageUrl(
+  value: string | null | undefined
+) {
+  if (!value) return "";
+
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("data:")
+  ) {
+    return value;
+  }
+
+  return `${API_URL}${value.startsWith("/") ? "" : "/"}${value}`;
+}
+
+function formatMoney(
+  value: number
+) {
   return new Intl.NumberFormat(
     "pt-BR",
     {
@@ -120,6 +134,15 @@ function formatMoney(value: number) {
       currency: "BRL",
     }
   ).format(value);
+}
+
+function addonIdsKey(
+  addons: ProductAddon[]
+) {
+  return addons
+    .map((addon) => addon.id)
+    .sort((a, b) => a - b)
+    .join("-");
 }
 
 function ShoppingBagIcon({
@@ -411,6 +434,11 @@ export default function CardapioPage() {
   ] = useState("");
 
   const [
+    selectedAddonIds,
+    setSelectedAddonIds,
+  ] = useState<number[]>([]);
+
+  const [
     crusts,
     setCrusts,
   ] = useState<Crust[]>([]);
@@ -418,7 +446,9 @@ export default function CardapioPage() {
   const [
     selectedCrust,
     setSelectedCrust,
-  ] = useState<Crust | null>(null);
+  ] = useState<Crust | null>(
+    null
+  );
 
   const [
     customer,
@@ -465,14 +495,11 @@ export default function CardapioPage() {
           CustomerSession =
           await response.json();
 
-        if (
+        setCustomer(
           data?.authenticated
-        ) {
-          setCustomer(data);
-        } else {
-          setCustomer(null);
-        }
-
+            ? data
+            : null
+        );
       } catch (error) {
         console.error(
           "Erro ao verificar conta do cliente:",
@@ -482,7 +509,6 @@ export default function CardapioPage() {
         if (mounted) {
           setCustomer(null);
         }
-
       } finally {
         if (mounted) {
           setCustomerSessionLoaded(
@@ -526,16 +552,23 @@ export default function CardapioPage() {
               observation:
                 item.observation ??
                 "",
+
               crust:
                 item.crust ??
                 null,
+
+              addons:
+                Array.isArray(
+                  item.addons
+                )
+                  ? item.addons
+                  : [],
             })
           );
 
         setCart(
           normalizedCart
         );
-
       } catch {
         localStorage.removeItem(
           cartKey
@@ -579,8 +612,8 @@ export default function CardapioPage() {
 
             fetch(
               `${API_URL}/api/store/status?store=${encodeURIComponent(
-                  storeSlug
-                )}`,
+                storeSlug
+              )}`,
               {
                 cache:
                   "no-store",
@@ -608,25 +641,19 @@ export default function CardapioPage() {
             ),
           ]);
 
-        if (
-          !productsResponse.ok
-        ) {
+        if (!productsResponse.ok) {
           throw new Error(
             "Erro ao buscar produtos"
           );
         }
 
-        if (
-          !statusResponse.ok
-        ) {
+        if (!statusResponse.ok) {
           throw new Error(
-            "Erro ao buscar status da pizzaria"
+            "Erro ao buscar status do estabelecimento"
           );
         }
 
-        if (
-          !crustsResponse.ok
-        ) {
+        if (!crustsResponse.ok) {
           throw new Error(
             "Erro ao buscar bordas"
           );
@@ -655,7 +682,14 @@ export default function CardapioPage() {
         }
 
         setProducts(
-          productsData
+          productsData.map(
+            (product) => ({
+              ...product,
+              addonGroups:
+                product.addonGroups ??
+                [],
+            })
+          )
         );
 
         setStoreStatus(
@@ -669,7 +703,6 @@ export default function CardapioPage() {
         setStoreProfile(
           profileData
         );
-
       } catch (error) {
         console.error(
           error
@@ -680,7 +713,6 @@ export default function CardapioPage() {
             "Não foi possível carregar o cardápio agora. Tente novamente em instantes."
           );
         }
-
       } finally {
         if (mounted) {
           setLoading(
@@ -690,10 +722,10 @@ export default function CardapioPage() {
       }
     }
 
-    loadData();
+    void loadData();
 
     const interval =
-      setInterval(
+      window.setInterval(
         async () => {
           try {
             const response =
@@ -707,9 +739,7 @@ export default function CardapioPage() {
                 }
               );
 
-            if (
-              !response.ok
-            ) {
+            if (!response.ok) {
               return;
             }
 
@@ -722,7 +752,6 @@ export default function CardapioPage() {
                 data
               );
             }
-
           } catch (error) {
             console.error(
               error
@@ -736,18 +765,21 @@ export default function CardapioPage() {
       mounted =
         false;
 
-      clearInterval(
+      window.clearInterval(
         interval
       );
     };
   }, [storeSlug]);
 
   // =========================
-  // BLOQUEAR FUNDO DO DRAWER
+  // BLOQUEAR FUNDO
   // =========================
 
   useEffect(() => {
-    if (!cartOpen && !selectedProduct) {
+    if (
+      !cartOpen &&
+      !selectedProduct
+    ) {
       document.body.style.overflow =
         "";
 
@@ -761,7 +793,10 @@ export default function CardapioPage() {
       document.body.style.overflow =
         "";
     };
-  }, [cartOpen, selectedProduct]);
+  }, [
+    cartOpen,
+    selectedProduct,
+  ]);
 
   // =========================
   // TOAST
@@ -773,7 +808,7 @@ export default function CardapioPage() {
     }
 
     const timeout =
-      setTimeout(
+      window.setTimeout(
         () => {
           setToast(
             null
@@ -783,7 +818,7 @@ export default function CardapioPage() {
       );
 
     return () =>
-      clearTimeout(
+      window.clearTimeout(
         timeout
       );
   }, [toast]);
@@ -807,18 +842,81 @@ export default function CardapioPage() {
   function openProduct(
     product: Product
   ) {
-    setSelectedProduct(product);
-    setSelectedQuantity(1);
-    setSelectedObservation("");
-    setSelectedCrust(null);
+    setSelectedProduct(
+      product
+    );
+
+    setSelectedQuantity(
+      1
+    );
+
+    setSelectedObservation(
+      ""
+    );
+
+    setSelectedCrust(
+      null
+    );
+
+    setSelectedAddonIds(
+      []
+    );
   }
 
   function closeProduct() {
-    setSelectedProduct(null);
-    setSelectedQuantity(1);
-    setSelectedObservation("");
-    setSelectedCrust(null);
+    setSelectedProduct(
+      null
+    );
+
+    setSelectedQuantity(
+      1
+    );
+
+    setSelectedObservation(
+      ""
+    );
+
+    setSelectedCrust(
+      null
+    );
+
+    setSelectedAddonIds(
+      []
+    );
   }
+
+  const selectedAddons =
+    useMemo(() => {
+      if (!selectedProduct) {
+        return [];
+      }
+
+      const selected =
+        new Set(
+          selectedAddonIds
+        );
+
+      return (
+        selectedProduct
+          .addonGroups ??
+        []
+      )
+        .flatMap(
+          (group) =>
+            group.addons ??
+            []
+        )
+        .filter(
+          (addon) =>
+            addon.active &&
+            selected.has(
+              addon.id
+            )
+        );
+    }, [
+      selectedProduct,
+      selectedAddonIds,
+    ]);
 
   function addSelectedProductToCart() {
     if (!selectedProduct) {
@@ -831,7 +929,26 @@ export default function CardapioPage() {
         title: "Pedidos indisponíveis",
         message:
           storeStatus?.message ||
-          "A pizzaria não está recebendo pedidos agora.",
+          "O estabelecimento não está recebendo pedidos agora.",
+      });
+
+      return;
+    }
+
+    const addonValidation =
+      validateAddonSelections(
+        selectedProduct
+          .addonGroups ??
+          [],
+        selectedAddonIds
+      );
+
+    if (!addonValidation.valid) {
+      showToast({
+        type: "warning",
+        title: "Complete suas escolhas",
+        message:
+          addonValidation.message,
       });
 
       return;
@@ -842,6 +959,11 @@ export default function CardapioPage() {
         ? selectedCrust
         : null;
 
+    const selectedAddonKey =
+      addonIdsKey(
+        selectedAddons
+      );
+
     const existingIndex =
       cart.findIndex(
         (item) =>
@@ -849,17 +971,24 @@ export default function CardapioPage() {
             selectedProduct.id &&
           (item.crust?.id ?? null) ===
             (crustForItem?.id ?? null) &&
+          addonIdsKey(
+            item.addons ??
+              []
+          ) ===
+            selectedAddonKey &&
           item.observation.trim() ===
             selectedObservation.trim()
       );
 
-    let updatedCart: CartItem[];
+    let updatedCart:
+      CartItem[];
 
     if (existingIndex >= 0) {
       updatedCart =
         cart.map(
           (item, index) =>
-            index === existingIndex
+            index ===
+            existingIndex
               ? {
                   ...item,
                   quantity:
@@ -872,25 +1001,35 @@ export default function CardapioPage() {
       updatedCart = [
         ...cart,
         {
-          product: selectedProduct,
-          quantity: selectedQuantity,
+          product:
+            selectedProduct,
+
+          quantity:
+            selectedQuantity,
+
           observation:
-            selectedObservation.trim(),
-          crust: crustForItem,
+            selectedObservation
+              .trim(),
+
+          crust:
+            crustForItem,
+
+          addons:
+            selectedAddons,
         },
       ];
     }
 
-    saveCart(updatedCart);
+    saveCart(
+      updatedCart
+    );
 
     showToast({
       type: "success",
-      title: "Adicionado ao pedido",
-      message: `${selectedQuantity}x ${selectedProduct.name}${
-        crustForItem
-          ? ` · Borda ${crustForItem.name}`
-          : ""
-      }`,
+      title:
+        "Adicionado ao pedido",
+      message:
+        `${selectedQuantity}x ${selectedProduct.name}`,
     });
 
     closeProduct();
@@ -916,60 +1055,6 @@ export default function CardapioPage() {
     );
   }
 
-  function addToCart(
-    product: Product
-  ) {
-    const existingItem =
-      cart.find(
-        (item) =>
-          item.product.id ===
-          product.id
-      );
-
-    let updatedCart:
-      CartItem[];
-
-    if (existingItem) {
-      updatedCart =
-        cart.map(
-          (item) =>
-            item.product.id ===
-            product.id
-              ? {
-                  ...item,
-
-                  quantity:
-                    item.quantity +
-                    1,
-                }
-              : item
-        );
-
-    } else {
-      updatedCart = [
-        ...cart,
-        {
-          product,
-          quantity: 1,
-          observation: "",
-          crust: null,
-        },
-      ];
-    }
-
-    saveCart(
-      updatedCart
-    );
-
-    showToast({
-      type: "success",
-      title:
-        "Adicionado ao pedido",
-      message:
-        product.name,
-    });
-  }
-
   function increaseQuantity(
     itemIndex: number
   ) {
@@ -980,12 +1065,15 @@ export default function CardapioPage() {
             ? {
                 ...item,
                 quantity:
-                  item.quantity + 1,
+                  item.quantity +
+                  1,
               }
             : item
       );
 
-    saveCart(updatedCart);
+    saveCart(
+      updatedCart
+    );
   }
 
   function decreaseQuantity(
@@ -999,36 +1087,46 @@ export default function CardapioPage() {
               ? {
                   ...item,
                   quantity:
-                    item.quantity - 1,
+                    item.quantity -
+                    1,
                 }
               : item
         )
         .filter(
           (item) =>
-            item.quantity > 0
+            item.quantity >
+            0
         );
 
-    saveCart(updatedCart);
+    saveCart(
+      updatedCart
+    );
   }
 
   function removeFromCart(
     itemIndex: number
   ) {
     const item =
-      cart[itemIndex];
+      cart[
+        itemIndex
+      ];
 
     const updatedCart =
       cart.filter(
         (_, index) =>
-          index !== itemIndex
+          index !==
+          itemIndex
       );
 
-    saveCart(updatedCart);
+    saveCart(
+      updatedCart
+    );
 
     if (item) {
       showToast({
         type: "warning",
-        title: "Item removido",
+        title:
+          "Item removido",
         message:
           item.product.name,
       });
@@ -1050,20 +1148,20 @@ export default function CardapioPage() {
             : item
       );
 
-    saveCart(updatedCart);
+    saveCart(
+      updatedCart
+    );
   }
 
   function continueOrder() {
-    if (
-      !storeStatus?.open
-    ) {
+    if (!storeStatus?.open) {
       showToast({
         type: "error",
         title:
           "Pedidos indisponíveis",
         message:
           storeStatus?.message ||
-          "A pizzaria não está recebendo pedidos agora.",
+          "O estabelecimento não está recebendo pedidos agora.",
       });
 
       return;
@@ -1124,30 +1222,67 @@ export default function CardapioPage() {
           (
             total,
             item
-          ) =>
-            total +
-            (
-              Number(
-                item.product.price
-              ) +
-              Number(
-                item.crust?.price ?? 0
-              )
-            ) *
-              item.quantity,
+          ) => {
+            const addonsPrice =
+              (
+                item.addons ??
+                []
+              ).reduce(
+                (
+                  addonTotal,
+                  addon
+                ) =>
+                  addonTotal +
+                  Number(
+                    addon.price
+                  ),
+                0
+              );
+
+            return (
+              total +
+              (
+                Number(
+                  item.product
+                    .price
+                ) +
+                Number(
+                  item.crust
+                    ?.price ??
+                    0
+                ) +
+                addonsPrice
+              ) *
+                item.quantity
+            );
+          },
           0
         ),
       [cart]
     );
 
+  const selectedAddonsPrice =
+    selectedProduct
+      ? getSelectedAddonsPrice(
+          selectedProduct
+            .addonGroups ??
+            [],
+          selectedAddonIds
+        )
+      : 0;
+
   const selectedUnitPrice =
     selectedProduct
       ? Number(
-          selectedProduct.price
+          selectedProduct
+            .price
         ) +
         Number(
-          selectedCrust?.price ?? 0
-        )
+          selectedCrust
+            ?.price ??
+            0
+        ) +
+        selectedAddonsPrice
       : 0;
 
   const categories =
@@ -1187,15 +1322,11 @@ export default function CardapioPage() {
               product.category.id ===
                 activeCategoryId;
 
-            if (
-              !matchesCategory
-            ) {
+            if (!matchesCategory) {
               return false;
             }
 
-            if (
-              !normalizedSearch
-            ) {
+            if (!normalizedSearch) {
               return true;
             }
 
@@ -1240,6 +1371,7 @@ export default function CardapioPage() {
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
 
           <div className="grid items-center gap-8 md:grid-cols-2">
+
             <div>
               <div className="skeleton h-7 w-36 rounded-full" />
               <div className="skeleton mt-5 h-16 w-4/5" />
@@ -1249,6 +1381,7 @@ export default function CardapioPage() {
             </div>
 
             <div className="skeleton aspect-[4/3] w-full rounded-3xl" />
+
           </div>
 
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -1300,7 +1433,8 @@ export default function CardapioPage() {
   const coverImageUrl =
     resolveStoreImageUrl(
       storeProfile?.coverImageUrl
-    ) || "/pizzasystem/hero.jpg";
+    ) ||
+    "/pizzasystem/hero.jpg";
 
   const brandInitial =
     storeName
@@ -1321,22 +1455,21 @@ export default function CardapioPage() {
       .toUpperCase() ||
     "?";
 
-  // =========================
-  // TELA
-  // =========================
-
   return (
     <main
       className="min-h-screen bg-background pb-32 text-foreground"
       style={{
-        "--primary": primaryColor,
-        "--secondary": secondaryColor,
-      } as React.CSSProperties}
+        "--primary":
+          primaryColor,
+
+        "--secondary":
+          secondaryColor,
+      } as CSSProperties}
     >
 
       {/* =========================
           HEADER
-          ========================= */}
+      ========================= */}
 
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
 
@@ -1353,10 +1486,13 @@ export default function CardapioPage() {
             }
             className="flex min-w-0 items-center gap-3 text-left"
           >
+
             {logoUrl ? (
               <span className="flex h-12 w-20 shrink-0 items-center justify-center sm:h-14 sm:w-24">
                 <img
-                  src={logoUrl}
+                  src={
+                    logoUrl
+                  }
                   alt={`Logo ${storeName}`}
                   className="h-full w-full object-contain"
                 />
@@ -1368,6 +1504,7 @@ export default function CardapioPage() {
             )}
 
             <span className="min-w-0">
+
               <span className="block truncate font-display text-2xl leading-none tracking-tight sm:text-3xl">
                 {storeName}
                 <span className="text-primary">
@@ -1379,7 +1516,9 @@ export default function CardapioPage() {
                 {storeProfile?.footerTagline ||
                   "Pedidos online"}
               </span>
+
             </span>
+
           </button>
 
           <div className="flex shrink-0 items-center gap-2">
@@ -1400,6 +1539,7 @@ export default function CardapioPage() {
                   : "Entrar ou criar conta"
               }
             >
+
               {customer?.profileImageUrl ? (
                 <img
                   src={
@@ -1423,6 +1563,7 @@ export default function CardapioPage() {
                     ? customerFirstName
                     : "Entrar"}
               </span>
+
             </button>
 
             <button
@@ -1434,6 +1575,7 @@ export default function CardapioPage() {
               }
               className="flex items-center gap-2 rounded-full bg-foreground px-3 py-2.5 text-sm font-bold text-cream transition-transform active:scale-95 sm:px-4"
             >
+
               <ShoppingBagIcon className="h-4 w-4" />
 
               <span className="hidden sm:inline">
@@ -1441,22 +1583,24 @@ export default function CardapioPage() {
               </span>
 
               <span
-                key={totalItems}
+                key={
+                  totalItems
+                }
                 className={`grid h-6 min-w-6 place-items-center rounded-full bg-primary px-1.5 font-mono-brand text-[11px] text-primary-foreground ${
-                  totalItems > 0
+                  totalItems >
+                  0
                     ? "animate-badge"
                     : ""
                 }`}
               >
                 {totalItems}
               </span>
+
             </button>
 
           </div>
 
         </div>
-
-        {/* CATEGORIAS */}
 
         <div className="border-t border-border">
 
@@ -1509,8 +1653,13 @@ export default function CardapioPage() {
 
       </header>
 
-      {storeProfile?.marqueeEnabled === true &&
-        Boolean(storeProfile?.marqueeMessage?.trim()) && (
+      {storeProfile?.marqueeEnabled ===
+        true &&
+        Boolean(
+          storeProfile
+            ?.marqueeMessage
+            ?.trim()
+        ) && (
           <div className="border-b border-border bg-secondary px-4 py-2 text-center font-mono-brand text-[11px] font-bold uppercase tracking-[0.12em] text-foreground">
             {storeProfile.marqueeMessage}
           </div>
@@ -1518,11 +1667,9 @@ export default function CardapioPage() {
 
       {/* =========================
           CONTEÚDO
-          ========================= */}
+      ========================= */}
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-
-        {/* HERO */}
 
         <section className="grid items-center gap-7 py-7 md:grid-cols-12 md:py-10">
 
@@ -1619,7 +1766,9 @@ export default function CardapioPage() {
             <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-[0_18px_60px_-30px] shadow-foreground/35">
 
               <img
-                src={coverImageUrl}
+                src={
+                  coverImageUrl
+                }
                 alt="Destaque do cardápio"
                 className="aspect-[16/10] w-full object-cover"
               />
@@ -1645,7 +1794,7 @@ export default function CardapioPage() {
 
         {/* =========================
             MENU
-            ========================= */}
+        ========================= */}
 
         <section
           id="menu"
@@ -1684,7 +1833,10 @@ export default function CardapioPage() {
                     event.target.value
                   )
                 }
-                placeholder={storeProfile?.menuSearchPlaceholder || "Buscar no cardápio"}
+                placeholder={
+                  storeProfile?.menuSearchPlaceholder ||
+                  "Buscar no cardápio"
+                }
                 className="h-12 w-full rounded-full border border-border bg-white/70 pl-11 pr-5 text-sm font-semibold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
               />
 
@@ -1745,7 +1897,11 @@ export default function CardapioPage() {
             )}
 
           <div
-            key={String(activeCategoryId)}
+            key={
+              String(
+                activeCategoryId
+              )
+            }
             className="mt-6 grid animate-fade-up gap-5 sm:grid-cols-2 lg:grid-cols-3"
           >
 
@@ -1755,12 +1911,22 @@ export default function CardapioPage() {
                 index
               ) => {
 
-                const cartItem =
-                  cart.find(
-                    (item) =>
-                      item.product.id ===
-                      product.id
-                  );
+                const cartQuantity =
+                  cart
+                    .filter(
+                      (item) =>
+                        item.product.id ===
+                        product.id
+                    )
+                    .reduce(
+                      (
+                        total,
+                        item
+                      ) =>
+                        total +
+                        item.quantity,
+                      0
+                    );
 
                 return (
                   <article
@@ -1804,9 +1970,9 @@ export default function CardapioPage() {
                         {product.category.name}
                       </span>
 
-                      {cartItem && (
+                      {cartQuantity > 0 && (
                         <span className="absolute right-3 top-3 grid h-8 min-w-8 place-items-center rounded-full bg-primary px-2 font-mono-brand text-xs font-bold text-primary-foreground shadow-lg">
-                          {cartItem.quantity}
+                          {cartQuantity}
                         </span>
                       )}
 
@@ -1834,6 +2000,19 @@ export default function CardapioPage() {
                         {product.description ||
                           "Confira este item do nosso cardápio."}
                       </p>
+
+                      {(product.addonGroups ?? []).some(
+                        (group) =>
+                          group.active &&
+                          (group.addons ?? []).some(
+                            (addon) =>
+                              addon.active
+                          )
+                      ) && (
+                        <p className="mt-3 text-xs font-bold text-primary">
+                          Personalizável
+                        </p>
+                      )}
 
                       <button
                         type="button"
@@ -1869,7 +2048,7 @@ export default function CardapioPage() {
 
       {/* =========================
           FOOTER
-          ========================= */}
+      ========================= */}
 
       <footer className="mt-16 border-t border-border pb-28 pt-10">
 
@@ -1903,8 +2082,8 @@ export default function CardapioPage() {
       </footer>
 
       {/* =========================
-          BARRA FIXA DO PEDIDO
-          ========================= */}
+          BARRA FIXA
+      ========================= */}
 
       {totalItems > 0 && (
         <div className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 animate-fade-up">
@@ -1953,30 +2132,41 @@ export default function CardapioPage() {
 
       {/* =========================
           MODAL DO PRODUTO
-          ========================= */}
+      ========================= */}
 
       {selectedProduct && (
         <div className="fixed inset-0 z-50">
+
           <button
             type="button"
             aria-label="Fechar produto"
-            onClick={closeProduct}
+            onClick={
+              closeProduct
+            }
             className="absolute inset-0 bg-foreground/50 backdrop-blur-[3px]"
           />
 
           <div className="animate-slide-up absolute bottom-0 left-1/2 flex max-h-[94vh] w-full max-w-xl -translate-x-1/2 flex-col overflow-hidden rounded-t-[2rem] bg-background shadow-2xl md:bottom-auto md:top-1/2 md:max-h-[86vh] md:-translate-y-1/2 md:rounded-[2rem]">
+
             {selectedProduct.imageUrl ? (
               <div className="relative h-[190px] shrink-0 overflow-hidden bg-secondary sm:h-[220px]">
+
                 <img
-                  src={selectedProduct.imageUrl}
-                  alt={selectedProduct.name}
+                  src={
+                    selectedProduct.imageUrl
+                  }
+                  alt={
+                    selectedProduct.name
+                  }
                   className="h-full w-full object-cover"
                 />
 
                 <button
                   type="button"
                   aria-label="Fechar"
-                  onClick={closeProduct}
+                  onClick={
+                    closeProduct
+                  }
                   className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-background/90 shadow-lg backdrop-blur transition-transform hover:scale-105"
                 >
                   <XIcon />
@@ -1985,9 +2175,11 @@ export default function CardapioPage() {
                 <span className="absolute bottom-4 left-4 rounded-full bg-background/90 px-3 py-1.5 font-mono-brand text-[10px] font-bold uppercase tracking-wider backdrop-blur">
                   {selectedProduct.category.name}
                 </span>
+
               </div>
             ) : (
               <div className="relative shrink-0 border-b border-border bg-[linear-gradient(110deg,var(--butter),var(--background)_72%)] px-5 py-4 sm:px-7">
+
                 <span className="inline-flex rounded-full border border-foreground/10 bg-background/75 px-3 py-1.5 font-mono-brand text-[10px] font-bold uppercase tracking-wider">
                   {selectedProduct.category.name}
                 </span>
@@ -1995,17 +2187,23 @@ export default function CardapioPage() {
                 <button
                   type="button"
                   aria-label="Fechar"
-                  onClick={closeProduct}
+                  onClick={
+                    closeProduct
+                  }
                   className="absolute right-4 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-background/90 shadow-md transition-transform hover:scale-105"
                 >
                   <XIcon className="h-4 w-4" />
                 </button>
+
               </div>
             )}
 
             <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5">
+
               <div className="flex items-start justify-between gap-5">
+
                 <div className="min-w-0">
+
                   <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                     Monte seu item
                   </p>
@@ -2013,13 +2211,17 @@ export default function CardapioPage() {
                   <h2 className="mt-1 font-display text-4xl leading-none tracking-tight sm:text-5xl">
                     {selectedProduct.name}
                   </h2>
+
                 </div>
 
                 <p className="shrink-0 font-display text-3xl leading-none text-primary">
                   {formatMoney(
-                    Number(selectedProduct.price)
+                    Number(
+                      selectedProduct.price
+                    )
                   )}
                 </p>
+
               </div>
 
               <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
@@ -2027,9 +2229,156 @@ export default function CardapioPage() {
                   "Confira este item do nosso cardápio."}
               </p>
 
+              <ProductAddonSelector
+                groups={
+                  selectedProduct
+                    .addonGroups ??
+                    []
+                }
+                selectedAddonIds={
+                  selectedAddonIds
+                }
+                onChange={
+                  setSelectedAddonIds
+                }
+              />
+
+              {selectedProduct.allowCrust && (
+                <div className="mt-6 border-t border-border pt-6">
+
+                  <div className="flex items-end justify-between gap-4">
+
+                    <div>
+
+                      <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                        Borda recheada
+                      </p>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Escolha uma opção para sua pizza.
+                      </p>
+
+                    </div>
+
+                    {selectedCrust && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedCrust(
+                            null
+                          )
+                        }
+                        className="text-xs font-bold text-primary"
+                      >
+                        Remover
+                      </button>
+                    )}
+
+                  </div>
+
+                  <div className="mt-4 grid gap-2">
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedCrust(
+                          null
+                        )
+                      }
+                      className={`flex min-h-14 items-center justify-between rounded-2xl border px-4 text-left transition ${
+                        selectedCrust ===
+                        null
+                          ? "border-foreground bg-foreground text-cream"
+                          : "border-border bg-card hover:border-foreground/30"
+                      }`}
+                    >
+
+                      <span className="font-bold">
+                        Sem borda
+                      </span>
+
+                      {selectedCrust ===
+                        null && (
+                        <CheckIcon className="h-4 w-4" />
+                      )}
+
+                    </button>
+
+                    {crusts.map(
+                      (crust) => (
+                        <button
+                          key={
+                            crust.id
+                          }
+                          type="button"
+                          onClick={() =>
+                            setSelectedCrust(
+                              crust
+                            )
+                          }
+                          className={`flex min-h-14 items-center justify-between gap-4 rounded-2xl border px-4 text-left transition ${
+                            selectedCrust?.id ===
+                            crust.id
+                              ? "border-primary bg-primary/5 ring-2 ring-primary/10"
+                              : "border-border bg-card hover:border-foreground/30"
+                          }`}
+                        >
+
+                          <span className="flex min-w-0 items-center gap-3">
+
+                            <span
+                              className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border ${
+                                selectedCrust?.id ===
+                                crust.id
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-border"
+                              }`}
+                            >
+
+                              {selectedCrust?.id ===
+                                crust.id && (
+                                <CheckIcon className="h-3.5 w-3.5" />
+                              )}
+
+                            </span>
+
+                            <span className="truncate font-bold">
+                              {crust.name}
+                            </span>
+
+                          </span>
+
+                          <span className="shrink-0 text-sm font-bold text-primary">
+                            +{" "}
+                            {formatMoney(
+                              Number(
+                                crust.price
+                              )
+                            )}
+                          </span>
+
+                        </button>
+                      )
+                    )}
+
+                  </div>
+
+                  {crusts.length ===
+                    0 && (
+                    <p className="mt-3 rounded-xl bg-secondary p-3 text-sm text-muted-foreground">
+                      Nenhuma borda está disponível no momento.
+                    </p>
+                  )}
+
+                </div>
+              )}
+
               <div className="mt-6 border-t border-border pt-6">
+
                 <div className="flex items-center justify-between gap-4">
+
                   <div>
+
                     <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                       Quantidade
                     </p>
@@ -2037,18 +2386,23 @@ export default function CardapioPage() {
                     <p className="mt-1 text-sm text-muted-foreground">
                       Quantos você quer?
                     </p>
+
                   </div>
 
                   <div className="flex items-center gap-2 rounded-full border border-border bg-card p-1.5">
+
                     <button
                       type="button"
                       aria-label="Diminuir quantidade"
                       onClick={() =>
                         setSelectedQuantity(
-                          (quantity) =>
+                          (
+                            quantity
+                          ) =>
                             Math.max(
                               1,
-                              quantity - 1
+                              quantity -
+                                1
                             )
                         )
                       }
@@ -2066,19 +2420,26 @@ export default function CardapioPage() {
                       aria-label="Aumentar quantidade"
                       onClick={() =>
                         setSelectedQuantity(
-                          (quantity) =>
-                            quantity + 1
+                          (
+                            quantity
+                          ) =>
+                            quantity +
+                            1
                         )
                       }
                       className="grid h-10 w-10 place-items-center rounded-full transition-colors hover:bg-secondary"
                     >
                       <PlusIcon className="h-4 w-4" />
                     </button>
+
                   </div>
+
                 </div>
+
               </div>
 
               <div className="mt-6">
+
                 <label
                   htmlFor="selected-product-observation"
                   className="mb-2 block font-mono-brand text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground"
@@ -2088,8 +2449,12 @@ export default function CardapioPage() {
 
                 <textarea
                   id="selected-product-observation"
-                  value={selectedObservation}
-                  onChange={(event) =>
+                  value={
+                    selectedObservation
+                  }
+                  onChange={(
+                    event
+                  ) =>
                     setSelectedObservation(
                       event.target.value
                     )
@@ -2103,114 +2468,24 @@ export default function CardapioPage() {
                 <p className="mt-2 text-right font-mono-brand text-[10px] text-muted-foreground">
                   {selectedObservation.length}/250
                 </p>
+
               </div>
 
-              {selectedProduct.allowCrust && (
-                <div className="mt-6 border-t border-border pt-6">
-                  <div className="flex items-end justify-between gap-4">
-                    <div>
-                      <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                        Borda recheada
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Escolha uma opção para sua pizza.
-                      </p>
-                    </div>
-
-                    {selectedCrust && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedCrust(null)
-                        }
-                        className="text-xs font-bold text-primary"
-                      >
-                        Remover
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="mt-4 grid gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelectedCrust(null)
-                      }
-                      className={`flex min-h-14 items-center justify-between rounded-2xl border px-4 text-left transition ${
-                        selectedCrust === null
-                          ? "border-foreground bg-foreground text-cream"
-                          : "border-border bg-card hover:border-foreground/30"
-                      }`}
-                    >
-                      <span className="font-bold">
-                        Sem borda
-                      </span>
-                      {selectedCrust === null && (
-                        <CheckIcon className="h-4 w-4" />
-                      )}
-                    </button>
-
-                    {crusts.map(
-                      (crust) => (
-                        <button
-                          key={crust.id}
-                          type="button"
-                          onClick={() =>
-                            setSelectedCrust(crust)
-                          }
-                          className={`flex min-h-14 items-center justify-between gap-4 rounded-2xl border px-4 text-left transition ${
-                            selectedCrust?.id ===
-                            crust.id
-                              ? "border-primary bg-primary/5 ring-2 ring-primary/10"
-                              : "border-border bg-card hover:border-foreground/30"
-                          }`}
-                        >
-                          <span className="flex min-w-0 items-center gap-3">
-                            <span
-                              className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border ${
-                                selectedCrust?.id ===
-                                crust.id
-                                  ? "border-primary bg-primary text-primary-foreground"
-                                  : "border-border"
-                              }`}
-                            >
-                              {selectedCrust?.id ===
-                                crust.id && (
-                                <CheckIcon className="h-3.5 w-3.5" />
-                              )}
-                            </span>
-
-                            <span className="truncate font-bold">
-                              {crust.name}
-                            </span>
-                          </span>
-
-                          <span className="shrink-0 text-sm font-bold text-primary">
-                            + {formatMoney(
-                              Number(crust.price)
-                            )}
-                          </span>
-                        </button>
-                      )
-                    )}
-                  </div>
-
-                  {crusts.length === 0 && (
-                    <p className="mt-3 rounded-xl bg-secondary p-3 text-sm text-muted-foreground">
-                      Nenhuma borda está disponível no momento.
-                    </p>
-                  )}
-                </div>
-              )}
             </div>
 
             <div className="shrink-0 border-t border-border bg-background px-5 py-4 sm:px-6">
+
               <button
                 type="button"
-                onClick={addSelectedProductToCart}
-                disabled={!storeStatus?.open}
+                onClick={
+                  addSelectedProductToCart
+                }
+                disabled={
+                  !storeStatus?.open
+                }
                 className="brand-button min-h-14 w-full rounded-2xl px-5 text-base disabled:cursor-not-allowed disabled:opacity-50"
               >
+
                 <PlusIcon className="h-5 w-5" />
 
                 {storeStatus?.open
@@ -2219,15 +2494,19 @@ export default function CardapioPage() {
                         selectedQuantity
                     )}`
                   : "Pedidos encerrados"}
+
               </button>
+
             </div>
+
           </div>
+
         </div>
       )}
 
       {/* =========================
-          DRAWER DO CARRINHO
-          ========================= */}
+          CARRINHO
+      ========================= */}
 
       {cartOpen && (
         <div className="fixed inset-0 z-50">
@@ -2279,8 +2558,7 @@ export default function CardapioPage() {
 
             <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
 
-              {cart.length ===
-              0 ? (
+              {cart.length === 0 ? (
                 <div className="grid min-h-64 place-items-center text-center">
 
                   <div>
@@ -2300,153 +2578,211 @@ export default function CardapioPage() {
                   </div>
 
                 </div>
-
               ) : (
                 <div className="space-y-4">
 
                   {cart.map(
-                    (item, itemIndex) => (
-                      <article
-                        key={`${item.product.id}-${item.crust?.id ?? "no-crust"}-${itemIndex}`}
-                        className="rounded-2xl border border-border bg-card p-4"
-                      >
+                    (
+                      item,
+                      itemIndex
+                    ) => {
 
-                        <div className="flex gap-4">
+                      const itemAddonsPrice =
+                        (
+                          item.addons ??
+                          []
+                        ).reduce(
+                          (
+                            total,
+                            addon
+                          ) =>
+                            total +
+                            Number(
+                              addon.price
+                            ),
+                          0
+                        );
 
-                          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-secondary">
+                      const itemUnitPrice =
+                        Number(
+                          item.product
+                            .price
+                        ) +
+                        Number(
+                          item.crust
+                            ?.price ??
+                            0
+                        ) +
+                        itemAddonsPrice;
 
-                            {item.product.imageUrl ? (
-                              <img
-                                src={
-                                  item.product.imageUrl
-                                }
-                                alt=""
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="h-full w-full bg-[linear-gradient(135deg,var(--butter),var(--secondary))]" />
-                            )}
+                      return (
+                        <article
+                          key={`${item.product.id}-${item.crust?.id ?? "no-crust"}-${addonIdsKey(
+                            item.addons ?? []
+                          )}-${itemIndex}`}
+                          className="rounded-2xl border border-border bg-card p-4"
+                        >
 
-                          </div>
+                          <div className="flex gap-4">
 
-                          <div className="min-w-0 flex-1">
+                            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-secondary">
 
-                            <div className="flex items-start justify-between gap-3">
+                              {item.product.imageUrl ? (
+                                <img
+                                  src={
+                                    item.product.imageUrl
+                                  }
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="h-full w-full bg-[linear-gradient(135deg,var(--butter),var(--secondary))]" />
+                              )}
 
-                              <div className="min-w-0">
+                            </div>
 
-                                <h3 className="truncate font-display text-xl">
-                                  {item.product.name}
-                                </h3>
+                            <div className="min-w-0 flex-1">
 
-                                {item.crust && (
-                                  <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                                    Borda: {item.crust.name} · + {formatMoney(
-                                      Number(item.crust.price)
+                              <div className="flex items-start justify-between gap-3">
+
+                                <div className="min-w-0">
+
+                                  <h3 className="truncate font-display text-xl">
+                                    {item.product.name}
+                                  </h3>
+
+                                  {item.crust && (
+                                    <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                                      Borda:{" "}
+                                      {item.crust.name}
+                                      {" · + "}
+                                      {formatMoney(
+                                        Number(
+                                          item.crust.price
+                                        )
+                                      )}
+                                    </p>
+                                  )}
+
+                                  {(item.addons ?? []).map(
+                                    (
+                                      addon
+                                    ) => (
+                                      <p
+                                        key={
+                                          addon.id
+                                        }
+                                        className="mt-1 text-xs font-semibold text-muted-foreground"
+                                      >
+                                        {addon.name}
+                                        {Number(
+                                          addon.price
+                                        ) >
+                                        0
+                                          ? ` · + ${formatMoney(
+                                              Number(
+                                                addon.price
+                                              )
+                                            )}`
+                                          : ""}
+                                      </p>
+                                    )
+                                  )}
+
+                                  <p className="mt-1 text-sm font-bold text-primary">
+                                    {formatMoney(
+                                      itemUnitPrice *
+                                        item.quantity
                                     )}
                                   </p>
-                                )}
 
-                                <p className="mt-1 text-sm font-bold text-primary">
-                                  {formatMoney(
-                                    (
-                                      Number(
-                                        item.product.price
-                                      ) +
-                                      Number(
-                                        item.crust?.price ?? 0
-                                      )
-                                    ) *
-                                      item.quantity
-                                  )}
-                                </p>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  aria-label={`Remover ${item.product.name}`}
+                                  onClick={() =>
+                                    removeFromCart(
+                                      itemIndex
+                                    )
+                                  }
+                                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
 
                               </div>
 
-                              <button
-                                type="button"
-                                aria-label={`Remover ${item.product.name}`}
-                                onClick={() =>
-                                  removeFromCart(
-                                    itemIndex
-                                  )
-                                }
-                                className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                              >
-                                <TrashIcon className="h-4 w-4" />
-                              </button>
+                              <div className="mt-4 flex items-center gap-2">
 
-                            </div>
+                                <button
+                                  type="button"
+                                  aria-label={`Diminuir quantidade de ${item.product.name}`}
+                                  onClick={() =>
+                                    decreaseQuantity(
+                                      itemIndex
+                                    )
+                                  }
+                                  className="grid h-9 w-9 place-items-center rounded-full border border-border transition-colors hover:bg-secondary"
+                                >
+                                  <MinusIcon className="h-4 w-4" />
+                                </button>
 
-                            <div className="mt-4 flex items-center gap-2">
+                                <span className="min-w-8 text-center font-mono-brand text-sm font-bold">
+                                  {item.quantity}
+                                </span>
 
-                              <button
-                                type="button"
-                                aria-label={`Diminuir quantidade de ${item.product.name}`}
-                                onClick={() =>
-                                  decreaseQuantity(
-                                    itemIndex
-                                  )
-                                }
-                                className="grid h-9 w-9 place-items-center rounded-full border border-border transition-colors hover:bg-secondary"
-                              >
-                                <MinusIcon className="h-4 w-4" />
-                              </button>
+                                <button
+                                  type="button"
+                                  aria-label={`Aumentar quantidade de ${item.product.name}`}
+                                  onClick={() =>
+                                    increaseQuantity(
+                                      itemIndex
+                                    )
+                                  }
+                                  className="grid h-9 w-9 place-items-center rounded-full border border-border transition-colors hover:bg-secondary"
+                                >
+                                  <PlusIcon className="h-4 w-4" />
+                                </button>
 
-                              <span className="min-w-8 text-center font-mono-brand text-sm font-bold">
-                                {item.quantity}
-                              </span>
-
-                              <button
-                                type="button"
-                                aria-label={`Aumentar quantidade de ${item.product.name}`}
-                                onClick={() =>
-                                  increaseQuantity(
-                                    itemIndex
-                                  )
-                                }
-                                className="grid h-9 w-9 place-items-center rounded-full border border-border transition-colors hover:bg-secondary"
-                              >
-                                <PlusIcon className="h-4 w-4" />
-                              </button>
+                              </div>
 
                             </div>
 
                           </div>
 
-                        </div>
+                          <div className="mt-4">
 
-                        <div className="mt-4">
+                            <label
+                              htmlFor={`observation-${itemIndex}`}
+                              className="mb-2 block font-mono-brand text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground"
+                            >
+                              Observação
+                            </label>
 
-                          <label
-                            htmlFor={`observation-${item.product.id}`}
-                            className="mb-2 block font-mono-brand text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground"
-                          >
-                            Observação
-                          </label>
+                            <textarea
+                              id={`observation-${itemIndex}`}
+                              value={
+                                item.observation
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                updateObservation(
+                                  itemIndex,
+                                  event.target.value
+                                )
+                              }
+                              placeholder="Ex: sem cebola"
+                              rows={2}
+                              className="w-full resize-none rounded-xl border border-border bg-background p-3 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                            />
 
-                          <textarea
-                            id={`observation-${item.product.id}`}
-                            value={
-                              item.observation
-                            }
-                            onChange={(
-                              event
-                            ) =>
-                              updateObservation(
-                                itemIndex,
-                                event.target.value
-                              )
-                            }
-                            placeholder="Ex: sem cebola"
-                            rows={2}
-                            className="w-full resize-none rounded-xl border border-border bg-background p-3 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
-                          />
+                          </div>
 
-                        </div>
-
-                      </article>
-                    )
+                        </article>
+                      );
+                    }
                   )}
 
                 </div>
@@ -2490,6 +2826,7 @@ export default function CardapioPage() {
                 }
                 className="brand-button mt-5 min-h-13 w-full rounded-xl px-5"
               >
+
                 {storeStatus?.open
                   ? "Continuar para checkout"
                   : "Pedidos encerrados"}
@@ -2497,6 +2834,7 @@ export default function CardapioPage() {
                 {storeStatus?.open && (
                   <ArrowRightIcon className="h-4 w-4" />
                 )}
+
               </button>
 
             </div>
@@ -2508,7 +2846,7 @@ export default function CardapioPage() {
 
       {/* =========================
           TOAST
-          ========================= */}
+      ========================= */}
 
       {toast && (
         <div className="fixed left-1/2 top-5 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 animate-slide-up">
@@ -2533,6 +2871,7 @@ export default function CardapioPage() {
                     : "bg-butter/40 text-foreground"
               }`}
             >
+
               {toast.type ===
               "success" ? (
                 <CheckIcon className="h-4 w-4" />
@@ -2541,6 +2880,7 @@ export default function CardapioPage() {
                   !
                 </span>
               )}
+
             </div>
 
             <div className="min-w-0 flex-1">

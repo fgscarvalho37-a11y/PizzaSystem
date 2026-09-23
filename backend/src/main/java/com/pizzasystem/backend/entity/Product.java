@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "products")
@@ -40,6 +42,18 @@ public class Product {
     )
     private boolean available = true;
 
+    // =========================
+    // LEGADO - BORDAS
+    // =========================
+
+    /*
+     * Mantido temporariamente para
+     * não quebrar o sistema atual.
+     *
+     * Será removido depois que todo
+     * o fluxo estiver usando grupos
+     * de adicionais.
+     */
     @Column(
             nullable = false
     )
@@ -55,6 +69,55 @@ public class Product {
             nullable = false
     )
     private Category category;
+
+    // =========================
+    // GRUPOS DE ADICIONAIS
+    // =========================
+
+    /*
+     * Um produto pode possuir vários
+     * grupos de adicionais.
+     *
+     * Exemplo:
+     *
+     * Açaí:
+     * - Frutas
+     * - Complementos
+     *
+     * Hambúrguer:
+     * - Adicionais
+     * - Molhos
+     *
+     * Pizza:
+     * - Bordas
+     * - Adicionais
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "product_addon_groups",
+            joinColumns = {
+                    @JoinColumn(
+                            name = "product_id"
+                    )
+            },
+            inverseJoinColumns = {
+                    @JoinColumn(
+                            name = "addon_group_id"
+                    )
+            },
+            uniqueConstraints = {
+                    @UniqueConstraint(
+                            name = "uk_product_addon_group",
+                            columnNames = {
+                                    "product_id",
+                                    "addon_group_id"
+                            }
+                    )
+            }
+    )
+    @OrderBy("sortOrder ASC, id ASC")
+    private Set<AddonGroup> addonGroups =
+            new LinkedHashSet<>();
 
     // =========================
     // LOJA / TENANT
@@ -83,8 +146,7 @@ public class Product {
     public void setName(
             String name
     ) {
-        this.name =
-                name;
+        this.name = name;
     }
 
     public String getDescription() {
@@ -94,8 +156,7 @@ public class Product {
     public void setDescription(
             String description
     ) {
-        this.description =
-                description;
+        this.description = description;
     }
 
     public String getImageUrl() {
@@ -105,8 +166,7 @@ public class Product {
     public void setImageUrl(
             String imageUrl
     ) {
-        this.imageUrl =
-                imageUrl;
+        this.imageUrl = imageUrl;
     }
 
     public BigDecimal getPrice() {
@@ -116,8 +176,7 @@ public class Product {
     public void setPrice(
             BigDecimal price
     ) {
-        this.price =
-                price;
+        this.price = price;
     }
 
     public boolean isAvailable() {
@@ -127,8 +186,7 @@ public class Product {
     public void setAvailable(
             boolean available
     ) {
-        this.available =
-                available;
+        this.available = available;
     }
 
     public boolean isAllowCrust() {
@@ -138,8 +196,7 @@ public class Product {
     public void setAllowCrust(
             boolean allowCrust
     ) {
-        this.allowCrust =
-                allowCrust;
+        this.allowCrust = allowCrust;
     }
 
     public Category getCategory() {
@@ -149,8 +206,20 @@ public class Product {
     public void setCategory(
             Category category
     ) {
-        this.category =
-                category;
+        this.category = category;
+    }
+
+    public Set<AddonGroup> getAddonGroups() {
+        return addonGroups;
+    }
+
+    public void setAddonGroups(
+            Set<AddonGroup> addonGroups
+    ) {
+        this.addonGroups =
+                addonGroups != null
+                        ? addonGroups
+                        : new LinkedHashSet<>();
     }
 
     public Store getStore() {
@@ -160,7 +229,6 @@ public class Product {
     public void setStore(
             Store store
     ) {
-        this.store =
-                store;
+        this.store = store;
     }
 }

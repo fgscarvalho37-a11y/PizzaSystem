@@ -332,15 +332,6 @@ public class PaymentController {
         String paymentMethodId =
                 request.getPaymentMethodId();
 
-        if (debit
-                && "elo".equalsIgnoreCase(
-                        paymentMethodId
-                )) {
-
-            paymentMethodId =
-                    "debelo";
-        }
-
         // =========================
         // CRIAR PAGAMENTO
         // =========================
@@ -539,135 +530,125 @@ public class PaymentController {
         );
     }
 
-// =========================
-// DEV - SINCRONIZAR PAGAMENTO
-// =========================
+    // =========================
+    // DEV - SINCRONIZAR PAGAMENTO
+    // =========================
 
-@PostMapping(
-        value = "/dev/sync/{orderId}",
-        produces = MediaType.APPLICATION_JSON_VALUE
-)
-public ResponseEntity<?> syncPaymentDev(
-        @PathVariable Long orderId
-) throws Exception {
+    @PostMapping(
+            value = "/dev/sync/{orderId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<?> syncPaymentDev(
+            @PathVariable Long orderId
+    ) throws Exception {
 
-    /*
-     * Endpoint temporário para desenvolvimento.
-     *
-     * Só funciona com administrador autenticado
-     * e respeita a Store do administrador.
-     */
+        if (!isAdminAuthenticated()) {
 
-    if (!isAdminAuthenticated()) {
+            return errorResponse(
+                    HttpStatus.UNAUTHORIZED,
+                    "Administrador não autenticado."
+            );
+        }
 
-        return errorResponse(
-                HttpStatus.UNAUTHORIZED,
-                "Administrador não autenticado."
+        Order order =
+                getOrderForAccess(
+                        orderId,
+                        null
+                );
+
+        if (order.getPaymentExternalId() == null
+                || order.getPaymentExternalId()
+                .isBlank()) {
+
+            return errorResponse(
+                    HttpStatus.BAD_REQUEST,
+                    "Pedido ainda não possui pagamento no Mercado Pago."
+            );
+        }
+
+        String mercadoPagoResponse =
+                mercadoPagoService.getOrder(
+                        order.getPaymentExternalId()
+                );
+
+        JsonNode json =
+                objectMapper.readTree(
+                        mercadoPagoResponse
+                );
+
+        PaymentStatus previousPaymentStatus =
+                order.getPaymentStatus();
+
+        updateOrderPaymentStatus(
+                order,
+                json
         );
-    }
 
-    Order order =
-            getOrderForAccess(
-                    orderId,
-                    null
-            );
+        order =
+                orderRepository.save(
+                        order
+                );
 
-    if (order.getPaymentExternalId() == null
-            || order.getPaymentExternalId()
-            .isBlank()) {
+        if (previousPaymentStatus != PaymentStatus.APPROVED
+                && order.getPaymentStatus()
+                == PaymentStatus.APPROVED) {
 
-        return errorResponse(
-                HttpStatus.BAD_REQUEST,
-                "Pedido ainda não possui pagamento no Mercado Pago."
-        );
-    }
-
-    String mercadoPagoResponse =
-            mercadoPagoService.getOrder(
-                    order.getPaymentExternalId()
-            );
-
-    JsonNode json =
-            objectMapper.readTree(
-                    mercadoPagoResponse
-            );
-
-    PaymentStatus previousPaymentStatus =
-            order.getPaymentStatus();
-
-    updateOrderPaymentStatus(
-            order,
-            json
-    );
-
-    order =
-            orderRepository.save(
+            couponService.registerUsageForOrder(
                     order
             );
 
-    /*
-     * Se acabou de ser aprovado,
-     * registra o uso do cupom.
-     */
-    if (previousPaymentStatus != PaymentStatus.APPROVED
-            && order.getPaymentStatus()
-            == PaymentStatus.APPROVED) {
+            loyaltyService.registerForOrder(
+                    order
+            );
+        }
 
-        couponService.registerUsageForOrder(
-                order
+        Map<String, Object> response =
+                new HashMap<>();
+
+        response.put(
+                "success",
+                true
         );
 
-        loyaltyService.registerForOrder(
-                order
+        response.put(
+                "orderId",
+                order.getId()
         );
+
+        response.put(
+                "storeId",
+                order.getStore() != null
+                        ? order.getStore().getId()
+                        : null
+        );
+
+        response.put(
+                "paymentExternalId",
+                order.getPaymentExternalId()
+        );
+
+        response.put(
+                "paymentStatus",
+                order.getPaymentStatus()
+                        .name()
+        );
+
+        response.put(
+                "orderStatus",
+                order.getStatus()
+                        .name()
+        );
+
+        return ResponseEntity
+                .ok()
+                .contentType(
+                        MediaType.APPLICATION_JSON
+                )
+                .body(
+                        response
+                );
     }
 
-    Map<String, Object> response =
-            new HashMap<>();
-
-    response.put(
-            "success",
-            true
-    );
-
-    response.put(
-            "orderId",
-            order.getId()
-    );
-
-    response.put(
-            "storeId",
-            order.getStore() != null
-                    ? order.getStore().getId()
-                    : null
-    );
-
-    response.put(
-            "paymentExternalId",
-            order.getPaymentExternalId()
-    );
-
-    response.put(
-            "paymentStatus",
-            order.getPaymentStatus()
-                    .name()
-    );
-
-    response.put(
-            "orderStatus",
-            order.getStatus()
-                    .name()
-    );
-
-    return ResponseEntity
-            .ok()
-            .contentType(
-                    MediaType.APPLICATION_JSON
-            )
-            .body(
-                    response
-            );
-}
     // =========================
     // DEV - APROVAR PAGAMENTO
     // =========================
@@ -679,13 +660,6 @@ public ResponseEntity<?> syncPaymentDev(
     public ResponseEntity<?> approvePaymentDev(
             @PathVariable Long orderId
     ) {
-
-        /*
-         * Endpoint temporário para desenvolvimento.
-         * Aprova o pedido localmente sem pagamento real.
-         * Só funciona com administrador autenticado
-         * e respeita a Store do administrador.
-         */
 
         if (!isAdminAuthenticated()) {
             return errorResponse(
@@ -826,13 +800,6 @@ public ResponseEntity<?> syncPaymentDev(
             String token
     ) {
 
-        /*
-         * ADMIN
-         *
-         * Um administrador autenticado só
-         * pode acessar pagamentos de pedidos
-         * pertencentes à própria Store.
-         */
         if (isAdminAuthenticated()) {
 
             Store currentStore =
@@ -854,12 +821,6 @@ public ResponseEntity<?> syncPaymentDev(
                     );
         }
 
-        /*
-         * CLIENTE
-         *
-         * Conhecer apenas o ID sequencial
-         * do pedido não autoriza acesso.
-         */
         if (token == null
                 || token.isBlank()) {
 
@@ -875,10 +836,6 @@ public ResponseEntity<?> syncPaymentDev(
                         this::orderNotFound
                 );
     }
-
-    // =========================
-    // PEDIDO PERTENCE À STORE?
-    // =========================
 
     private boolean belongsToStore(
             Order order,
@@ -906,10 +863,6 @@ public ResponseEntity<?> syncPaymentDev(
                 );
     }
 
-    // =========================
-    // ADMIN AUTENTICADO?
-    // =========================
-
     private boolean isAdminAuthenticated() {
 
         Authentication authentication =
@@ -934,10 +887,6 @@ public ResponseEntity<?> syncPaymentDev(
                 );
     }
 
-    // =========================
-    // PEDIDO NÃO ENCONTRADO
-    // =========================
-
     private ResponseStatusException orderNotFound() {
 
         return new ResponseStatusException(
@@ -945,10 +894,6 @@ public ResponseEntity<?> syncPaymentDev(
                 "Pedido não encontrado"
         );
     }
-
-    // =========================
-    // VALIDAR CARTÃO
-    // =========================
 
     private ResponseEntity<?> validateCardRequest(
             CardPaymentRequest request
@@ -994,10 +939,6 @@ public ResponseEntity<?> syncPaymentDev(
 
         return null;
     }
-
-    // =========================
-    // ATUALIZAR STATUS
-    // =========================
 
     private void updateOrderPaymentStatus(
             Order order,
@@ -1063,8 +1004,8 @@ public ResponseEntity<?> syncPaymentDev(
                 paymentStatus
         )
                 || "rejected".equalsIgnoreCase(
-                paymentStatus
-        )) {
+                        paymentStatus
+                )) {
 
             order.setPaymentStatus(
                     PaymentStatus.REJECTED
@@ -1085,10 +1026,6 @@ public ResponseEntity<?> syncPaymentDev(
                 OrderStatus.PENDING_PAYMENT
         );
     }
-
-    // =========================
-    // TRADUZIR RECUSA
-    // =========================
 
     private String translateCardRejection(
             String statusDetail
@@ -1132,10 +1069,6 @@ public ResponseEntity<?> syncPaymentDev(
         };
     }
 
-    // =========================
-    // RESPOSTA JSON
-    // =========================
-
     private ResponseEntity<String> jsonResponse(
             String body
     ) {
@@ -1149,10 +1082,6 @@ public ResponseEntity<?> syncPaymentDev(
                         body
                 );
     }
-
-    // =========================
-    // RESPOSTA DE ERRO
-    // =========================
 
     private ResponseEntity<Map<String, Object>>
     errorResponse(

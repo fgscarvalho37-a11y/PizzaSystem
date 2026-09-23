@@ -1,9 +1,11 @@
 package com.pizzasystem.backend.controller;
 
+import com.pizzasystem.backend.entity.AddonGroup;
 import com.pizzasystem.backend.entity.Category;
 import com.pizzasystem.backend.entity.Product;
 import com.pizzasystem.backend.entity.Store;
 
+import com.pizzasystem.backend.repository.AddonGroupRepository;
 import com.pizzasystem.backend.repository.CategoryRepository;
 import com.pizzasystem.backend.repository.ProductRepository;
 
@@ -14,7 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/products")
@@ -26,6 +30,9 @@ public class ProductController {
     private final CategoryRepository
             categoryRepository;
 
+    private final AddonGroupRepository
+            addonGroupRepository;
+
     private final CurrentStoreService
             currentStoreService;
 
@@ -35,6 +42,7 @@ public class ProductController {
     public ProductController(
             ProductRepository productRepository,
             CategoryRepository categoryRepository,
+            AddonGroupRepository addonGroupRepository,
             CurrentStoreService currentStoreService,
             PublicStoreService publicStoreService
     ) {
@@ -44,6 +52,9 @@ public class ProductController {
 
         this.categoryRepository =
                 categoryRepository;
+
+        this.addonGroupRepository =
+                addonGroupRepository;
 
         this.currentStoreService =
                 currentStoreService;
@@ -177,6 +188,13 @@ public class ProductController {
                 data.isAvailable()
         );
 
+        /*
+         * LEGADO.
+         *
+         * Mantido temporariamente até
+         * removermos completamente o
+         * sistema antigo de bordas.
+         */
         product.setAllowCrust(
                 data.isAllowCrust()
         );
@@ -187,6 +205,18 @@ public class ProductController {
 
         product.setStore(
                 store
+        );
+
+        /*
+         * Grupos não são aceitos diretamente
+         * no cadastro do produto.
+         *
+         * Eles são vinculados pelo endpoint
+         * específico abaixo para impedir
+         * manipulação de IDs de outra loja.
+         */
+        product.setAddonGroups(
+                new LinkedHashSet<>()
         );
 
         return productRepository
@@ -255,6 +285,9 @@ public class ProductController {
                 data.isAvailable()
         );
 
+        /*
+         * LEGADO.
+         */
         product.setAllowCrust(
                 data.isAllowCrust()
         );
@@ -269,6 +302,95 @@ public class ProductController {
          */
         product.setStore(
                 store
+        );
+
+        /*
+         * Os grupos atuais NÃO são alterados
+         * por esse endpoint.
+         *
+         * Existe endpoint específico
+         * para isso.
+         */
+        return productRepository
+                .save(
+                        product
+                );
+    }
+
+    // =========================
+    // ADMIN - GRUPOS DO PRODUTO
+    // =========================
+
+    /*
+     * Recebe uma lista de IDs.
+     *
+     * Exemplo:
+     *
+     * PUT /api/products/10/addon-groups
+     *
+     * [
+     *   1,
+     *   3,
+     *   5
+     * ]
+     *
+     * Isso substitui todos os grupos
+     * vinculados ao produto.
+     */
+    @PutMapping("/{id}/addon-groups")
+    public Product updateAddonGroups(
+            @PathVariable Long id,
+            @RequestBody List<Long> addonGroupIds
+    ) {
+
+        Store store =
+                currentStoreService
+                        .getCurrentStore();
+
+        Product product =
+                productRepository
+                        .findByIdAndStoreId(
+                                id,
+                                store.getId()
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Produto não encontrado"
+                                )
+                        );
+
+        Set<AddonGroup> groups =
+                new LinkedHashSet<>();
+
+        if (addonGroupIds != null) {
+
+            for (Long groupId : addonGroupIds) {
+
+                if (groupId == null) {
+                    continue;
+                }
+
+                AddonGroup group =
+                        addonGroupRepository
+                                .findByIdAndStoreId(
+                                        groupId,
+                                        store.getId()
+                                )
+                                .orElseThrow(() ->
+                                        new RuntimeException(
+                                                "Grupo de adicionais não encontrado: "
+                                                        + groupId
+                                        )
+                                );
+
+                groups.add(
+                        group
+                );
+            }
+        }
+
+        product.setAddonGroups(
+                groups
         );
 
         return productRepository
@@ -314,9 +436,13 @@ public class ProductController {
     }
 
     // =========================
-    // ADMIN - BORDA
+    // ADMIN - BORDA LEGADA
     // =========================
 
+    /*
+     * Será removido quando concluirmos
+     * a migração completa para adicionais.
+     */
     @PatchMapping("/{id}/allow-crust")
     public Product changeAllowCrust(
             @PathVariable Long id,

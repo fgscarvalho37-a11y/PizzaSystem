@@ -29,6 +29,15 @@ type Product = {
   name: string;
 };
 
+type OrderItemAddon = {
+  id: number;
+  sourceAddonId: number | null;
+  groupName: string | null;
+  addonName: string;
+  addonPrice: number;
+  sortOrder: number;
+};
+
 type OrderItem = {
   id: number;
   quantity: number;
@@ -36,6 +45,7 @@ type OrderItem = {
   observation: string | null;
   crustName: string | null;
   crustPrice: number | null;
+  addons?: OrderItemAddon[];
   product: Product;
 };
 
@@ -64,10 +74,6 @@ type OrderWithItems =
     items: OrderItem[];
   };
 
-type IconProps = {
-  className?: string;
-};
-
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:8080";
@@ -78,6 +84,18 @@ const activeStatuses: OrderStatus[] = [
   "READY",
   "OUT_FOR_DELIVERY",
 ];
+
+function currency(
+  value: number
+) {
+  return Number(value).toLocaleString(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL",
+    }
+  );
+}
 
 function statusName(
   status: OrderStatus
@@ -178,208 +196,29 @@ function nextButtonText(
   }
 }
 
-function currency(
-  value: number
+function normalizeAddons(
+  addons:
+    OrderItemAddon[] |
+    null |
+    undefined
 ) {
-  return Number(value).toLocaleString(
-    "pt-BR",
-    {
-      style: "currency",
-      currency: "BRL",
-    }
-  );
-}
+  if (!Array.isArray(addons)) {
+    return [];
+  }
 
-function ClockIcon({
-  className = "h-4 w-4",
-}: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </svg>
-  );
-}
-
-function UserIcon({
-  className = "h-4 w-4",
-}: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 21a8 8 0 0 1 16 0" />
-    </svg>
-  );
-}
-
-function PhoneIcon({
-  className = "h-4 w-4",
-}: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M6 3h4l2 5-3 2a15 15 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2C10 20 4 14 4 5a2 2 0 0 1 2-2Z" />
-    </svg>
-  );
-}
-
-function MapIcon({
-  className = "h-4 w-4",
-}: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M12 21s6-5 6-11a6 6 0 1 0-12 0c0 6 6 11 6 11Z" />
-      <circle cx="12" cy="10" r="2" />
-    </svg>
-  );
-}
-
-function CheckIcon({
-  className = "h-4 w-4",
-}: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="m5 12 4 4L19 6" />
-    </svg>
-  );
-}
-
-function EmptyIcon({
-  className = "h-6 w-6",
-}: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M5 11h14" />
-      <path d="M7 11a5 5 0 0 1 10 0" />
-      <path d="M4 15h16" />
-      <path d="M8 19h8" />
-    </svg>
-  );
-}
-
-function Spinner() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4 animate-spin"
-      aria-hidden="true"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        opacity="0.2"
-      />
-
-      <path
-        d="M21 12a9 9 0 0 0-9-9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function KitchenSkeleton() {
-  return (
-    <div
-      className="mt-6 grid gap-4 lg:grid-cols-2"
-      role="status"
-      aria-label="Carregando cozinha"
-    >
-      {[1, 2].map(
-        (item) => (
-          <div
-            key={item}
-            className="rounded-2xl border border-border bg-card p-5"
-          >
-            <div className="animate-pulse">
-
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="h-3 w-16 rounded bg-muted" />
-                  <div className="mt-2 h-8 w-20 rounded bg-muted" />
-                </div>
-
-                <div className="h-7 w-24 rounded-full bg-muted" />
-              </div>
-
-              <div className="mt-5 h-px bg-border" />
-
-              <div className="mt-4 space-y-2">
-                <div className="h-14 rounded-xl bg-muted" />
-                <div className="h-14 rounded-xl bg-muted" />
-              </div>
-
-              <div className="mt-5 h-16 rounded-xl bg-muted" />
-
-            </div>
-          </div>
-        )
-      )}
-    </div>
+  return [...addons].sort(
+    (a, b) =>
+      Number(
+        a.sortOrder ?? 0
+      ) -
+      Number(
+        b.sortOrder ?? 0
+      )
   );
 }
 
 export default function CozinhaPage() {
+
   const [
     orders,
     setOrders,
@@ -409,14 +248,17 @@ export default function CozinhaPage() {
     useState("");
 
   async function loadOrders() {
+
     try {
+
       setErrorMessage("");
 
       const response =
         await adminFetch(
           `${API_URL}/api/orders`,
           {
-            cache: "no-store",
+            cache:
+              "no-store",
           }
         );
 
@@ -444,7 +286,9 @@ export default function CozinhaPage() {
         await Promise.all(
           activeOrders.map(
             async (order) => {
+
               try {
+
                 const itemsResponse =
                   await adminFetch(
                     `${API_URL}/api/orders/${order.id}/items`,
@@ -460,8 +304,24 @@ export default function CozinhaPage() {
                 if (
                   itemsResponse.ok
                 ) {
-                  items =
+
+                  const rawItems:
+                    OrderItem[] =
                     await itemsResponse.json();
+
+                  items =
+                    rawItems.map(
+                      (
+                        item
+                      ) => ({
+                        ...item,
+
+                        addons:
+                          normalizeAddons(
+                            item.addons
+                          ),
+                      })
+                    );
                 }
 
                 return {
@@ -470,6 +330,7 @@ export default function CozinhaPage() {
                 };
 
               } catch {
+
                 return {
                   ...order,
                   items: [],
@@ -484,16 +345,21 @@ export default function CozinhaPage() {
       );
 
     } catch {
+
       setErrorMessage(
         "Não foi possível carregar os pedidos da cozinha."
       );
 
     } finally {
-      setLoading(false);
+
+      setLoading(
+        false
+      );
     }
   }
 
   useEffect(() => {
+
     loadOrders();
 
     const interval =
@@ -508,11 +374,14 @@ export default function CozinhaPage() {
       clearInterval(
         interval
       );
+
   }, []);
 
   async function changeStatus(
-    order: OrderWithItems
+    order:
+      OrderWithItems
   ) {
+
     const next =
       nextStatus(
         order.status
@@ -523,17 +392,21 @@ export default function CozinhaPage() {
     }
 
     try {
+
       setUpdatingId(
         order.id
       );
 
-      setErrorMessage("");
+      setErrorMessage(
+        ""
+      );
 
       const response =
         await adminFetch(
           `${API_URL}/api/orders/${order.id}/status?status=${next}`,
           {
-            method: "PATCH",
+            method:
+              "PATCH",
           }
         );
 
@@ -546,11 +419,13 @@ export default function CozinhaPage() {
       await loadOrders();
 
     } catch {
+
       setErrorMessage(
         `Não foi possível atualizar o pedido #${order.id}.`
       );
 
     } finally {
+
       setUpdatingId(
         null
       );
@@ -558,6 +433,7 @@ export default function CozinhaPage() {
   }
 
   return (
+
     <main className="min-h-screen bg-background">
 
       <AdminHeader />
@@ -569,6 +445,7 @@ export default function CozinhaPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 
             <div>
+
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
                 Operação
               </p>
@@ -580,21 +457,18 @@ export default function CozinhaPage() {
               <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
                 Pedidos pagos em andamento aparecem automaticamente aqui.
               </p>
+
             </div>
 
-            <div className="flex items-end gap-3 rounded-xl border border-border bg-card px-4 py-3">
+            <div className="rounded-xl border border-border bg-card px-4 py-3">
 
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                  Ativos
-                </p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                Ativos
+              </p>
 
-                <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
-                  {orders.length}
-                </p>
-              </div>
-
-              <span className="mb-1.5 h-2 w-2 rounded-full bg-emerald-500" />
+              <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+                {orders.length}
+              </p>
 
             </div>
 
@@ -603,10 +477,9 @@ export default function CozinhaPage() {
         </section>
 
         {errorMessage && (
-          <div
-            className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4"
-            role="alert"
-          >
+
+          <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4">
+
             <p className="text-sm font-bold text-red-800">
               Problema ao atualizar a cozinha
             </p>
@@ -617,33 +490,48 @@ export default function CozinhaPage() {
 
             <button
               type="button"
-              onClick={() =>
-                loadOrders()
+              onClick={
+                loadOrders
               }
-              className="mt-3 rounded-lg bg-red-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-800"
+              className="mt-3 rounded-lg bg-red-700 px-4 py-2 text-sm font-bold text-white"
             >
               Tentar novamente
             </button>
+
           </div>
         )}
 
         {loading ? (
-          <KitchenSkeleton />
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+
+            {[1, 2].map(
+              (
+                item
+              ) => (
+
+                <div
+                  key={
+                    item
+                  }
+                  className="h-72 animate-pulse rounded-2xl border border-border bg-card"
+                />
+
+              )
+            )}
+
+          </div>
 
         ) : orders.length ===
           0 ? (
 
           <div className="mt-6 rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
 
-            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-              <EmptyIcon />
-            </div>
-
-            <h2 className="mt-4 text-lg font-bold text-foreground">
+            <h2 className="text-lg font-bold text-foreground">
               Cozinha em dia
             </h2>
 
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground">
               Nenhum pedido pago está aguardando preparo no momento.
             </p>
 
@@ -654,7 +542,10 @@ export default function CozinhaPage() {
           <section className="mt-6 grid gap-4 lg:grid-cols-2">
 
             {orders.map(
-              (order) => {
+              (
+                order
+              ) => {
+
                 const createdAt =
                   new Date(
                     order.createdAt
@@ -663,6 +554,7 @@ export default function CozinhaPage() {
                     {
                       hour:
                         "2-digit",
+
                       minute:
                         "2-digit",
                     }
@@ -673,6 +565,7 @@ export default function CozinhaPage() {
                   order.id;
 
                 return (
+
                   <article
                     key={
                       order.id
@@ -685,6 +578,7 @@ export default function CozinhaPage() {
                       <div className="flex items-start justify-between gap-4">
 
                         <div>
+
                           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
                             Pedido
                           </p>
@@ -693,10 +587,10 @@ export default function CozinhaPage() {
                             #{order.id}
                           </h2>
 
-                          <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <ClockIcon />
+                          <p className="mt-1 text-xs text-muted-foreground">
                             {createdAt}
-                          </div>
+                          </p>
+
                         </div>
 
                         <div className="text-right">
@@ -711,10 +605,9 @@ export default function CozinhaPage() {
                             )}
                           </span>
 
-                          <div className="mt-2 flex items-center justify-end gap-1.5 text-xs font-bold text-emerald-700">
-                            <CheckIcon />
+                          <p className="mt-2 text-xs font-bold text-emerald-700">
                             Pago
-                          </div>
+                          </p>
 
                         </div>
 
@@ -728,13 +621,9 @@ export default function CozinhaPage() {
 
                         <div className="rounded-xl border border-border bg-background p-3">
 
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <UserIcon />
-
-                            <p className="text-[10px] font-bold uppercase tracking-[0.14em]">
-                              Cliente
-                            </p>
-                          </div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                            Cliente
+                          </p>
 
                           <p className="mt-2 text-sm font-bold text-foreground">
                             {order.customerName}
@@ -744,13 +633,9 @@ export default function CozinhaPage() {
 
                         <div className="rounded-xl border border-border bg-background p-3">
 
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <PhoneIcon />
-
-                            <p className="text-[10px] font-bold uppercase tracking-[0.14em]">
-                              WhatsApp
-                            </p>
-                          </div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                            WhatsApp
+                          </p>
 
                           <p className="mt-2 text-sm font-semibold text-foreground">
                             {order.customerPhone}
@@ -770,6 +655,7 @@ export default function CozinhaPage() {
 
                           {order.items.length ===
                           0 ? (
+
                             <div className="rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
                               Nenhum item carregado.
                             </div>
@@ -777,74 +663,146 @@ export default function CozinhaPage() {
                           ) : (
 
                             order.items.map(
-                              (item) => (
-                                <div
-                                  key={
-                                    item.id
-                                  }
-                                  className="rounded-xl border border-border bg-background p-3"
-                                >
+                              (
+                                item
+                              ) => {
 
-                                  <div className="flex gap-3">
+                                const addons =
+                                  normalizeAddons(
+                                    item.addons
+                                  );
 
-                                    <div className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-foreground px-2 text-xs font-bold text-background">
-                                      {item.quantity}x
-                                    </div>
+                                return (
 
-                                    <div className="min-w-0 flex-1">
+                                  <div
+                                    key={
+                                      item.id
+                                    }
+                                    className="rounded-xl border border-border bg-background p-3"
+                                  >
 
-                                      <p className="text-sm font-bold text-foreground">
-                                        {
-                                          item
-                                            .product
-                                            .name
-                                        }
-                                      </p>
+                                    <div className="flex gap-3">
 
-                                      {item.crustName && (
-                                        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                      <div className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-foreground px-2 text-xs font-bold text-background">
+                                        {item.quantity}x
+                                      </div>
 
-                                          <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <div className="min-w-0 flex-1">
 
-                                            <p className="text-xs font-bold text-amber-900">
-                                              Borda: {item.crustName}
+                                        <p className="text-sm font-bold text-foreground">
+                                          {item.product.name}
+                                        </p>
+
+                                        {addons.length >
+                                          0 && (
+
+                                          <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+
+                                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">
+                                              Adicionais
                                             </p>
 
-                                            {item.crustPrice !==
-                                              null && (
-                                              <p className="text-xs font-bold text-amber-700">
-                                                +{" "}
-                                                {currency(
-                                                  item.crustPrice
-                                                )}
-                                              </p>
-                                            )}
+                                            <div className="mt-2 space-y-1.5">
+
+                                              {addons.map(
+                                                (
+                                                  addon
+                                                ) => (
+
+                                                  <div
+                                                    key={
+                                                      addon.id
+                                                    }
+                                                    className="flex items-start justify-between gap-3 text-xs"
+                                                  >
+
+                                                    <div className="min-w-0">
+
+                                                      {addon.groupName && (
+
+                                                        <span className="mr-1 text-emerald-700">
+                                                          {addon.groupName}:
+                                                        </span>
+
+                                                      )}
+
+                                                      <span className="font-bold text-emerald-950">
+                                                        {addon.addonName}
+                                                      </span>
+
+                                                    </div>
+
+                                                    <span className="shrink-0 font-bold text-emerald-700">
+                                                      +{" "}
+                                                      {currency(
+                                                        addon.addonPrice
+                                                      )}
+                                                    </span>
+
+                                                  </div>
+
+                                                )
+                                              )}
+
+                                            </div>
 
                                           </div>
 
-                                        </div>
-                                      )}
+                                        )}
 
-                                      {item.observation && (
-                                        <div className="mt-2 rounded-lg border border-primary/15 bg-primary/5 px-3 py-2">
+                                        {item.crustName && (
 
-                                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-                                            Atenção
-                                          </p>
+                                          <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
 
-                                          <p className="mt-1 text-sm font-semibold leading-5 text-foreground">
-                                            {item.observation}
-                                          </p>
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
 
-                                        </div>
-                                      )}
+                                              <p className="text-xs font-bold text-amber-900">
+                                                Borda:{" "}
+                                                {item.crustName}
+                                              </p>
+
+                                              {item.crustPrice !==
+                                                null && (
+
+                                                <p className="text-xs font-bold text-amber-700">
+                                                  +{" "}
+                                                  {currency(
+                                                    item.crustPrice
+                                                  )}
+                                                </p>
+
+                                              )}
+
+                                            </div>
+
+                                          </div>
+
+                                        )}
+
+                                        {item.observation && (
+
+                                          <div className="mt-2 rounded-lg border border-primary/15 bg-primary/5 px-3 py-2">
+
+                                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                                              Atenção
+                                            </p>
+
+                                            <p className="mt-1 text-sm font-semibold leading-5 text-foreground">
+                                              {item.observation}
+                                            </p>
+
+                                          </div>
+
+                                        )}
+
+                                      </div>
 
                                     </div>
 
                                   </div>
 
-                                </div>
-                              )
+                                );
+                              }
                             )
                           )}
 
@@ -854,13 +812,9 @@ export default function CozinhaPage() {
 
                       <section className="mt-5 rounded-xl border border-border bg-background p-3">
 
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <MapIcon />
-
-                          <p className="text-[10px] font-bold uppercase tracking-[0.14em]">
-                            Entrega
-                          </p>
-                        </div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                          Entrega
+                        </p>
 
                         <p className="mt-2 text-sm font-bold text-foreground">
                           {order.street},{" "}
@@ -872,9 +826,11 @@ export default function CozinhaPage() {
                         </p>
 
                         {order.complement && (
+
                           <p className="mt-1 text-sm text-muted-foreground">
                             {order.complement}
                           </p>
+
                         )}
 
                       </section>
@@ -882,6 +838,7 @@ export default function CozinhaPage() {
                       <div className="mt-5 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
 
                         <div>
+
                           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                             Total
                           </p>
@@ -891,11 +848,13 @@ export default function CozinhaPage() {
                               order.total
                             )}
                           </p>
+
                         </div>
 
                         {nextStatus(
                           order.status
                         ) && (
+
                           <button
                             type="button"
                             disabled={
@@ -906,32 +865,15 @@ export default function CozinhaPage() {
                                 order
                               )
                             }
-                            className="
-                              inline-flex min-h-10
-                              items-center justify-center
-                              gap-2 rounded-xl
-                              bg-primary px-4
-                              text-sm font-bold
-                              text-primary-foreground
-                              transition
-                              hover:-translate-y-0.5
-                              hover:shadow-sm
-                              disabled:pointer-events-none
-                              disabled:opacity-50
-                            "
+                            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50"
                           >
-
-                            {isUpdating && (
-                              <Spinner />
-                            )}
-
                             {isUpdating
-                              ? "Atualizando"
+                              ? "Atualizando..."
                               : nextButtonText(
                                   order.status
                                 )}
-
                           </button>
+
                         )}
 
                       </div>
@@ -939,11 +881,13 @@ export default function CozinhaPage() {
                     </div>
 
                   </article>
+
                 );
               }
             )}
 
           </section>
+
         )}
 
       </div>

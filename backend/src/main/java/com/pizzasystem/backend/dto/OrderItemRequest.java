@@ -1,15 +1,58 @@
 package com.pizzasystem.backend.dto;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class OrderItemRequest {
 
     private Long productId;
+
     private Integer quantity;
+
     private String observation;
 
     // =========================
-    // BORDA
+    // ADICIONAIS
     // =========================
 
+    /*
+     * IDs dos adicionais escolhidos
+     * pelo cliente.
+     *
+     * Exemplo:
+     *
+     * [
+     *   1,
+     *   3,
+     *   7
+     * ]
+     *
+     * O backend vai validar:
+     *
+     * - se pertencem à mesma loja
+     * - se pertencem a grupos do produto
+     * - se estão ativos
+     * - mínimo/máximo de cada grupo
+     * - preço real no banco
+     *
+     * O frontend nunca informa
+     * o preço do adicional.
+     */
+    private List<Long> addonIds =
+            new ArrayList<>();
+
+    // =========================
+    // BORDA LEGADA
+    // =========================
+
+    /*
+     * Mantido temporariamente para
+     * não quebrar o cardápio antigo.
+     *
+     * Depois que a migração estiver
+     * concluída, bordas serão apenas
+     * grupos de adicionais.
+     */
     private Long crustId;
 
     public Long getProductId() {
@@ -43,6 +86,19 @@ public class OrderItemRequest {
     ) {
         this.observation =
                 observation;
+    }
+
+    public List<Long> getAddonIds() {
+        return addonIds;
+    }
+
+    public void setAddonIds(
+            List<Long> addonIds
+    ) {
+        this.addonIds =
+                addonIds != null
+                        ? addonIds
+                        : new ArrayList<>();
     }
 
     public Long getCrustId() {

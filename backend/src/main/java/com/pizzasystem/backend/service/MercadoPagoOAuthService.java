@@ -116,6 +116,16 @@ public class MercadoPagoOAuthService {
                         && !connection.getAccessToken().isBlank()
         );
 
+        response.put(
+                "cardPaymentsReady",
+                connection != null
+                        && connection.isConnected()
+                        && connection.getAccessToken() != null
+                        && !connection.getAccessToken().isBlank()
+                        && connection.getPublicKey() != null
+                        && !connection.getPublicKey().isBlank()
+        );
+
         if (connection != null) {
 
             response.put(
@@ -326,9 +336,13 @@ public class MercadoPagoOAuthService {
         }
 
         /*
-         * Não mantemos tokens utilizáveis após
+         * Não mantemos credenciais utilizáveis após
          * a desconexão local.
          */
+        connection.setPublicKey(
+                null
+        );
+
         connection.setAccessToken(
                 null
         );
@@ -355,7 +369,7 @@ public class MercadoPagoOAuthService {
     }
 
     // =========================
-    // TOKEN DA LOJA
+    // ACCESS TOKEN DA LOJA
     // =========================
 
     @Transactional(readOnly = true)
@@ -363,23 +377,10 @@ public class MercadoPagoOAuthService {
             Long storeId
     ) {
 
-        if (storeId == null) {
-
-            throw new IllegalArgumentException(
-                    "Loja não informada."
-            );
-        }
-
         MercadoPagoConnection connection =
-                connectionRepository
-                        .findByStoreIdAndConnectedTrue(
-                                storeId
-                        )
-                        .orElseThrow(() ->
-                                new IllegalStateException(
-                                        "Mercado Pago não está conectado para esta loja."
-                                )
-                        );
+                getConnectedConnection(
+                        storeId
+                );
 
         String accessToken =
                 connection.getAccessToken();
@@ -392,7 +393,61 @@ public class MercadoPagoOAuthService {
             );
         }
 
-        return accessToken;
+        return accessToken.trim();
+    }
+
+    // =========================
+    // PUBLIC KEY DA LOJA
+    // =========================
+
+    @Transactional(readOnly = true)
+    public String getPublicKeyForStore(
+            Long storeId
+    ) {
+
+        MercadoPagoConnection connection =
+                getConnectedConnection(
+                        storeId
+                );
+
+        String publicKey =
+                connection.getPublicKey();
+
+        if (publicKey == null
+                || publicKey.isBlank()) {
+
+            throw new IllegalStateException(
+                    "Public Key do Mercado Pago não disponível para esta loja. Reconecte a conta do Mercado Pago."
+            );
+        }
+
+        return publicKey.trim();
+    }
+
+    // =========================
+    // CONEXÃO DA LOJA
+    // =========================
+
+    private MercadoPagoConnection getConnectedConnection(
+            Long storeId
+    ) {
+
+        if (storeId == null) {
+
+            throw new IllegalArgumentException(
+                    "Loja não informada."
+            );
+        }
+
+        return connectionRepository
+                .findByStoreIdAndConnectedTrue(
+                        storeId
+                )
+                .orElseThrow(() ->
+                        new IllegalStateException(
+                                "Mercado Pago não está conectado para esta loja."
+                        )
+                );
     }
 
     // =========================
@@ -501,6 +556,20 @@ public class MercadoPagoOAuthService {
 
         connection.setStore(
                 store
+        );
+
+        /*
+         * A resposta OAuth também contém a Public Key
+         * vinculada à conta autorizada.
+         *
+         * Ela será usada pelo frontend para inicializar
+         * o SDK do Mercado Pago e tokenizar cartões.
+         */
+        connection.setPublicKey(
+                getText(
+                        tokenResponse,
+                        "public_key"
+                )
         );
 
         connection.setAccessToken(

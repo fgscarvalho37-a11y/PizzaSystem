@@ -3,6 +3,8 @@ package com.pizzasystem.backend.entity;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "order_items")
@@ -41,9 +43,31 @@ public class OrderItem {
     private BigDecimal unitPrice;
 
     // =========================
-    // BORDA ESCOLHIDA
+    // ADICIONAIS ESCOLHIDOS
     // =========================
 
+    @OneToMany(
+            mappedBy = "orderItem",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @OrderBy("sortOrder ASC, id ASC")
+    private List<OrderItemAddon> addons =
+            new ArrayList<>();
+
+    // =========================
+    // BORDA LEGADA
+    // =========================
+
+    /*
+     * Mantido temporariamente para
+     * preservar pedidos antigos e
+     * não quebrar o fluxo atual.
+     *
+     * Depois da migração completa,
+     * bordas passam a ser apenas
+     * grupos de adicionais.
+     */
     @Column(
             length = 80
     )
@@ -54,6 +78,10 @@ public class OrderItem {
             scale = 2
     )
     private BigDecimal crustPrice;
+
+    // =========================
+    // OBSERVAÇÃO
+    // =========================
 
     @Column(
             length = 500
@@ -109,6 +137,36 @@ public class OrderItem {
     ) {
         this.unitPrice =
                 unitPrice;
+    }
+
+    public List<OrderItemAddon> getAddons() {
+        return addons;
+    }
+
+    public void setAddons(
+            List<OrderItemAddon> addons
+    ) {
+        this.addons =
+                addons != null
+                        ? addons
+                        : new ArrayList<>();
+    }
+
+    public void addAddon(
+            OrderItemAddon addon
+    ) {
+
+        if (addon == null) {
+            return;
+        }
+
+        addon.setOrderItem(
+                this
+        );
+
+        addons.add(
+                addon
+        );
     }
 
     public String getCrustName() {
