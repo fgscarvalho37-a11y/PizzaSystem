@@ -22,6 +22,9 @@ public class OrbittaProvisionService {
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
 
+    @Value("${pizzasystem.storefront-base-domain:}")
+    private String storefrontBaseDomain;
+
     public OrbittaProvisionService(
             StoreRepository storeRepository,
             AdminUserRepository adminUserRepository
@@ -281,6 +284,124 @@ public class OrbittaProvisionService {
         );
     }
 
+    @Transactional
+    public LifecycleResult suspend(
+            Long orbittaProductId
+    ) {
+
+        Store store =
+                getStoreByOrbittaProductId(
+                        orbittaProductId
+                );
+
+        store.setActive(
+                false
+        );
+
+        store.setSubscriptionStatus(
+                "SUSPENDED"
+        );
+
+        store =
+                storeRepository.save(
+                        store
+                );
+
+        for (
+                AdminUser admin :
+                adminUserRepository
+                        .findAllByStoreId(
+                                store.getId()
+                        )
+        ) {
+            admin.setActive(
+                    false
+            );
+
+            adminUserRepository.save(
+                    admin
+            );
+        }
+
+        return new LifecycleResult(
+                store.getId(),
+                store.getOrbittaProductId(),
+                store.isActive(),
+                store.getSubscriptionStatus()
+        );
+    }
+
+    @Transactional
+    public LifecycleResult reactivate(
+            Long orbittaProductId
+    ) {
+
+        Store store =
+                getStoreByOrbittaProductId(
+                        orbittaProductId
+                );
+
+        store.setActive(
+                true
+        );
+
+        store.setSubscriptionStatus(
+                "ACTIVE"
+        );
+
+        store =
+                storeRepository.save(
+                        store
+                );
+
+        for (
+                AdminUser admin :
+                adminUserRepository
+                        .findAllByStoreId(
+                                store.getId()
+                        )
+        ) {
+            admin.setActive(
+                    true
+            );
+
+            adminUserRepository.save(
+                    admin
+            );
+        }
+
+        return new LifecycleResult(
+                store.getId(),
+                store.getOrbittaProductId(),
+                store.isActive(),
+                store.getSubscriptionStatus()
+        );
+    }
+
+    private Store getStoreByOrbittaProductId(
+            Long orbittaProductId
+    ) {
+
+        if (
+                orbittaProductId == null ||
+                orbittaProductId <= 0
+        ) {
+            throw new IllegalArgumentException(
+                    "orbittaProductId inválido."
+            );
+        }
+
+        return storeRepository
+                .findByOrbittaProductId(
+                        orbittaProductId
+                )
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Loja vinculada ao produto Orbitta não encontrada."
+                        )
+                );
+    }
+
     private AdminUser ensureAdmin(
             AdminUser admin,
             String email,
@@ -353,8 +474,48 @@ public class OrbittaProvisionService {
                 store.getSlug(),
                 admin.getId(),
                 baseUrl + "/admin/login",
-                baseUrl + "/cardapio/" + store.getSlug()
+                buildStorefrontUrl(
+                        store,
+                        baseUrl
+                )
         );
+    }
+
+    private String buildStorefrontUrl(
+            Store store,
+            String frontendBaseUrl
+    ) {
+
+        String domain =
+                storefrontBaseDomain == null
+                        ? ""
+                        : storefrontBaseDomain
+                                .trim()
+                                .toLowerCase(
+                                        Locale.ROOT
+                                );
+
+        domain =
+                domain
+                        .replaceFirst(
+                                "^https?://",
+                                ""
+                        )
+                        .replaceAll(
+                                "/+$",
+                                ""
+                        );
+
+        if (!domain.isBlank()) {
+            return "https://"
+                    + store.getSlug()
+                    + "."
+                    + domain;
+        }
+
+        return frontendBaseUrl
+                + "/cardapio/"
+                + store.getSlug();
     }
 
     private void validateIds(
@@ -569,6 +730,14 @@ public class OrbittaProvisionService {
             Long adminUserId,
             String systemUrl,
             String storefrontUrl
+    ) {
+    }
+
+    public record LifecycleResult(
+            Long tenantId,
+            Long orbittaProductId,
+            boolean active,
+            String subscriptionStatus
     ) {
     }
 }
