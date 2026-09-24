@@ -11,25 +11,17 @@ import java.util.Optional;
 public interface CashClosingRepository
         extends JpaRepository<CashClosing, Long> {
 
-    // =========================
-    // FECHAMENTO POR DATA
-    // =========================
-
-    Optional<CashClosing> findByDate(
+    Optional<CashClosing> findByStoreIdAndDate(
+            Long storeId,
             LocalDate date
     );
 
-    // =========================
-    // VERIFICAR SE JÁ FECHOU
-    // =========================
-
-    boolean existsByDate(
+    boolean existsByStoreIdAndDate(
+            Long storeId,
             LocalDate date
     );
 
-    // =========================
-    // HISTÓRICO DE FECHAMENTOS
-    // =========================
-
-    List<CashClosing> findAllByOrderByDateDesc();
+    List<CashClosing> findByStoreIdOrderByDateDesc(
+            Long storeId
+    );
 }
