@@ -21,12 +21,17 @@ import com.pizzasystem.backend.repository.ProductRepository;
 import com.pizzasystem.backend.repository.StoreRepository;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
 @Configuration
+@ConditionalOnProperty(
+        name = "pizzasystem.legacy-migration.enabled",
+        havingValue = "true"
+)
 public class StoreDataMigrationConfig {
 
     private final StoreRepository
