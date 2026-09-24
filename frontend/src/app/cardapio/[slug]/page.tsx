@@ -19,9 +19,7 @@ import ProductAddonSelector, {
   type ProductAddonGroup,
 } from "@/components/ProductAddonSelector";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:8080";
+const API_URL = "";
 
 type Category = {
   id: number;
@@ -1864,13 +1862,21 @@ export default function CardapioPage() {
               <div className="mt-8 rounded-3xl border border-border bg-card p-10 text-center">
 
                 <p className="font-display text-3xl">
-                  {storeProfile?.menuEmptyTitle ||
-                    "Nenhum item encontrado"}
+                  {products.length === 0 &&
+                  !search &&
+                  activeCategoryId === "ALL"
+                    ? "Cardápio em preparação"
+                    : storeProfile?.menuEmptyTitle ||
+                      "Nenhum item encontrado"}
                 </p>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                  {storeProfile?.menuEmptyDescription ||
-                    "Tente outra categoria ou altere sua busca."}
+                  {products.length === 0 &&
+                  !search &&
+                  activeCategoryId === "ALL"
+                    ? "Esta loja ainda não publicou produtos. Volte em breve."
+                    : storeProfile?.menuEmptyDescription ||
+                      "Tente outra categoria ou altere sua busca."}
                 </p>
 
                 {(search ||
