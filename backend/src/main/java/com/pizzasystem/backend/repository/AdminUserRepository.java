@@ -4,6 +4,7 @@ import com.pizzasystem.backend.entity.AdminUser;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface AdminUserRepository
@@ -15,5 +16,9 @@ public interface AdminUserRepository
 
     boolean existsByEmailIgnoreCase(
             String email
+    );
+
+    List<AdminUser> findAllByStoreId(
+            Long storeId
     );
 }
