@@ -33,7 +33,6 @@ public class StoreImageController {
             );
 
     private final CurrentStoreService currentStoreService;
-
     private final Path uploadRoot;
 
     public StoreImageController(
@@ -49,10 +48,6 @@ public class StoreImageController {
                         .toAbsolutePath()
                         .normalize();
     }
-
-    // =========================
-    // LOGO
-    // =========================
 
     @PostMapping(
             value = "/logo",
@@ -83,6 +78,7 @@ public class StoreImageController {
         );
 
         deleteOldImage(
+                store.getId(),
                 oldUrl,
                 imageUrl
         );
@@ -90,14 +86,9 @@ public class StoreImageController {
         return Map.of(
                 "success", true,
                 "url", imageUrl,
-                "message",
-                "Logo atualizada com sucesso."
+                "message", "Logo atualizada com sucesso."
         );
     }
-
-    // =========================
-    // CAPA
-    // =========================
 
     @PostMapping(
             value = "/cover",
@@ -128,6 +119,7 @@ public class StoreImageController {
         );
 
         deleteOldImage(
+                store.getId(),
                 oldUrl,
                 imageUrl
         );
@@ -135,14 +127,9 @@ public class StoreImageController {
         return Map.of(
                 "success", true,
                 "url", imageUrl,
-                "message",
-                "Imagem de capa atualizada com sucesso."
+                "message", "Imagem de capa atualizada com sucesso."
         );
     }
-
-    // =========================
-    // REMOVER LOGO
-    // =========================
 
     @DeleteMapping("/logo")
     @Transactional
@@ -161,20 +148,16 @@ public class StoreImageController {
         );
 
         deleteOldImage(
+                store.getId(),
                 oldUrl,
                 null
         );
 
         return Map.of(
                 "success", true,
-                "message",
-                "Logo removida com sucesso."
+                "message", "Logo removida com sucesso."
         );
     }
-
-    // =========================
-    // REMOVER CAPA
-    // =========================
 
     @DeleteMapping("/cover")
     @Transactional
@@ -193,26 +176,28 @@ public class StoreImageController {
         );
 
         deleteOldImage(
+                store.getId(),
                 oldUrl,
                 null
         );
 
         return Map.of(
                 "success", true,
-                "message",
-                "Imagem de capa removida com sucesso."
+                "message", "Imagem de capa removida com sucesso."
         );
     }
-
-    // =========================
-    // SALVAR IMAGEM
-    // =========================
 
     private String saveImage(
             Long storeId,
             MultipartFile file,
             String prefix
     ) throws IOException {
+
+        if (storeId == null) {
+            throw new IllegalArgumentException(
+                    "Loja inválida."
+            );
+        }
 
         validateImage(
                 file
@@ -224,22 +209,9 @@ public class StoreImageController {
                 );
 
         Path storeDirectory =
-                uploadRoot
-                        .resolve("stores")
-                        .resolve(
-                                String.valueOf(
-                                        storeId
-                                )
-                        )
-                        .normalize();
-
-        if (!storeDirectory.startsWith(
-                uploadRoot
-        )) {
-            throw new IllegalArgumentException(
-                    "Diretório de upload inválido."
-            );
-        }
+                getStoreDirectory(
+                        storeId
+                );
 
         Files.createDirectories(
                 storeDirectory
@@ -269,12 +241,10 @@ public class StoreImageController {
                 var inputStream =
                         file.getInputStream()
         ) {
-
             Files.copy(
                     inputStream,
                     destination,
-                    StandardCopyOption
-                            .REPLACE_EXISTING
+                    StandardCopyOption.REPLACE_EXISTING
             );
         }
 
@@ -284,9 +254,34 @@ public class StoreImageController {
                 + fileName;
     }
 
-    // =========================
-    // VALIDAR IMAGEM
-    // =========================
+    private Path getStoreDirectory(
+            Long storeId
+    ) {
+
+        if (storeId == null) {
+            throw new IllegalArgumentException(
+                    "Loja inválida."
+            );
+        }
+
+        Path storeDirectory =
+                uploadRoot
+                        .resolve("stores")
+                        .resolve(
+                                String.valueOf(storeId)
+                        )
+                        .normalize();
+
+        if (!storeDirectory.startsWith(
+                uploadRoot
+        )) {
+            throw new IllegalArgumentException(
+                    "Diretório de upload inválido."
+            );
+        }
+
+        return storeDirectory;
+    }
 
     private void validateImage(
             MultipartFile file
@@ -294,7 +289,6 @@ public class StoreImageController {
 
         if (file == null
                 || file.isEmpty()) {
-
             throw new IllegalArgumentException(
                     "Selecione uma imagem."
             );
@@ -302,7 +296,6 @@ public class StoreImageController {
 
         if (file.getSize()
                 > MAX_FILE_SIZE) {
-
             throw new IllegalArgumentException(
                     "A imagem deve ter no máximo 5 MB."
             );
@@ -312,84 +305,91 @@ public class StoreImageController {
                 file.getContentType();
 
         if (contentType == null
-                || !ALLOWED_CONTENT_TYPES
-                .contains(contentType)) {
-
+                || !ALLOWED_CONTENT_TYPES.contains(
+                        contentType
+                )) {
             throw new IllegalArgumentException(
                     "Formato inválido. Use JPG, PNG ou WebP."
             );
         }
     }
 
-    // =========================
-    // EXTENSÃO
-    // =========================
-
     private String extensionFor(
             String contentType
     ) {
 
-        if (MediaType.IMAGE_PNG_VALUE
-                .equals(contentType)) {
-
+        if (MediaType.IMAGE_PNG_VALUE.equals(
+                contentType
+        )) {
             return "png";
         }
 
-        if ("image/webp"
-                .equals(contentType)) {
-
+        if ("image/webp".equals(
+                contentType
+        )) {
             return "webp";
         }
 
         return "jpg";
     }
 
-    // =========================
-    // APAGAR IMAGEM ANTIGA
-    // =========================
-
     private void deleteOldImage(
+            Long storeId,
             String oldUrl,
             String newUrl
     ) throws IOException {
 
+        if (storeId == null) {
+            return;
+        }
+
         if (oldUrl == null
                 || oldUrl.isBlank()) {
-
             return;
         }
 
         if (oldUrl.equals(
                 newUrl
         )) {
-
             return;
         }
+
+        String expectedPrefix =
+                "/uploads/stores/"
+                        + storeId
+                        + "/";
 
         if (!oldUrl.startsWith(
-                "/uploads/"
+                expectedPrefix
         )) {
-
             return;
         }
 
-        String relativePath =
+        String fileName =
                 oldUrl.substring(
-                        "/uploads/"
-                                .length()
+                        expectedPrefix.length()
+                );
+
+        if (fileName.isBlank()
+                || fileName.contains("/")
+                || fileName.contains("\\")
+                || fileName.contains("..")) {
+            return;
+        }
+
+        Path storeDirectory =
+                getStoreDirectory(
+                        storeId
                 );
 
         Path oldFile =
-                uploadRoot
-                        .resolve(
-                                relativePath
-                        )
+                storeDirectory
+                        .resolve(fileName)
                         .normalize();
 
         if (!oldFile.startsWith(
-                uploadRoot
+                storeDirectory
         )) {
-
             return;
         }
 

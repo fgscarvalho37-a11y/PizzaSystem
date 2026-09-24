@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/reports")
 public class ReportController {
@@ -18,7 +17,8 @@ public class ReportController {
     public ReportController(
             ReportService reportService
     ) {
-        this.reportService = reportService;
+        this.reportService =
+                reportService;
     }
 
     // =========================
