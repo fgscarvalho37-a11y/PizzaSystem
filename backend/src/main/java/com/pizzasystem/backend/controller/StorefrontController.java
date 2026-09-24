@@ -5,15 +5,30 @@ import com.pizzasystem.backend.repository.StoreRepository;
 import com.pizzasystem.backend.service.CurrentStoreService;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.Normalizer;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/store/storefront")
 public class StorefrontController {
+
+    private static final Set<String> RESERVED_SLUGS =
+            Set.of(
+                    "admin",
+                    "api",
+                    "app",
+                    "www",
+                    "mail",
+                    "cdn",
+                    "suporte",
+                    "support"
+            );
 
     private final CurrentStoreService
             currentStoreService;
@@ -182,6 +197,14 @@ public class StorefrontController {
             );
         }
 
+        if (RESERVED_SLUGS.contains(
+                normalized
+        )) {
+            throw new IllegalArgumentException(
+                    "Este endereço é reservado. Escolha outro."
+            );
+        }
+
         if (normalized.length() > 60) {
             throw new IllegalArgumentException(
                     "O endereço deve ter no máximo 60 caracteres."
@@ -230,6 +253,21 @@ public class StorefrontController {
                         "/+$",
                         ""
                 );
+    }
+
+    @ExceptionHandler(
+            IllegalArgumentException.class
+    )
+    @ResponseStatus(
+            HttpStatus.BAD_REQUEST
+    )
+    public Map<String, String> handleBadRequest(
+            IllegalArgumentException exception
+    ) {
+        return Map.of(
+                "message",
+                exception.getMessage()
+        );
     }
 
     public record StorefrontRequest(
