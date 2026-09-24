@@ -6,7 +6,7 @@ import {
 const STOREFRONT_BASE_DOMAIN =
   (
     process.env.STOREFRONT_BASE_DOMAIN ??
-    "loja.orbitta.space"
+    "orbitta.space"
   )
     .trim()
     .toLowerCase()
