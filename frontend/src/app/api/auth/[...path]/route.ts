@@ -182,33 +182,62 @@ async function proxyAuthRequest(
       ? responseHeaders.getSetCookie()
       : [];
 
-  if (setCookies.length > 0) {
-    for (
-      const setCookie
-      of setCookies
-    ) {
-      response.headers.append(
-        "set-cookie",
-        normalizeSetCookie(
-          setCookie
-        )
-      );
-    }
-  } else {
-    const setCookie =
-      upstreamResponse.headers.get(
-        "set-cookie"
+  const cookiesToForward =
+    setCookies.length > 0
+      ? setCookies
+      : (() => {
+          const value =
+            upstreamResponse.headers.get(
+              "set-cookie"
+            );
+
+          return value
+            ? [value]
+            : [];
+        })();
+
+  for (
+    const setCookie
+    of cookiesToForward
+  ) {
+    const normalized =
+      normalizeSetCookie(
+        setCookie
       );
 
-    if (setCookie) {
-      response.headers.append(
-        "set-cookie",
-        normalizeSetCookie(
-          setCookie
-        )
+    response.headers.append(
+      "set-cookie",
+      normalized
+    );
+
+    /*
+     * Garante explicitamente o JSESSIONID no domínio
+     * do frontend. Isso evita depender de como a
+     * plataforma trata Set-Cookie vindo do upstream.
+     */
+    const jsessionMatch =
+      normalized.match(
+        /(?:^|,|;\s*)JSESSIONID=([^;,"]+)/i
+      );
+
+    if (jsessionMatch?.[1]) {
+      response.cookies.set(
+        "JSESSIONID",
+        jsessionMatch[1],
+        {
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          path: "/",
+        }
       );
     }
   }
+
+  response.headers.set(
+    "x-pizzasystem-auth-proxy",
+    "active"
+  );
 
   return response;
 }
