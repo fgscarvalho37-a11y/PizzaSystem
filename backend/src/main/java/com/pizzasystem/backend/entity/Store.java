@@ -24,7 +24,7 @@ public class Store {
     private Long id;
 
     // =========================
-    // IDENTIFICAÃ‡ÃƒO
+    // IDENTIFICAÇÃO
     // =========================
 
     @Column(
@@ -41,6 +41,21 @@ public class Store {
     private String slug;
 
     // =========================
+    // ORBITTA
+    // =========================
+
+    @Column(
+            name = "orbitta_user_id"
+    )
+    private Long orbittaUserId;
+
+    @Column(
+            name = "orbitta_product_id",
+            unique = true
+    )
+    private Long orbittaProductId;
+
+    // =========================
     // IDENTIDADE VISUAL
     // =========================
 
@@ -55,7 +70,7 @@ public class Store {
     private String secondaryColor;
 
     // =========================
-    // CONTEÃšDO DO CARDÃPIO
+    // CONTEÚDO DO CARDÁPIO
     // =========================
 
     @Column(length = 180)
@@ -128,7 +143,7 @@ public class Store {
     private String email;
 
     // =========================
-    // OPERAÃ‡ÃƒO
+    // OPERAÇÃO
     // =========================
 
     @Column(nullable = false)
@@ -146,24 +161,12 @@ public class Store {
     private boolean loyaltyEnabled =
             false;
 
-    /*
-     * Nome histÃ³rico mantido.
-     *
-     * Funciona como meta de pontos/selos
-     * necessÃ¡ria para liberar a recompensa.
-     */
     private Integer loyaltyStampGoal =
             10;
 
     @Column(length = 180)
     private String loyaltyRewardDescription;
 
-    /*
-     * Como o cliente ganha pontos:
-     *
-     * PER_ORDER
-     * PER_AMOUNT
-     */
     @Enumerated(EnumType.STRING)
     @Column(
             nullable = false,
@@ -172,22 +175,10 @@ public class Store {
     private LoyaltyEarningType loyaltyEarningType =
             LoyaltyEarningType.PER_ORDER;
 
-    /*
-     * Usado em PER_ORDER.
-     *
-     * Exemplo:
-     * 1 pedido aprovado = 1 ponto.
-     */
     @Column(nullable = false)
     private Integer loyaltyPointsPerOrder =
             1;
 
-    /*
-     * Usado em PER_AMOUNT.
-     *
-     * Exemplo:
-     * a cada R$ 20,00.
-     */
     @Column(
             precision = 12,
             scale = 2
@@ -197,23 +188,10 @@ public class Store {
                     20
             );
 
-    /*
-     * Quantos pontos sÃ£o ganhos
-     * a cada faixa de valor.
-     *
-     * Exemplo:
-     * R$ 20 = 1 ponto.
-     */
     @Column(nullable = false)
     private Integer loyaltyPointsPerAmountStep =
             1;
 
-    /*
-     * Pedido precisa atingir esse
-     * valor para participar.
-     *
-     * null = sem mÃnimo.
-     */
     @Column(
             precision = 12,
             scale = 2
@@ -253,14 +231,9 @@ public class Store {
 
     @PreUpdate
     private void updateTimestamp() {
-
         updatedAt =
                 LocalDateTime.now();
     }
-
-    // =========================
-    // GETTERS / SETTERS
-    // =========================
 
     public Long getId() {
         return id;
@@ -286,6 +259,28 @@ public class Store {
     ) {
         this.slug =
                 slug;
+    }
+
+    public Long getOrbittaUserId() {
+        return orbittaUserId;
+    }
+
+    public void setOrbittaUserId(
+            Long orbittaUserId
+    ) {
+        this.orbittaUserId =
+                orbittaUserId;
+    }
+
+    public Long getOrbittaProductId() {
+        return orbittaProductId;
+    }
+
+    public void setOrbittaProductId(
+            Long orbittaProductId
+    ) {
+        this.orbittaProductId =
+                orbittaProductId;
     }
 
     public String getLogoUrl() {
