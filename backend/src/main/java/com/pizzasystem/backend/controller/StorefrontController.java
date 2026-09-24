@@ -24,7 +24,7 @@ public class StorefrontController {
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
 
-    @Value("${pizzasystem.storefront-base-domain:}")
+    @Value("${PIZZASYSTEM_STOREFRONT_BASE_DOMAIN:}")
     private String storefrontBaseDomain;
 
     public StorefrontController(
