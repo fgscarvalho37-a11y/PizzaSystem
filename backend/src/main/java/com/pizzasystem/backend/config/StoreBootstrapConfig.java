@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -18,6 +19,10 @@ import java.text.Normalizer;
 import java.util.Locale;
 
 @Configuration
+@ConditionalOnProperty(
+        name = "pizzasystem.legacy-bootstrap.enabled",
+        havingValue = "true"
+)
 public class StoreBootstrapConfig {
 
     private static final Logger logger =
