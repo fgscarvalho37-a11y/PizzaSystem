@@ -41,15 +41,24 @@ public class PublicStoreService {
                         .trim()
                         .toLowerCase();
 
-        return storeRepository
-                .findBySlug(
-                        normalizedSlug
-                )
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Loja não encontrada."
+        Store store =
+                storeRepository
+                        .findBySlug(
+                                normalizedSlug
                         )
-                );
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Loja não encontrada."
+                                )
+                        );
+
+        if (!store.isActive()) {
+            throw new IllegalStateException(
+                    "Loja temporariamente indisponível."
+            );
+        }
+
+        return store;
     }
 
     // =========================
