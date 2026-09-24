@@ -1,6 +1,7 @@
 package com.pizzasystem.backend.service;
 
 import com.pizzasystem.backend.entity.CashClosing;
+import com.pizzasystem.backend.entity.Store;
 import com.pizzasystem.backend.repository.CashClosingRepository;
 
 import org.springframework.stereotype.Service;
@@ -17,16 +18,21 @@ public class CashClosingService {
 
     private final CashClosingRepository cashClosingRepository;
     private final CashService cashService;
+    private final CurrentStoreService currentStoreService;
 
     public CashClosingService(
             CashClosingRepository cashClosingRepository,
-            CashService cashService
+            CashService cashService,
+            CurrentStoreService currentStoreService
     ) {
         this.cashClosingRepository =
                 cashClosingRepository;
 
         this.cashService =
                 cashService;
+
+        this.currentStoreService =
+                currentStoreService;
     }
 
     // =========================
@@ -44,10 +50,16 @@ public class CashClosingService {
             );
         }
 
+        Store store =
+                currentStoreService
+                        .getCurrentStore();
+
         if (
-                cashClosingRepository.existsByDate(
-                        date
-                )
+                cashClosingRepository
+                        .existsByStoreIdAndDate(
+                                store.getId(),
+                                date
+                        )
         ) {
             throw new RuntimeException(
                     "O caixa desta data já foi fechado"
@@ -61,6 +73,10 @@ public class CashClosingService {
 
         CashClosing closing =
                 new CashClosing();
+
+        closing.setStore(
+                store
+        );
 
         closing.setDate(
                 date
@@ -166,8 +182,13 @@ public class CashClosingService {
             LocalDate date
     ) {
 
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
         return cashClosingRepository
-                .findByDate(
+                .findByStoreIdAndDate(
+                        storeId,
                         date
                 )
                 .orElseThrow(() ->
@@ -185,8 +206,13 @@ public class CashClosingService {
             LocalDate date
     ) {
 
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
         return cashClosingRepository
-                .existsByDate(
+                .existsByStoreIdAndDate(
+                        storeId,
                         date
                 );
     }
@@ -197,8 +223,14 @@ public class CashClosingService {
 
     public List<CashClosing> listAll() {
 
+        Long storeId =
+                currentStoreService
+                        .getCurrentStoreId();
+
         return cashClosingRepository
-                .findAllByOrderByDateDesc();
+                .findByStoreIdOrderByDateDesc(
+                        storeId
+                );
     }
 
     // =========================
