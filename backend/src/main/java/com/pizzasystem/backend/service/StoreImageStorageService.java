@@ -46,11 +46,11 @@ public class StoreImageStorageService {
                     .build();
 
     public StoreImageStorageService(
-            @Value("${supabase.url:}")
+            @Value("${SUPABASE_URL:}")
             String supabaseUrl,
-            @Value("${supabase.service-role-key:}")
+            @Value("${SUPABASE_SERVICE_ROLE_KEY:}")
             String serviceRoleKey,
-            @Value("${pizzasystem.storage.bucket:pizzasystem-assets}")
+            @Value("${PIZZASYSTEM_STORAGE_BUCKET:pizzasystem-assets}")
             String bucket,
             @Value("${pizzasystem.upload-dir:uploads}")
             String localUploadDirectory
