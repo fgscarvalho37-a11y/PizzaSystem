@@ -351,6 +351,28 @@ function ClockIcon({
   );
 }
 
+function GlobeIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <path d="M12 3a15 15 0 0 1 0 18" />
+      <path d="M12 3a15 15 0 0 0 0 18" />
+    </svg>
+  );
+}
+
 function SettingsIcon({
   className = "h-5 w-5",
 }: IconProps) {
@@ -566,6 +588,16 @@ const catalogCards:
         "/admin/horarios",
       icon:
         ClockIcon,
+    },
+    {
+      title:
+        "Loja online",
+      description:
+        "Escolha o endereço público e abra o cardápio dos seus clientes.",
+      route:
+        "/admin/loja",
+      icon:
+        GlobeIcon,
     },
     {
       title:
@@ -1017,7 +1049,7 @@ export default function AdminPage() {
                 rel="noreferrer"
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-card px-5 text-sm font-bold text-foreground transition hover:bg-muted"
               >
-                Ver cardápio
+                Abrir loja
               </Link>
 
             </div>
