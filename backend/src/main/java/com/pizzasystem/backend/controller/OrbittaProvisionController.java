@@ -98,6 +98,84 @@ public class OrbittaProvisionController {
         }
     }
 
+    @PostMapping("/{orbittaProductId}/suspend")
+    public ResponseEntity<?> suspend(
+            @PathVariable Long orbittaProductId,
+            @RequestHeader(
+                    value = "Authorization",
+                    required = false
+            )
+            String authorization
+    ) {
+
+        ResponseEntity<?> authorizationError =
+                validateAuthorization(
+                        authorization
+                );
+
+        if (authorizationError != null) {
+            return authorizationError;
+        }
+
+        try {
+            return ResponseEntity.ok(
+                    orbittaProvisionService
+                            .suspend(
+                                    orbittaProductId
+                            )
+            );
+
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    exception.getMessage()
+                            )
+                    );
+        }
+    }
+
+    @PostMapping("/{orbittaProductId}/reactivate")
+    public ResponseEntity<?> reactivate(
+            @PathVariable Long orbittaProductId,
+            @RequestHeader(
+                    value = "Authorization",
+                    required = false
+            )
+            String authorization
+    ) {
+
+        ResponseEntity<?> authorizationError =
+                validateAuthorization(
+                        authorization
+                );
+
+        if (authorizationError != null) {
+            return authorizationError;
+        }
+
+        try {
+            return ResponseEntity.ok(
+                    orbittaProvisionService
+                            .reactivate(
+                                    orbittaProductId
+                            )
+            );
+
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    exception.getMessage()
+                            )
+                    );
+        }
+    }
+
     private ResponseEntity<?> validateAuthorization(
             String authorization
     ) {
