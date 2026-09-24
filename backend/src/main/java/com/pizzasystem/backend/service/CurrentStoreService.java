@@ -83,6 +83,13 @@ public class CurrentStoreService {
             );
         }
 
+        if (!store.isActive()) {
+
+            throw new IllegalStateException(
+                    "Loja suspensa ou indisponível."
+            );
+        }
+
         return store;
     }
 
