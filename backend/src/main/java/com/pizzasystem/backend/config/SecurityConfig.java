@@ -73,26 +73,14 @@ public class SecurityConfig {
 
         http
 
-                // =========================
-                // CORS
-                // =========================
-
                 .cors(
                         Customizer.withDefaults()
                 )
-
-                // =========================
-                // FILTRO ADMIN
-                // =========================
 
                 .addFilterBefore(
                         adminSessionAuthenticationFilter,
                         CsrfFilter.class
                 )
-
-                // =========================
-                // CSRF
-                // =========================
 
                 .csrf(
                         csrf -> csrf
@@ -105,8 +93,6 @@ public class SecurityConfig {
                                         csrfHandler
                                 )
 
-                                // AUTH ADMIN
-
                                 .ignoringRequestMatchers(
                                         "/api/auth/login"
                                 )
@@ -115,37 +101,30 @@ public class SecurityConfig {
                                         "/api/auth/logout"
                                 )
 
-                                // AUTH CLIENTE
-
                                 .ignoringRequestMatchers(
                                         "/api/customer-auth/register",
                                         "/api/customer-auth/login",
                                         "/api/customer-auth/logout"
                                 )
 
-                                // FIDELIDADE CLIENTE
-
                                 .ignoringRequestMatchers(
                                         "/api/customer/loyalty/*/redeem"
                                 )
-
-                                // PEDIDOS PÚBLICOS
 
                                 .ignoringRequestMatchers(
                                         "/api/orders",
                                         "/api/orders/*/cancel"
                                 )
 
-                                // PAGAMENTOS
-
                                 .ignoringRequestMatchers(
                                         "/api/payments/**"
                                 )
-                )
 
-                // =========================
-                // GERA COOKIE CSRF
-                // =========================
+                                // Backend Orbitta -> PizzaSystem
+                                .ignoringRequestMatchers(
+                                        "/api/internal/orbitta/**"
+                                )
+                )
 
                 .addFilterAfter(
                         new OncePerRequestFilter() {
@@ -178,10 +157,6 @@ public class SecurityConfig {
                         CsrfFilter.class
                 )
 
-                // =========================
-                // AUTORIZAÇÃO
-                // =========================
-
                 .authorizeHttpRequests(
                         auth -> auth
 
@@ -190,10 +165,6 @@ public class SecurityConfig {
                                         "/**"
                                 )
                                 .permitAll()
-
-                                // =========================
-                                // AUTENTICAÇÃO
-                                // =========================
 
                                 .requestMatchers(
                                         "/api/auth/**"
@@ -205,32 +176,17 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // MERCADO PAGO OAUTH
-                                // =========================
+                                // A própria rota valida o Bearer secret.
+                                .requestMatchers(
+                                        "/api/internal/orbitta/**"
+                                )
+                                .permitAll()
 
-                                /*
-                                 * O Mercado Pago redireciona o navegador
-                                 * para este endpoint após a autorização.
-                                 *
-                                 * Somente o callback é público.
-                                 *
-                                 * /connect
-                                 * /disconnect
-                                 * /status
-                                 *
-                                 * continuam protegidos pelo ROLE_ADMIN
-                                 * através do anyRequest() no final.
-                                 */
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/admin/mercadopago/oauth/callback"
                                 )
                                 .permitAll()
-
-                                // =========================
-                                // ÁREA DO CLIENTE
-                                // =========================
 
                                 .requestMatchers(
                                         HttpMethod.GET,
@@ -250,19 +206,11 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // IMAGENS PÚBLICAS
-                                // =========================
-
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/uploads/**"
                                 )
                                 .permitAll()
-
-                                // =========================
-                                // ROTAS PÚBLICAS
-                                // =========================
 
                                 .requestMatchers(
                                         HttpMethod.GET,
@@ -342,35 +290,19 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
-                                // =========================
-                                // RESTANTE = ADMIN
-                                // =========================
-
                                 .anyRequest()
                                 .hasRole("ADMIN")
                 )
-
-                // =========================
-                // LOGIN PADRÃO DESATIVADO
-                // =========================
 
                 .formLogin(
                         form ->
                                 form.disable()
                 )
 
-                // =========================
-                // BASIC AUTH DESATIVADO
-                // =========================
-
                 .httpBasic(
                         basic ->
                                 basic.disable()
                 )
-
-                // =========================
-                // 401
-                // =========================
 
                 .exceptionHandling(
                         exceptions ->
@@ -385,19 +317,10 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // =========================
-    // PASSWORD
-    // =========================
-
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
-
-    // =========================
-    // CORS
-    // =========================
 
     @Bean
     public CorsConfigurationSource
