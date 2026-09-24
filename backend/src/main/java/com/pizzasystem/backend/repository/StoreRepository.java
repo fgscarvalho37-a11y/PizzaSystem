@@ -9,10 +9,6 @@ import java.util.Optional;
 public interface StoreRepository
         extends JpaRepository<Store, Long> {
 
-    // =========================
-    // BUSCAR POR SLUG
-    // =========================
-
     Optional<Store> findBySlug(
             String slug
     );
@@ -21,16 +17,9 @@ public interface StoreRepository
             String slug
     );
 
-    // =========================
-    // MIGRAÇÃO LEGADA
-    // =========================
+    Optional<Store> findByOrbittaProductId(
+            Long orbittaProductId
+    );
 
-    /*
-     * Mantido temporariamente apenas para
-     * StoreDataMigrationConfig.
-     *
-     * Controllers não devem usar isso
-     * para descobrir a loja atual.
-     */
     Optional<Store> findFirstByOrderByIdAsc();
 }
