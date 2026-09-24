@@ -88,6 +88,18 @@ public class StoreStatusService {
             );
         }
 
+        if (!store.isActive()) {
+
+            return new StoreStatusResponse(
+                    store.getName(),
+                    false,
+                    false,
+                    "Loja temporariamente indisponível",
+                    0,
+                    store.getDailyOrderLimit()
+            );
+        }
+
         long ordersToday =
                 countOrdersToday(
                         store.getId()
