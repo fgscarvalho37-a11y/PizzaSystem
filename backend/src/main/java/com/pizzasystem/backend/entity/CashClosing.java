@@ -11,8 +11,11 @@ import java.time.LocalDateTime;
         name = "cash_closings",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_cash_closing_date",
-                        columnNames = "closing_date"
+                        name = "uk_cash_closing_store_date",
+                        columnNames = {
+                                "store_id",
+                                "closing_date"
+                        }
                 )
         }
 )
@@ -24,10 +27,19 @@ public class CashClosing {
     )
     private Long id;
 
+    @ManyToOne(
+            fetch = FetchType.LAZY,
+            optional = false
+    )
+    @JoinColumn(
+            name = "store_id",
+            nullable = false
+    )
+    private Store store;
+
     @Column(
             name = "closing_date",
-            nullable = false,
-            unique = true
+            nullable = false
     )
     private LocalDate date;
 
@@ -118,6 +130,17 @@ public class CashClosing {
             Long id
     ) {
         this.id = id;
+    }
+
+    public Store getStore() {
+        return store;
+    }
+
+    public void setStore(
+            Store store
+    ) {
+        this.store =
+                store;
     }
 
     public LocalDate getDate() {
