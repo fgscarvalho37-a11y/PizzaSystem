@@ -1,6 +1,7 @@
 package com.pizzasystem.backend.controller;
 
 import com.pizzasystem.backend.entity.Store;
+import com.pizzasystem.backend.repository.StoreRepository;
 import com.pizzasystem.backend.service.CurrentStoreService;
 import com.pizzasystem.backend.service.StoreImageStorageService;
 
@@ -22,15 +23,22 @@ public class StoreImageController {
     private final StoreImageStorageService
             imageStorageService;
 
+    private final StoreRepository
+            storeRepository;
+
     public StoreImageController(
             CurrentStoreService currentStoreService,
-            StoreImageStorageService imageStorageService
+            StoreImageStorageService imageStorageService,
+            StoreRepository storeRepository
     ) {
         this.currentStoreService =
                 currentStoreService;
 
         this.imageStorageService =
                 imageStorageService;
+
+        this.storeRepository =
+                storeRepository;
     }
 
     @GetMapping("/status")
@@ -80,6 +88,10 @@ public class StoreImageController {
                 imageUrl
         );
 
+        storeRepository.saveAndFlush(
+                store
+        );
+
         imageStorageService
                 .deleteOldImage(
                         store.getId(),
@@ -121,6 +133,10 @@ public class StoreImageController {
 
         store.setCoverImageUrl(
                 imageUrl
+        );
+
+        storeRepository.saveAndFlush(
+                store
         );
 
         imageStorageService
