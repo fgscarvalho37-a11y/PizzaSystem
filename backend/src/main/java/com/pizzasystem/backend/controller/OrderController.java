@@ -10,7 +10,6 @@ import com.pizzasystem.backend.entity.AddonGroup;
 import com.pizzasystem.backend.entity.Coupon;
 import com.pizzasystem.backend.entity.Customer;
 import com.pizzasystem.backend.entity.Crust;
-import com.pizzasystem.backend.entity.DeliveryArea;
 import com.pizzasystem.backend.entity.Order;
 import com.pizzasystem.backend.entity.OrderItem;
 import com.pizzasystem.backend.entity.OrderItemAddon;
@@ -22,7 +21,6 @@ import com.pizzasystem.backend.entity.Store;
 import com.pizzasystem.backend.repository.AddonRepository;
 import com.pizzasystem.backend.repository.CrustRepository;
 import com.pizzasystem.backend.repository.CustomerRepository;
-import com.pizzasystem.backend.repository.DeliveryAreaRepository;
 import com.pizzasystem.backend.repository.OrderItemRepository;
 import com.pizzasystem.backend.repository.OrderRepository;
 import com.pizzasystem.backend.repository.ProductRepository;
@@ -70,9 +68,6 @@ public class OrderController {
     private final ProductRepository
             productRepository;
 
-    private final DeliveryAreaRepository
-            deliveryAreaRepository;
-
     private final DeliveryQuoteService
             deliveryQuoteService;
 
@@ -104,7 +99,6 @@ public class OrderController {
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             ProductRepository productRepository,
-            DeliveryAreaRepository deliveryAreaRepository,
             DeliveryQuoteService deliveryQuoteService,
             StoreStatusService storeStatusService,
             CouponService couponService,
@@ -123,9 +117,6 @@ public class OrderController {
 
         this.productRepository =
                 productRepository;
-
-        this.deliveryAreaRepository =
-                deliveryAreaRepository;
 
         this.deliveryQuoteService =
                 deliveryQuoteService;
@@ -322,40 +313,6 @@ public class OrderController {
             );
         }
 
-        DeliveryArea deliveryArea =
-                deliveryAreaRepository
-                        .findByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCaseAndActiveTrue(
-                                store.getId(),
-                                request
-                                        .getCity()
-                                        .trim(),
-                                request
-                                        .getNeighborhood()
-                                        .trim()
-                        )
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Não realizamos entrega para este bairro"
-                                )
-                        );
-
-        DeliveryQuoteResponse deliveryQuote =
-                deliveryQuoteService
-                        .quote(
-                                store,
-                                deliveryArea,
-                                new DeliveryQuoteRequest(
-                                        request.getStreet(),
-                                        request.getNumber(),
-                                        request.getCity(),
-                                        request.getNeighborhood(),
-                                        request.getComplement()
-                                )
-                        );
-
-        BigDecimal deliveryFee =
-                deliveryQuote.fee();
-
         Order order =
                 new Order();
 
@@ -436,13 +393,15 @@ public class OrderController {
         );
 
         order.setCity(
-                deliveryArea
+                request
                         .getCity()
+                        .trim()
         );
 
         order.setNeighborhood(
-                deliveryArea
+                request
                         .getNeighborhood()
+                        .trim()
         );
 
         order.setComplement(
@@ -450,7 +409,11 @@ public class OrderController {
         );
 
         order.setDeliveryFee(
-                deliveryFee
+                BigDecimal.ZERO
+                        .setScale(
+                                2,
+                                RoundingMode.HALF_UP
+                        )
         );
 
         order.setTotal(
@@ -974,6 +937,31 @@ public class OrderController {
                             subtotal
                     );
         }
+
+        // =========================
+        // ENTREGA POR KM
+        // =========================
+
+        DeliveryQuoteResponse deliveryQuote =
+                deliveryQuoteService
+                        .quote(
+                                store,
+                                new DeliveryQuoteRequest(
+                                        request.getStreet(),
+                                        request.getNumber(),
+                                        request.getCity(),
+                                        request.getNeighborhood(),
+                                        request.getComplement(),
+                                        productsTotal
+                                )
+                        );
+
+        BigDecimal deliveryFee =
+                deliveryQuote.fee();
+
+        order.setDeliveryFee(
+                deliveryFee
+        );
 
         // =========================
         // CUPOM
