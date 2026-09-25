@@ -1491,7 +1491,7 @@ export default function CardapioPage() {
 
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
 
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-4 sm:px-6 sm:py-3">
 
           <button
             type="button"
@@ -1506,7 +1506,7 @@ export default function CardapioPage() {
           >
 
             {logoUrl ? (
-              <span className="flex h-12 w-20 shrink-0 items-center justify-center sm:h-14 sm:w-24">
+              <span className="flex h-9 w-14 shrink-0 items-center justify-center sm:h-14 sm:w-24">
                 <img
                   src={
                     logoUrl
@@ -1523,7 +1523,7 @@ export default function CardapioPage() {
 
             <span className="min-w-0">
 
-              <span className="block truncate font-display text-2xl leading-none tracking-tight sm:text-3xl">
+              <span className="block max-w-[34vw] truncate font-display text-lg leading-none tracking-tight min-[390px]:max-w-[42vw] min-[390px]:text-xl sm:max-w-none sm:text-3xl">
                 {storeName}
                 <span className="text-primary">
                   .
@@ -1550,7 +1550,7 @@ export default function CardapioPage() {
                   )}`
                 )
               }
-              className="flex min-h-10 items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-bold transition-colors hover:border-foreground/30 hover:bg-secondary sm:px-4"
+              className="flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 text-xs font-bold transition-colors hover:border-foreground/30 hover:bg-secondary sm:min-h-10 sm:gap-2 sm:px-4 sm:text-sm"
               aria-label={
                 customer
                   ? "Abrir minha conta"
@@ -1574,7 +1574,7 @@ export default function CardapioPage() {
                 <AccountIcon className="h-4 w-4" />
               )}
 
-              <span className="max-w-24 truncate">
+              <span className="hidden max-w-24 truncate sm:inline">
                 {!customerSessionLoaded
                   ? "Conta"
                   : customer
@@ -1591,7 +1591,7 @@ export default function CardapioPage() {
                   true
                 )
               }
-              className="flex items-center gap-2 rounded-full bg-foreground px-3 py-2.5 text-sm font-bold text-cream transition-transform active:scale-95 sm:px-4"
+              className="flex h-9 items-center gap-1.5 rounded-full bg-foreground px-2.5 text-xs font-bold text-cream transition-transform active:scale-95 sm:h-auto sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm"
             >
 
               <ShoppingBagIcon className="h-4 w-4" />
@@ -1622,7 +1622,7 @@ export default function CardapioPage() {
 
         <div className="border-t border-border">
 
-          <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-2.5 sm:px-6 [scrollbar-width:none]">
+          <div className="mx-auto flex max-w-6xl gap-1.5 overflow-x-auto px-3 py-2 sm:gap-2 sm:px-6 sm:py-2.5 [scrollbar-width:none]">
 
             <button
               type="button"
@@ -1634,8 +1634,8 @@ export default function CardapioPage() {
               className={
                 activeCategoryId ===
                 "ALL"
-                  ? "shrink-0 rounded-full bg-chrome px-4 py-2 text-sm font-bold text-white shadow-[0_2px_0_0] shadow-chrome/30 transition-transform active:scale-95"
-                  : "brand-chip shrink-0 px-4 py-2 text-sm font-semibold active:scale-95"
+                  ? "shrink-0 rounded-full bg-chrome px-3 py-1.5 text-xs font-bold text-white shadow-[0_2px_0_0] shadow-chrome/30 transition-transform active:scale-95 sm:px-4 sm:py-2 sm:text-sm"
+                  : "brand-chip shrink-0 px-3 py-1.5 text-xs font-semibold active:scale-95 sm:px-4 sm:py-2 sm:text-sm"
               }
             >
               Todos
@@ -1656,8 +1656,8 @@ export default function CardapioPage() {
                   className={
                     activeCategoryId ===
                     category.id
-                      ? "shrink-0 rounded-full bg-chrome px-4 py-2 text-sm font-bold text-white shadow-[0_2px_0_0] shadow-chrome/30 transition-transform active:scale-95"
-                      : "brand-chip shrink-0 px-4 py-2 text-sm font-semibold active:scale-95"
+                      ? "shrink-0 rounded-full bg-chrome px-3 py-1.5 text-xs font-bold text-white shadow-[0_2px_0_0] shadow-chrome/30 transition-transform active:scale-95 sm:px-4 sm:py-2 sm:text-sm"
+                      : "brand-chip shrink-0 px-3 py-1.5 text-xs font-semibold active:scale-95 sm:px-4 sm:py-2 sm:text-sm"
                   }
                 >
                   {category.name}
@@ -1687,9 +1687,9 @@ export default function CardapioPage() {
           CONTEÚDO
       ========================= */}
 
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+      <div className="mx-auto max-w-6xl px-3 sm:px-6">
 
-        <section className="grid items-center gap-5 py-5 md:grid-cols-12 md:py-8">
+        <section className="grid items-center gap-4 py-4 sm:gap-5 sm:py-5 md:grid-cols-12 md:py-8">
 
           <div className="animate-fade-up md:col-span-6">
 
@@ -1715,7 +1715,7 @@ export default function CardapioPage() {
                   "Pedidos encerrados"}
             </div>
 
-            <h1 className="mt-3 font-display text-[clamp(2.6rem,6vw,5rem)] leading-[0.9] tracking-[-0.035em]">
+            <h1 className="mt-2 font-display text-[2.2rem] leading-[0.92] tracking-[-0.035em] min-[390px]:text-[2.5rem] sm:mt-3 sm:text-[3.5rem] lg:text-[5rem]">
               {storeProfile?.heroTitleLine1 ||
                 "ESCOLHA."}
               <br />
@@ -1728,7 +1728,7 @@ export default function CardapioPage() {
               </span>
             </h1>
 
-            <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
+            <p className="mt-2 max-w-xl text-[13px] leading-5 text-muted-foreground sm:mt-3 sm:text-base sm:leading-6">
               {storeProfile?.heroDescription ||
                 "Escolha seus favoritos, monte seu pedido e acompanhe tudo pelo site."}
             </p>
@@ -1748,11 +1748,11 @@ export default function CardapioPage() {
               </div>
             )}
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-2 sm:mt-6 sm:gap-3">
 
               <a
                 href="#menu"
-                className="brand-button min-h-12 rounded-full px-7"
+                className="brand-button min-h-10 rounded-full px-5 text-sm sm:min-h-12 sm:px-7"
               >
                 {storeProfile?.heroPrimaryButtonText ||
                   "Ver cardápio"}
@@ -1768,7 +1768,7 @@ export default function CardapioPage() {
                       true
                     )
                   }
-                  className="min-h-12 rounded-full border-2 border-foreground bg-transparent px-6 font-bold transition-colors hover:bg-foreground hover:text-cream"
+                  className="min-h-10 rounded-full border-2 border-foreground bg-transparent px-5 text-sm font-bold transition-colors hover:bg-foreground hover:text-cream sm:min-h-12 sm:px-6"
                 >
                   {storeProfile?.heroSecondaryButtonText ||
                     "Ver meu pedido"}
@@ -1788,7 +1788,7 @@ export default function CardapioPage() {
                   coverImageUrl
                 }
                 alt="Destaque do cardápio"
-                className="aspect-[16/9] w-full object-cover"
+                className="aspect-[16/7] max-h-44 w-full object-cover sm:aspect-[16/9] sm:max-h-none"
               />
 
             </div>
@@ -1828,7 +1828,7 @@ export default function CardapioPage() {
                   "O cardápio"}
               </p>
 
-              <h2 className="mt-1 font-display text-4xl tracking-tight sm:text-5xl">
+              <h2 className="mt-1 font-display text-3xl tracking-tight sm:text-5xl">
                 {storeProfile?.menuSubtitle ||
                   "Escolha o seu"}
               </h2>
@@ -1928,7 +1928,7 @@ export default function CardapioPage() {
                 activeCategoryId
               )
             }
-            className="mt-5 grid animate-fade-up gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            className="mt-4 grid grid-cols-2 animate-fade-up gap-2.5 sm:mt-5 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4"
           >
 
             {filteredProducts.map(
@@ -1959,7 +1959,7 @@ export default function CardapioPage() {
                     key={
                       product.id
                     }
-                    className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_28px_-24px] shadow-foreground/40 transition-transform duration-200 hover:-translate-y-0.5"
+                    className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[0_10px_28px_-24px] shadow-foreground/40 transition-transform duration-200 hover:-translate-y-0.5 sm:rounded-2xl"
                     style={{
                       animationDelay:
                         `${Math.min(
@@ -1980,19 +1980,19 @@ export default function CardapioPage() {
                             product.name
                           }
                           loading="lazy"
-                          className="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          className="aspect-square w-full object-cover transition-transform duration-500 group-hover:scale-105 sm:aspect-[16/10]"
                         />
                       ) : (
-                        <div className="grid aspect-[16/10] place-items-center bg-[radial-gradient(circle_at_top_left,var(--butter),transparent_55%),linear-gradient(135deg,var(--secondary),var(--background))]">
+                        <div className="grid aspect-square place-items-center bg-[radial-gradient(circle_at_top_left,var(--butter),transparent_55%),linear-gradient(135deg,var(--secondary),var(--background))] sm:aspect-[16/10]">
 
-                          <div className="rounded-full border border-foreground/10 bg-white/65 px-4 py-2 font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                          <div className="rounded-full border border-foreground/10 bg-white/65 px-2 py-1 font-mono-brand text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.18em]">
                             Sem foto
                           </div>
 
                         </div>
                       )}
 
-                      <span className="absolute left-3 top-3 rounded-full bg-background/90 px-3 py-1.5 font-mono-brand text-[10px] font-bold uppercase tracking-wider backdrop-blur">
+                      <span className="absolute left-2 top-2 max-w-[75%] truncate rounded-full bg-background/90 px-2 py-1 font-mono-brand text-[8px] font-bold uppercase tracking-wide backdrop-blur sm:left-3 sm:top-3 sm:px-3 sm:py-1.5 sm:text-[10px]">
                         {product.category.name}
                       </span>
 
@@ -2004,15 +2004,15 @@ export default function CardapioPage() {
 
                     </div>
 
-                    <div className="flex flex-1 flex-col p-4">
+                    <div className="flex flex-1 flex-col p-2.5 sm:p-4">
 
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
 
-                        <h3 className="font-display text-xl leading-none tracking-tight">
+                        <h3 className="line-clamp-2 min-w-0 font-display text-base leading-[1.05] tracking-tight sm:text-xl sm:leading-none">
                           {product.name}
                         </h3>
 
-                        <p className="shrink-0 font-display text-[1.35rem] leading-none text-primary">
+                        <p className="shrink-0 font-display text-base leading-none text-primary sm:text-[1.35rem]">
                           {formatMoney(
                             Number(
                               product.price
@@ -2022,7 +2022,7 @@ export default function CardapioPage() {
 
                       </div>
 
-                      <p className="mt-2 line-clamp-2 flex-1 text-[13px] leading-5 text-muted-foreground">
+                      <p className="mt-1.5 hidden flex-1 text-[13px] leading-5 text-muted-foreground sm:line-clamp-2 sm:block">
                         {product.description ||
                           "Confira este item do nosso cardápio."}
                       </p>
@@ -2050,7 +2050,7 @@ export default function CardapioPage() {
                         disabled={
                           !storeStatus?.open
                         }
-                        className="mt-3 flex min-h-10 items-center justify-center gap-2 rounded-full border-2 border-foreground bg-foreground px-4 text-xs font-bold text-cream transition-all hover:bg-transparent hover:text-foreground active:scale-[0.98] disabled:cursor-not-allowed disabled:border-border disabled:bg-secondary disabled:text-muted-foreground"
+                        className="mt-2.5 flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-foreground bg-foreground px-2 text-[11px] font-bold text-cream transition-all hover:bg-transparent hover:text-foreground active:scale-[0.98] disabled:cursor-not-allowed disabled:border-border disabled:bg-secondary disabled:text-muted-foreground sm:mt-3 sm:min-h-10 sm:gap-2 sm:border-2 sm:px-4 sm:text-xs"
                       >
                         <PlusIcon className="h-4 w-4" />
 
