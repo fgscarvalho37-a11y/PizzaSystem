@@ -16,6 +16,7 @@ import {
   adminFetch,
   clearAdminCsrfToken,
 } from "@/lib/adminFetch";
+import { setBrowserIcon } from "@/lib/browserIcon";
 
 type IconProps = {
   className?: string;
@@ -603,6 +604,59 @@ export default function AdminHeader() {
     setMobileOpen,
   ] =
     useState(false);
+
+  useEffect(() => {
+    let mounted =
+      true;
+
+    async function loadStoreIdentity() {
+      try {
+        const response =
+          await adminFetch(
+            "/api/store/profile",
+            {
+              cache: "no-store",
+            }
+          );
+
+        if (
+          !mounted ||
+          !response.ok
+        ) {
+          return;
+        }
+
+        const profile:
+          {
+            name?: string;
+            logoUrl?: string | null;
+          } =
+          await response.json();
+
+        setBrowserIcon(
+          profile.logoUrl
+        );
+
+        if (
+          profile.name
+        ) {
+          document.title =
+            `${profile.name} | PizzaSystem`;
+        }
+
+      } catch {
+        // Mantém a identidade padrão do PizzaSystem.
+      }
+    }
+
+    void loadStoreIdentity();
+
+    return () => {
+      mounted =
+        false;
+    };
+  }, []);
+
 
   const [
     storeSlug,
