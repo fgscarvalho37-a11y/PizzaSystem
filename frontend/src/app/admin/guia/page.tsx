@@ -50,7 +50,7 @@ const areas = [
   {
     title: "Entregas",
     description:
-      "Acompanhe os pedidos que estão prontos para sair, em rota ou já foram entregues.",
+      "Configure o endereço de saída, valor por km, distância máxima e frete grátis. O cálculo usa a rota real e cada pedido guarda o atalho do Google Maps.",
     href: "/admin/entregas",
     icon: "delivery",
   },
