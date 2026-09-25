@@ -11,9 +11,10 @@ import java.math.BigDecimal;
         name = "delivery_areas",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_delivery_area_store_neighborhood",
+                        name = "uk_delivery_area_store_city_neighborhood",
                         columnNames = {
                                 "store_id",
+                                "city",
                                 "neighborhood"
                         }
                 )
@@ -22,6 +23,10 @@ import java.math.BigDecimal;
                 @Index(
                         name = "idx_delivery_areas_store_id",
                         columnList = "store_id"
+                ),
+                @Index(
+                        name = "idx_delivery_areas_store_city",
+                        columnList = "store_id, city"
                 )
         }
 )
@@ -33,15 +38,6 @@ public class DeliveryArea {
     )
     private Long id;
 
-    // =========================
-    // LOJA / TENANT
-    // =========================
-
-    /*
-     * Temporariamente nullable para permitir
-     * que as áreas antigas sejam migradas
-     * para a Store 1.
-     */
     @JsonIgnore
     @ManyToOne(
             fetch = FetchType.LAZY
@@ -51,28 +47,46 @@ public class DeliveryArea {
     )
     private Store store;
 
-    // =========================
-    // BAIRRO
-    // =========================
+    @Column(
+            length = 120
+    )
+    private String city;
 
-    /*
-     * Não é mais unique globalmente.
-     *
-     * A combinação:
-     *
-     * store_id + neighborhood
-     *
-     * é que precisa ser única.
-     */
     @Column(
             nullable = false,
             length = 120
     )
     private String neighborhood;
 
-    // =========================
-    // TAXA
-    // =========================
+    /*
+     * FIXED:
+     * fee é o valor definido diretamente.
+     *
+     * PER_KM:
+     * fee é calculado e persistido como
+     * distanceKm x feePerKm.
+     */
+    @Column(
+            name = "pricing_mode",
+            nullable = false,
+            length = 20
+    )
+    private String pricingMode =
+            "FIXED";
+
+    @Column(
+            name = "distance_km",
+            precision = 8,
+            scale = 2
+    )
+    private BigDecimal distanceKm;
+
+    @Column(
+            name = "fee_per_km",
+            precision = 12,
+            scale = 2
+    )
+    private BigDecimal feePerKm;
 
     @Column(
             nullable = false,
@@ -81,20 +95,12 @@ public class DeliveryArea {
     )
     private BigDecimal fee;
 
-    // =========================
-    // STATUS
-    // =========================
-
     @Column(nullable = false)
     private boolean active =
             true;
 
     public DeliveryArea() {
     }
-
-    // =========================
-    // GETTERS / SETTERS
-    // =========================
 
     public Long getId() {
         return id;
@@ -111,6 +117,17 @@ public class DeliveryArea {
                 store;
     }
 
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(
+            String city
+    ) {
+        this.city =
+                city;
+    }
+
     public String getNeighborhood() {
         return neighborhood;
     }
@@ -120,6 +137,39 @@ public class DeliveryArea {
     ) {
         this.neighborhood =
                 neighborhood;
+    }
+
+    public String getPricingMode() {
+        return pricingMode;
+    }
+
+    public void setPricingMode(
+            String pricingMode
+    ) {
+        this.pricingMode =
+                pricingMode;
+    }
+
+    public BigDecimal getDistanceKm() {
+        return distanceKm;
+    }
+
+    public void setDistanceKm(
+            BigDecimal distanceKm
+    ) {
+        this.distanceKm =
+                distanceKm;
+    }
+
+    public BigDecimal getFeePerKm() {
+        return feePerKm;
+    }
+
+    public void setFeePerKm(
+            BigDecimal feePerKm
+    ) {
+        this.feePerKm =
+                feePerKm;
     }
 
     public BigDecimal getFee() {
