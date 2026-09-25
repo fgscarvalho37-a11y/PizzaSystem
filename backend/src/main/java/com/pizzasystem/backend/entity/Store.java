@@ -168,6 +168,12 @@ public class Store {
     )
     private String deliveryOriginAddress;
 
+    @Column(name = "delivery_origin_latitude")
+    private Double deliveryOriginLatitude;
+
+    @Column(name = "delivery_origin_longitude")
+    private Double deliveryOriginLongitude;
+
     @Column(
             name = "delivery_max_distance_km",
             precision = 8,
@@ -475,6 +481,28 @@ public class Store {
     ) {
         this.deliveryOriginAddress =
                 deliveryOriginAddress;
+    }
+
+    public Double getDeliveryOriginLatitude() {
+        return deliveryOriginLatitude;
+    }
+
+    public void setDeliveryOriginLatitude(
+            Double deliveryOriginLatitude
+    ) {
+        this.deliveryOriginLatitude =
+                deliveryOriginLatitude;
+    }
+
+    public Double getDeliveryOriginLongitude() {
+        return deliveryOriginLongitude;
+    }
+
+    public void setDeliveryOriginLongitude(
+            Double deliveryOriginLongitude
+    ) {
+        this.deliveryOriginLongitude =
+                deliveryOriginLongitude;
     }
 
     public BigDecimal getDeliveryMaxDistanceKm() {

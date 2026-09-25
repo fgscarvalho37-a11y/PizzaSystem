@@ -2,17 +2,11 @@ package com.pizzasystem.backend.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import com.pizzasystem.backend.dto.DeliveryQuoteRequest;
 import com.pizzasystem.backend.dto.DeliveryQuoteResponse;
-
 import com.pizzasystem.backend.entity.DeliveryArea;
 import com.pizzasystem.backend.entity.Store;
-
 import com.pizzasystem.backend.repository.DeliveryAreaRepository;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,48 +14,44 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-
 import java.nio.charset.StandardCharsets;
-
 import java.time.Duration;
 
 @Service
 public class DeliveryQuoteService {
 
     private static final String GEOCODE_URL =
-            "https://api.heigit.org/pelias/v1/search";
+            "https://api.mapbox.com/search/geocode/v6/forward";
 
     private static final String DIRECTIONS_URL =
-            "https://api.heigit.org/openrouteservice/v2/directions/driving-car";
+            "https://api.mapbox.com/directions/v5/mapbox/driving";
 
     private static final String PROVIDER =
-            "OPENROUTESERVICE";
+            "MAPBOX";
 
     private final ObjectMapper objectMapper =
             new ObjectMapper();
 
     private final HttpClient httpClient;
 
-    private final String openRouteServiceApiKey;
+    private final String mapboxAccessToken;
 
     private final DeliveryAreaRepository
             deliveryAreaRepository;
 
     public DeliveryQuoteService(
-            @Value("${OPENROUTESERVICE_API_KEY:}")
-            String openRouteServiceApiKey,
+            @Value("${MAPBOX_ACCESS_TOKEN:}")
+            String mapboxAccessToken,
             DeliveryAreaRepository deliveryAreaRepository
     ) {
-
-        this.openRouteServiceApiKey =
-                openRouteServiceApiKey != null
-                        ? openRouteServiceApiKey.trim()
+        this.mapboxAccessToken =
+                mapboxAccessToken != null
+                        ? mapboxAccessToken.trim()
                         : "";
 
         this.deliveryAreaRepository =
@@ -71,16 +61,13 @@ public class DeliveryQuoteService {
                 HttpClient
                         .newBuilder()
                         .connectTimeout(
-                                Duration.ofSeconds(
-                                        8
-                                )
+                                Duration.ofSeconds(8)
                         )
                         .build();
     }
 
     public boolean isConfigured() {
-        return !openRouteServiceApiKey
-                .isBlank();
+        return !mapboxAccessToken.isBlank();
     }
 
     public String getProviderName() {
@@ -91,7 +78,6 @@ public class DeliveryQuoteService {
             Store store,
             DeliveryQuoteRequest request
     ) {
-
         if (store == null) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
@@ -106,17 +92,19 @@ public class DeliveryQuoteService {
             );
         }
 
-
-        // A escolha da loja é a única fonte de verdade para a cobrança.
-        // Áreas antigas não podem substituir uma cotação por distância.
-        if ("FIXED".equals(store.getDeliveryPricingMode())) {
-            return quoteByFixedArea(store, request);
+        if ("FIXED".equalsIgnoreCase(
+                store.getDeliveryPricingMode()
+        )) {
+            return quoteByFixedArea(
+                    store,
+                    request
+            );
         }
 
-        if (openRouteServiceApiKey.isBlank()) {
+        if (mapboxAccessToken.isBlank()) {
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
-                    "O cálculo por km está indisponível. Configure a chave do OpenRouteService ou selecione taxa fixa no painel."
+                    "O cálculo por km está indisponível. Configure MAPBOX_ACCESS_TOKEN no backend."
             );
         }
 
@@ -126,10 +114,9 @@ public class DeliveryQuoteService {
                 );
 
         if (originAddress.isBlank()) {
-
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
-                    "O endereço de saída da pizzaria ainda não foi configurado."
+                    "Configure o endereço de saída da pizzaria no painel de entregas."
             );
         }
 
@@ -142,7 +129,6 @@ public class DeliveryQuoteService {
                         BigDecimal.ZERO
                 ) < 0
         ) {
-
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
                     "O valor por km ainda não foi configurado."
@@ -155,7 +141,22 @@ public class DeliveryQuoteService {
                 );
 
         Coordinates origin =
-                geocode(originAddress, DeliveryAddress.fromOrigin(originAddress), "saída da pizzaria");
+                validCoordinates(
+                        store.getDeliveryOriginLatitude(),
+                        store.getDeliveryOriginLongitude()
+                )
+                        ? new Coordinates(
+                                store.getDeliveryOriginLongitude(),
+                                store.getDeliveryOriginLatitude(),
+                                originAddress
+                        )
+                        : geocode(
+                                originAddress,
+                                DeliveryAddress.fromOrigin(
+                                        originAddress
+                                ),
+                                "saída da pizzaria"
+                        );
 
         Coordinates destination =
                 geocode(
@@ -188,12 +189,13 @@ public class DeliveryQuoteService {
                         maxDistance
                 ) > 0
         ) {
-
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "A rota calculada tem " + distanceKm.toPlainString() + " km; o limite da loja é "
-                            + maxDistance.toPlainString() + " km. Pontos encontrados: "
-                            + origin.label() + " → " + destination.label() + "."
+                    "A rota calculada tem "
+                            + distanceKm.toPlainString()
+                            + " km; o limite da loja é "
+                            + maxDistance.toPlainString()
+                            + " km."
             );
         }
 
@@ -259,7 +261,6 @@ public class DeliveryQuoteService {
                         freeDeliveryDistanceKm
                 ) > 0
         ) {
-
             billableDistanceKm =
                     distanceKm
                             .subtract(
@@ -313,10 +314,11 @@ public class DeliveryQuoteService {
                                 )
                         : null,
                 PROVIDER,
-                buildGoogleMapsUrl(
-                        originAddress,
-                        destinationAddress
-                )
+                null,
+                origin.latitude(),
+                origin.longitude(),
+                destination.latitude(),
+                destination.longitude()
         );
     }
 
@@ -324,7 +326,6 @@ public class DeliveryQuoteService {
             Store store,
             DeliveryQuoteRequest request
     ) {
-
         String city =
                 clean(
                         request.city()
@@ -369,22 +370,9 @@ public class DeliveryQuoteService {
         )) {
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
-                    "O cálculo por rota está indisponível no momento."
+                    "A área encontrada não possui taxa fixa ativa."
             );
         }
-
-        return quoteFromFixedArea(
-                store,
-                request,
-                area
-        );
-    }
-
-    private DeliveryQuoteResponse quoteFromFixedArea(
-            Store store,
-            DeliveryQuoteRequest request,
-            DeliveryArea area
-    ) {
 
         BigDecimal subtotal =
                 request.orderSubtotal() != null
@@ -436,12 +424,8 @@ public class DeliveryQuoteService {
                 null,
                 null,
                 fee,
-                clean(
-                        request.city()
-                ),
-                clean(
-                        request.neighborhood()
-                ),
+                city,
+                neighborhood,
                 freeDelivery,
                 freeDeliveryAbove != null
                         ? freeDeliveryAbove
@@ -452,6 +436,10 @@ public class DeliveryQuoteService {
                         : null,
                 null,
                 "FIXED_AREA",
+                null,
+                null,
+                null,
+                null,
                 null
         );
     }
@@ -459,7 +447,6 @@ public class DeliveryQuoteService {
     private String buildDestinationAddress(
             DeliveryQuoteRequest request
     ) {
-
         String street =
                 clean(
                         request.street()
@@ -483,15 +470,17 @@ public class DeliveryQuoteService {
         String state =
                 clean(
                         request.state()
-                ).toUpperCase(java.util.Locale.ROOT);
+                ).toUpperCase();
 
         String postalCode =
                 clean(
                         request.postalCode()
-                ).replaceAll("\\D", "");
+                ).replaceAll(
+                        "\\D",
+                        ""
+                );
 
         if (street.isBlank()) {
-
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Informe a rua para calcular a entrega."
@@ -499,33 +488,25 @@ public class DeliveryQuoteService {
         }
 
         if (number.isBlank()) {
-
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Informe o número para calcular a entrega."
             );
         }
 
-        if (neighborhood.isBlank()) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Informe o bairro para calcular a entrega."
-            );
-        }
-
         if (city.isBlank()) {
-
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Informe a cidade para calcular a entrega."
             );
         }
 
-        String cityRegion =
-                state.isBlank()
-                        ? city
-                        : city + " - " + state;
+        if (state.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Informe o estado para calcular a entrega."
+            );
+        }
 
         String destination =
                 String.join(
@@ -533,7 +514,7 @@ public class DeliveryQuoteService {
                         street,
                         number,
                         neighborhood,
-                        cityRegion
+                        city + " - " + state
                 );
 
         if (!postalCode.isBlank()) {
@@ -543,74 +524,287 @@ public class DeliveryQuoteService {
         return destination + ", Brasil";
     }
 
-    private Coordinates geocode(String text, DeliveryAddress address, String role) {
-        if (address.city().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Informe a cidade no endereço de " + role + ". Use: rua, número, cidade - UF.");
+    private Coordinates geocode(
+            String text,
+            DeliveryAddress address,
+            String role
+    ) {
+        if (
+                address.street().isBlank() ||
+                address.city().isBlank()
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "O endereço de "
+                            + role
+                            + " está incompleto. Informe rua, número, cidade, UF e CEP."
+            );
         }
-        // Keep city and street separate: free-text searches can match a similarly
-        // named road elsewhere in Brazil, even when the requested city is present.
-        String structured = GEOCODE_URL + "/structured?address="
-                + encode(address.street() + " " + address.number())
-                + "&locality=" + encode(address.city()) + "&country=BR"
-                + (address.region().isBlank() ? "" : "&region=" + encode(address.region()))
-                + (address.postalCode().isBlank() ? "" : "&postalcode=" + encode(address.postalCode()));
-        Coordinates result = searchCoordinates(structured, address);
+
+        StringBuilder url =
+                new StringBuilder(
+                        GEOCODE_URL
+                );
+
+        url.append(
+                "?country=BR"
+        );
+        url.append(
+                "&autocomplete=false"
+        );
+        url.append(
+                "&limit=5"
+        );
+        url.append(
+                "&address_number="
+        ).append(
+                encode(
+                        address.number()
+                )
+        );
+        url.append(
+                "&street="
+        ).append(
+                encode(
+                        address.street()
+                )
+        );
+        url.append(
+                "&place="
+        ).append(
+                encode(
+                        address.city()
+                )
+        );
+
+        if (!address.region().isBlank()) {
+            url.append(
+                    "&region="
+            ).append(
+                    encode(
+                            address.region()
+                    )
+            );
+        }
+
+        String postalCode =
+                clean(
+                        address.postalCode()
+                ).replaceAll(
+                        "\\D",
+                        ""
+                );
+
+        if (!postalCode.isBlank()) {
+            url.append(
+                    "&postcode="
+            ).append(
+                    encode(
+                            postalCode
+                    )
+            );
+        }
+
+        url.append(
+                "&access_token="
+        ).append(
+                encode(
+                        mapboxAccessToken
+                )
+        );
+
+        Coordinates result =
+                fetchCoordinates(
+                        url.toString(),
+                        text
+                );
+
         if (result == null) {
-            result = searchCoordinates(GEOCODE_URL + "?text=" + encode(text), address);
+            String fallbackUrl =
+                    GEOCODE_URL
+                            + "?q="
+                            + encode(
+                                    text
+                            )
+                            + "&country=BR"
+                            + "&limit=5"
+                            + "&autocomplete=false"
+                            + "&access_token="
+                            + encode(
+                                    mapboxAccessToken
+                            );
+
+            result =
+                    fetchCoordinates(
+                            fallbackUrl,
+                            text
+                    );
         }
+
         if (result == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Não foi possível confirmar a rua na cidade informada para " + role
-                            + ". Confira o nome completo da rua e a cidade; nenhum ponto aproximado de outra cidade foi usado.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Não foi possível localizar o endereço de "
+                            + role
+                            + " no Mapbox. Confira CEP, rua, número, cidade e UF."
+            );
         }
+
         return result;
     }
 
-    private String encode(String value) {
-        return URLEncoder.encode(value, StandardCharsets.UTF_8);
-    }
-
-    private Coordinates searchCoordinates(String url, DeliveryAddress address) {
+    private Coordinates fetchCoordinates(
+            String url,
+            String fallbackLabel
+    ) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url + "&size=10&boundary.country=BR"))
-                    .timeout(Duration.ofSeconds(12))
-                    .header("Accept", "application/json")
-                    .header("Authorization", openRouteServiceApiKey).GET().build();
-            HttpResponse<String> response = httpClient.send(request,
-                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpRequest request =
+                    HttpRequest
+                            .newBuilder()
+                            .uri(
+                                    URI.create(
+                                            url
+                                    )
+                            )
+                            .timeout(
+                                    Duration.ofSeconds(
+                                            12
+                                    )
+                            )
+                            .header(
+                                    "Accept",
+                                    "application/json"
+                            )
+                            .GET()
+                            .build();
+
+            HttpResponse<String> response =
+                    httpClient.send(
+                            request,
+                            HttpResponse.BodyHandlers.ofString(
+                                    StandardCharsets.UTF_8
+                            )
+                    );
+
             if (response.statusCode() == 429) {
-                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                        "O serviço de mapas atingiu o limite de consultas. Aguarde um pouco e tente recalcular.");
+                throw new ResponseStatusException(
+                        HttpStatus.SERVICE_UNAVAILABLE,
+                        "O Mapbox atingiu o limite de consultas. Tente novamente em instantes."
+                );
             }
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                        "O serviço de localização está indisponível. Tente recalcular em instantes.");
+
+            if (
+                    response.statusCode() < 200 ||
+                    response.statusCode() >= 300
+            ) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_GATEWAY,
+                        "O Mapbox não conseguiu localizar o endereço agora."
+                );
             }
-            JsonNode features = objectMapper.readTree(response.body()).path("features");
-            if (!features.isArray()) return null;
+
+            JsonNode features =
+                    objectMapper
+                            .readTree(
+                                    response.body()
+                            )
+                            .path(
+                                    "features"
+                            );
+
+            if (!features.isArray()) {
+                return null;
+            }
+
             for (JsonNode feature : features) {
-                JsonNode properties = feature.path("properties");
-                if (!address.matches(properties)) continue;
-                JsonNode point = feature.path("geometry").path("coordinates");
-                if (!point.isArray() || point.size() < 2
-                        || !point.get(0).isNumber() || !point.get(1).isNumber()) continue;
-                double longitude = point.get(0).asDouble();
-                double latitude = point.get(1).asDouble();
-                if (!Double.isFinite(longitude) || !Double.isFinite(latitude)
-                        || Math.abs(longitude) > 180 || Math.abs(latitude) > 90) continue;
-                return new Coordinates(longitude, latitude, properties.path("label").asText(address.city()));
+                JsonNode point =
+                        feature
+                                .path(
+                                        "geometry"
+                                )
+                                .path(
+                                        "coordinates"
+                                );
+
+                if (
+                        !point.isArray() ||
+                        point.size() < 2 ||
+                        !point.get(0).isNumber() ||
+                        !point.get(1).isNumber()
+                ) {
+                    continue;
+                }
+
+                double longitude =
+                        point
+                                .get(0)
+                                .asDouble();
+
+                double latitude =
+                        point
+                                .get(1)
+                                .asDouble();
+
+                if (!validCoordinates(
+                        latitude,
+                        longitude
+                )) {
+                    continue;
+                }
+
+                JsonNode properties =
+                        feature.path(
+                                "properties"
+                        );
+
+                String label =
+                        firstNonBlank(
+                                properties
+                                        .path(
+                                                "full_address"
+                                        )
+                                        .asText(),
+                                properties
+                                        .path(
+                                                "name"
+                                        )
+                                        .asText(),
+                                fallbackLabel
+                        );
+
+                return new Coordinates(
+                        longitude,
+                        latitude,
+                        label
+                );
             }
+
             return null;
-        } catch (ResponseStatusException exception) {
+
+        } catch (
+                ResponseStatusException exception
+        ) {
             throw exception;
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "A consulta do endereço foi interrompida.");
-        } catch (Exception exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "Não foi possível consultar o serviço de localização. Tente recalcular.");
+
+        } catch (
+                InterruptedException exception
+        ) {
+            Thread
+                    .currentThread()
+                    .interrupt();
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "A consulta de endereço foi interrompida."
+            );
+
+        } catch (
+                Exception exception
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Não foi possível consultar o Mapbox."
+            );
         }
     }
 
@@ -618,62 +812,32 @@ public class DeliveryQuoteService {
             Coordinates origin,
             Coordinates destination
     ) {
-
         try {
-
-            ObjectNode body =
-                    objectMapper
-                            .createObjectNode();
-
-            ArrayNode coordinates =
-                    objectMapper
-                            .createArrayNode();
-
-            ArrayNode originNode =
-                    objectMapper
-                            .createArrayNode();
-
-            originNode.add(
+            String coordinates =
                     origin.longitude()
-            );
+                            + ","
+                            + origin.latitude()
+                            + ";"
+                            + destination.longitude()
+                            + ","
+                            + destination.latitude();
 
-            originNode.add(
-                    origin.latitude()
-            );
-
-            ArrayNode destinationNode =
-                    objectMapper
-                            .createArrayNode();
-
-            destinationNode.add(
-                    destination.longitude()
-            );
-
-            destinationNode.add(
-                    destination.latitude()
-            );
-
-            coordinates.add(
-                    originNode
-            );
-
-            coordinates.add(
-                    destinationNode
-            );
-
-            body.put("units", "m");
-
-            body.set(
-                    "coordinates",
-                    coordinates
-            );
+            String url =
+                    DIRECTIONS_URL
+                            + "/"
+                            + coordinates
+                            + "?overview=false"
+                            + "&access_token="
+                            + encode(
+                                    mapboxAccessToken
+                            );
 
             HttpRequest request =
                     HttpRequest
                             .newBuilder()
                             .uri(
                                     URI.create(
-                                            DIRECTIONS_URL
+                                            url
                                     )
                             )
                             .timeout(
@@ -682,55 +846,53 @@ public class DeliveryQuoteService {
                                     )
                             )
                             .header(
-                                    "Content-Type",
-                                    "application/json; charset=utf-8"
-                            )
-                            .header(
                                     "Accept",
                                     "application/json"
                             )
-                            .header(
-                                    "Authorization",
-                                    openRouteServiceApiKey
-                            )
-                            .POST(
-                                    HttpRequest
-                                            .BodyPublishers
-                                            .ofString(
-                                                    objectMapper
-                                                            .writeValueAsString(
-                                                                    body
-                                                            ),
-                                                    StandardCharsets.UTF_8
-                                            )
-                            )
+                            .GET()
                             .build();
 
             HttpResponse<String> response =
                     httpClient.send(
                             request,
-                            HttpResponse
-                                    .BodyHandlers
-                                    .ofString(
-                                            StandardCharsets.UTF_8
-                                    )
+                            HttpResponse.BodyHandlers.ofString(
+                                    StandardCharsets.UTF_8
+                            )
                     );
+
+            if (response.statusCode() == 429) {
+                throw new ResponseStatusException(
+                        HttpStatus.SERVICE_UNAVAILABLE,
+                        "O Mapbox atingiu o limite de rotas. Tente novamente em instantes."
+                );
+            }
 
             if (
                     response.statusCode() < 200 ||
                     response.statusCode() >= 300
             ) {
-
                 throw new ResponseStatusException(
                         HttpStatus.BAD_GATEWAY,
-                        "Não foi possível consultar a rota da entrega."
+                        "Não foi possível consultar a rota no Mapbox."
                 );
             }
 
             JsonNode root =
-                    objectMapper.readTree(
-                            response.body()
-                    );
+                    objectMapper
+                            .readTree(
+                                    response.body()
+                            );
+
+            if (!"Ok".equalsIgnoreCase(
+                    root.path(
+                            "code"
+                    ).asText()
+            )) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "O Mapbox não encontrou uma rota de carro para este endereço."
+                );
+            }
 
             double distanceMeters =
                     root
@@ -741,48 +903,16 @@ public class DeliveryQuoteService {
                                     0
                             )
                             .path(
-                                    "summary"
-                            )
-                            .path(
                                     "distance"
                             )
                             .asDouble(
                                     -1
                             );
 
-            if (
-                    distanceMeters <= 0
-            ) {
-
-                distanceMeters =
-                        root
-                                .path(
-                                        "features"
-                                )
-                                .path(
-                                        0
-                                )
-                                .path(
-                                        "properties"
-                                )
-                                .path(
-                                        "summary"
-                                )
-                                .path(
-                                        "distance"
-                                )
-                                .asDouble(
-                                        -1
-                                );
-            }
-
-            if (
-                    distanceMeters <= 0
-            ) {
-
+            if (distanceMeters <= 0) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "Não foi possível encontrar uma rota para este endereço."
+                        "O Mapbox não retornou uma distância válida."
                 );
             }
 
@@ -801,13 +931,11 @@ public class DeliveryQuoteService {
         } catch (
                 ResponseStatusException exception
         ) {
-
             throw exception;
 
         } catch (
                 InterruptedException exception
         ) {
-
             Thread
                     .currentThread()
                     .interrupt();
@@ -820,7 +948,6 @@ public class DeliveryQuoteService {
         } catch (
                 Exception exception
         ) {
-
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
                     "Não foi possível calcular a distância da entrega."
@@ -828,29 +955,53 @@ public class DeliveryQuoteService {
         }
     }
 
-    private String buildGoogleMapsUrl(
-            String origin,
-            String destination
+    private boolean validCoordinates(
+            Double latitude,
+            Double longitude
     ) {
+        return latitude != null &&
+                longitude != null &&
+                Double.isFinite(
+                        latitude
+                ) &&
+                Double.isFinite(
+                        longitude
+                ) &&
+                latitude >= -90 &&
+                latitude <= 90 &&
+                longitude >= -180 &&
+                longitude <= 180;
+    }
 
-        return "https://www.google.com/maps/dir/?api=1"
-                + "&origin="
-                + URLEncoder.encode(
-                        origin,
-                        StandardCharsets.UTF_8
-                )
-                + "&destination="
-                + URLEncoder.encode(
-                        destination,
-                        StandardCharsets.UTF_8
-                )
-                + "&travelmode=driving";
+    private String firstNonBlank(
+            String... values
+    ) {
+        for (String value : values) {
+            if (
+                    value != null &&
+                    !value.isBlank()
+            ) {
+                return value.trim();
+            }
+        }
+
+        return "";
+    }
+
+    private String encode(
+            String value
+    ) {
+        return URLEncoder.encode(
+                value == null
+                        ? ""
+                        : value,
+                StandardCharsets.UTF_8
+        );
     }
 
     private String clean(
             String value
     ) {
-
         return value == null
                 ? ""
                 : value

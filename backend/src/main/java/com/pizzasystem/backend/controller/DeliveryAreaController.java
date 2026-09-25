@@ -112,6 +112,8 @@ public class DeliveryAreaController {
         return new DeliveryConfigResponse(
                 store.getDeliveryPricingMode(),
                 store.getDeliveryOriginAddress(),
+                store.getDeliveryOriginLatitude(),
+                store.getDeliveryOriginLongitude(),
                 store.getDeliveryMaxDistanceKm(),
                 store.getDeliveryFeePerKm(),
                 store.getDeliveryFreeAbove(),
@@ -143,6 +145,16 @@ public class DeliveryAreaController {
                         ? cleanNullable(
                                 request.originAddress()
                         )
+                        : null;
+
+        Double originLatitude =
+                request != null
+                        ? request.originLatitude()
+                        : null;
+
+        Double originLongitude =
+                request != null
+                        ? request.originLongitude()
                         : null;
 
         BigDecimal maxDistanceKm =
@@ -233,8 +245,34 @@ public class DeliveryAreaController {
 
         store.setDeliveryPricingMode(pricingMode);
 
+        if ((originLatitude == null) != (originLongitude == null)) {
+            throw new IllegalArgumentException(
+                    "Latitude e longitude da pizzaria precisam ser informadas juntas."
+            );
+        }
+
+        if (originLatitude != null &&
+                (!Double.isFinite(originLatitude) ||
+                        originLatitude < -90 ||
+                        originLatitude > 90 ||
+                        !Double.isFinite(originLongitude) ||
+                        originLongitude < -180 ||
+                        originLongitude > 180)) {
+            throw new IllegalArgumentException(
+                    "Localização da pizzaria inválida."
+            );
+        }
+
         store.setDeliveryOriginAddress(
                 originAddress
+        );
+
+        store.setDeliveryOriginLatitude(
+                originLatitude
+        );
+
+        store.setDeliveryOriginLongitude(
+                originLongitude
         );
 
         store.setDeliveryMaxDistanceKm(
@@ -283,6 +321,8 @@ public class DeliveryAreaController {
         return new DeliveryConfigResponse(
                 saved.getDeliveryPricingMode(),
                 saved.getDeliveryOriginAddress(),
+                saved.getDeliveryOriginLatitude(),
+                saved.getDeliveryOriginLongitude(),
                 saved.getDeliveryMaxDistanceKm(),
                 saved.getDeliveryFeePerKm(),
                 saved.getDeliveryFreeAbove(),
@@ -649,6 +689,8 @@ public class DeliveryAreaController {
     public record DeliveryConfigRequest(
             String pricingMode,
             String originAddress,
+            Double originLatitude,
+            Double originLongitude,
             BigDecimal maxDistanceKm,
             BigDecimal feePerKm,
             BigDecimal freeDeliveryAbove,
@@ -659,6 +701,8 @@ public class DeliveryAreaController {
     public record DeliveryConfigResponse(
             String pricingMode,
             String originAddress,
+            Double originLatitude,
+            Double originLongitude,
             BigDecimal maxDistanceKm,
             BigDecimal feePerKm,
             BigDecimal freeDeliveryAbove,

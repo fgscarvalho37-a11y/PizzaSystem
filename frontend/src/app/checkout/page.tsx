@@ -11,6 +11,8 @@ import {
   useRouter,
 } from "next/navigation";
 
+import MapboxLocationPicker from "@/components/MapboxLocationPicker";
+
 const API_URL = "";
 
 type Product = {
@@ -57,6 +59,10 @@ type DeliveryQuote = {
   freeDeliveryAbove: number | null;
   routeProvider: string;
   googleMapsUrl: string | null;
+  originLatitude: number | null;
+  originLongitude: number | null;
+  destinationLatitude: number | null;
+  destinationLongitude: number | null;
 };
 
 type StoreStatus = {
@@ -2371,7 +2377,17 @@ export default function CheckoutPage() {
                       )}
 
                     {deliveryQuote.pricingMode === "PER_KM" && (
-                      <p className="mt-2 text-xs text-muted-foreground">Confira rua, número, bairro e cidade antes de confirmar.</p>
+                      <>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Rota calculada pelo Mapbox. Confira o ponto do endereço antes de confirmar.
+                        </p>
+
+                        <MapboxLocationPicker
+                          latitude={deliveryQuote.destinationLatitude}
+                          longitude={deliveryQuote.destinationLongitude}
+                          className="mt-3"
+                        />
+                      </>
                     )}
 
                   </div>
@@ -2383,10 +2399,9 @@ export default function CheckoutPage() {
                       className="mt-2 mr-4 inline-block font-bold underline underline-offset-2">
                       Recalcular entrega
                     </button>
-                    <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent([street, number, neighborhood, city].filter(Boolean).join(", "))}`}
-                      target="_blank" rel="noreferrer" className="mt-2 inline-block font-bold underline underline-offset-2">
-                      Conferir endereço no OpenStreetMap
-                    </a>
+                    <span className="mt-2 inline-block text-xs text-muted-foreground">
+                      Confira CEP, número e os campos preenchidos automaticamente.
+                    </span>
                   </div>
 
                 ) : (

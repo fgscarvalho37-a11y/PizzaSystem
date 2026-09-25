@@ -8,9 +8,12 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import MapboxLocationPicker from "@/components/MapboxLocationPicker";
 import { adminFetch } from "@/lib/adminFetch";
 
 const API_URL = "";
+const MAPBOX_PUBLIC_TOKEN =
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? "";
 
 type DeliveryArea = { id: number; city: string; neighborhood: string; fee: number; pricingMode: string; active: boolean };
 
@@ -26,6 +29,8 @@ type ViaCepResponse = {
 type DeliveryConfig = {
   pricingMode: "FIXED" | "PER_KM";
   originAddress: string | null;
+  originLatitude: number | null;
+  originLongitude: number | null;
   maxDistanceKm: number | null;
   feePerKm: number | null;
   freeDeliveryAbove: number | null;
@@ -130,6 +135,26 @@ export default function AdminEntregasPage() {
   ] = useState<ViaCepResponse | null>(null);
 
   const [
+    originLatitude,
+    setOriginLatitude,
+  ] = useState<number | null>(null);
+
+  const [
+    originLongitude,
+    setOriginLongitude,
+  ] = useState<number | null>(null);
+
+  const [
+    originMapLoading,
+    setOriginMapLoading,
+  ] = useState(false);
+
+  const [
+    originMapError,
+    setOriginMapError,
+  ] = useState("");
+
+  const [
     feePerKm,
     setFeePerKm,
   ] =
@@ -219,6 +244,16 @@ export default function AdminEntregasPage() {
       setOriginAddress(
         data.originAddress ??
           ""
+      );
+
+      setOriginLatitude(
+        data.originLatitude ??
+          null
+      );
+
+      setOriginLongitude(
+        data.originLongitude ??
+          null
       );
 
       setFeePerKm(
@@ -405,6 +440,120 @@ export default function AdminEntregasPage() {
     );
   }, [originCepData, originNumber, originCep]);
 
+  useEffect(() => {
+    if (
+      !MAPBOX_PUBLIC_TOKEN ||
+      !originCepData ||
+      !originNumber.trim()
+    ) {
+      return;
+    }
+
+    const street =
+      originCepData.logradouro?.trim() ?? "";
+    const city =
+      originCepData.localidade?.trim() ?? "";
+    const state =
+      originCepData.uf?.trim().toUpperCase() ?? "";
+    const postcode =
+      originCep.replace(/\D/g, "");
+
+    if (!street || !city || !state || postcode.length !== 8) {
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    const timer =
+      window.setTimeout(
+        async () => {
+          try {
+            setOriginMapLoading(true);
+            setOriginMapError("");
+
+            const params =
+              new URLSearchParams({
+                country: "BR",
+                autocomplete: "false",
+                limit: "1",
+                address_number: originNumber.trim(),
+                street,
+                place: city,
+                region: state,
+                postcode,
+                access_token: MAPBOX_PUBLIC_TOKEN,
+              });
+
+            const response =
+              await fetch(
+                `https://api.mapbox.com/search/geocode/v6/forward?${params.toString()}`,
+                {
+                  signal: controller.signal,
+                }
+              );
+
+            if (!response.ok) {
+              throw new Error(
+                "O Mapbox não conseguiu localizar a pizzaria."
+              );
+            }
+
+            const data =
+              await response.json();
+
+            const coordinates =
+              data?.features?.[0]?.geometry?.coordinates;
+
+            if (
+              !Array.isArray(coordinates) ||
+              coordinates.length < 2 ||
+              !Number.isFinite(Number(coordinates[0])) ||
+              !Number.isFinite(Number(coordinates[1]))
+            ) {
+              throw new Error(
+                "O Mapbox não encontrou esse endereço. Confira CEP e número."
+              );
+            }
+
+            setOriginLongitude(
+              Number(coordinates[0])
+            );
+            setOriginLatitude(
+              Number(coordinates[1])
+            );
+          } catch (error) {
+            if (
+              error instanceof DOMException &&
+              error.name === "AbortError"
+            ) {
+              return;
+            }
+
+            setOriginMapError(
+              error instanceof Error
+                ? error.message
+                : "Não foi possível localizar a pizzaria no mapa."
+            );
+          } finally {
+            if (!controller.signal.aborted) {
+              setOriginMapLoading(false);
+            }
+          }
+        },
+        350
+      );
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [
+    originCepData,
+    originNumber,
+    originCep,
+  ]);
+
   const googleMapsOriginUrl =
     useMemo(
       () =>
@@ -577,6 +726,8 @@ export default function AdminEntregasPage() {
                 pricingMode,
                 originAddress:
                   normalizedOrigin || null,
+                originLatitude,
+                originLongitude,
                 maxDistanceKm:
                   normalizedMaxDistance,
                 feePerKm:
@@ -715,11 +866,11 @@ export default function AdminEntregasPage() {
                   </p>
 
                   <h2 className="mt-1 text-xl font-bold text-foreground">
-                    OpenRouteService + OpenStreetMap
+                    Mapbox
                   </h2>
 
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    A distância e a taxa são calculadas pelo OpenRouteService. O OpenStreetMap é um atalho para conferir o endereço informado.
+                    O Mapbox localiza a pizzaria e calcula a rota real de carro até o cliente. O ponto de saída pode ser ajustado no mapa.
                   </p>
                 </div>
 
@@ -742,7 +893,7 @@ export default function AdminEntregasPage() {
 
               {!config?.mapsConfigured && (
                 <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
-                  Para ativar o cálculo automático no servidor, adicione a variável <strong>OPENROUTESERVICE_API_KEY</strong> no backend do PizzaSystem.
+                  Para ativar as rotas, adicione <strong>MAPBOX_ACCESS_TOKEN</strong> no Render e <strong>NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN</strong> na Vercel.
                 </div>
               )}
 
@@ -788,6 +939,8 @@ export default function AdminEntregasPage() {
                     onChange={(event) => {
                       setOriginCep(formatCep(event.target.value));
                       setOriginCepError("");
+                      setOriginLatitude(null);
+                      setOriginLongitude(null);
                     }}
                     placeholder="CEP"
                     className={fieldClass}
@@ -795,7 +948,11 @@ export default function AdminEntregasPage() {
 
                   <input
                     value={originNumber}
-                    onChange={(event) => setOriginNumber(event.target.value)}
+                    onChange={(event) => {
+                      setOriginNumber(event.target.value);
+                      setOriginLatitude(null);
+                      setOriginLongitude(null);
+                    }}
                     placeholder="Número"
                     className={fieldClass}
                   />
@@ -845,10 +1002,35 @@ export default function AdminEntregasPage() {
                       rel="noreferrer"
                       className="text-xs font-bold text-primary underline underline-offset-2"
                     >
-                      Conferir no OpenStreetMap
+                      Conferir endereço
                     </a>
                   )}
 
+                </div>
+
+                <div className="mt-4">
+                  {originMapLoading && (
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      Localizando a pizzaria no Mapbox...
+                    </p>
+                  )}
+
+                  {originMapError && (
+                    <p className="mb-2 text-xs font-semibold text-primary">
+                      {originMapError}
+                    </p>
+                  )}
+
+                  <MapboxLocationPicker
+                    latitude={originLatitude}
+                    longitude={originLongitude}
+                    draggable
+                    onChange={(location) => {
+                      setOriginLatitude(location.latitude);
+                      setOriginLongitude(location.longitude);
+                      setOriginMapError("");
+                    }}
+                  />
                 </div>
 
               </div>

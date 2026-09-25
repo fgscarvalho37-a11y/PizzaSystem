@@ -13,6 +13,10 @@ public record DeliveryQuoteResponse(
         BigDecimal freeDeliveryAbove,
         BigDecimal freeDeliveryDistanceKm,
         String routeProvider,
-        String googleMapsUrl
+        String googleMapsUrl,
+        Double originLatitude,
+        Double originLongitude,
+        Double destinationLatitude,
+        Double destinationLongitude
 ) {
 }
