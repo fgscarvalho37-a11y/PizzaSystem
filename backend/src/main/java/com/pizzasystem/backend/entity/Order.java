@@ -97,6 +97,25 @@ public class Order {
 
     private BigDecimal deliveryFee;
 
+    @Column(
+            name = "delivery_distance_km",
+            precision = 8,
+            scale = 2
+    )
+    private BigDecimal deliveryDistanceKm;
+
+    @Column(
+            name = "delivery_route_provider",
+            length = 40
+    )
+    private String deliveryRouteProvider;
+
+    @Column(
+            name = "delivery_route_url",
+            length = 1200
+    )
+    private String deliveryRouteUrl;
+
     // =========================
     // VALORES
     // =========================
@@ -300,6 +319,39 @@ public class Order {
     ) {
         this.deliveryFee =
                 deliveryFee;
+    }
+
+    public BigDecimal getDeliveryDistanceKm() {
+        return deliveryDistanceKm;
+    }
+
+    public void setDeliveryDistanceKm(
+            BigDecimal deliveryDistanceKm
+    ) {
+        this.deliveryDistanceKm =
+                deliveryDistanceKm;
+    }
+
+    public String getDeliveryRouteProvider() {
+        return deliveryRouteProvider;
+    }
+
+    public void setDeliveryRouteProvider(
+            String deliveryRouteProvider
+    ) {
+        this.deliveryRouteProvider =
+                deliveryRouteProvider;
+    }
+
+    public String getDeliveryRouteUrl() {
+        return deliveryRouteUrl;
+    }
+
+    public void setDeliveryRouteUrl(
+            String deliveryRouteUrl
+    ) {
+        this.deliveryRouteUrl =
+                deliveryRouteUrl;
     }
 
     public BigDecimal getTotal() {
