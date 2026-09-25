@@ -80,6 +80,16 @@ public class StoreImageStorageService {
                         .normalize();
     }
 
+    public boolean isPersistentStorageConfigured() {
+        return supabaseConfigured();
+    }
+
+    public String storageProvider() {
+        return supabaseConfigured()
+                ? "SUPABASE"
+                : "LOCAL";
+    }
+
     public String saveImage(
             Long storeId,
             MultipartFile file,
