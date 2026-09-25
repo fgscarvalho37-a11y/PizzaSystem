@@ -2,12 +2,12 @@ package com.pizzasystem.backend.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import com.pizzasystem.backend.dto.DeliveryQuoteRequest;
 import com.pizzasystem.backend.dto.DeliveryQuoteResponse;
 
-import com.pizzasystem.backend.entity.DeliveryArea;
 import com.pizzasystem.backend.entity.Store;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -30,27 +31,33 @@ import java.time.Duration;
 @Service
 public class DeliveryQuoteService {
 
-    private static final String ROUTES_URL =
-            "https://routes.googleapis.com/directions/v2:computeRoutes";
+    private static final String GEOCODE_URL =
+            "https://api.heigit.org/pelias/v1/search";
+
+    private static final String DIRECTIONS_URL =
+            "https://api.heigit.org/openrouteservice/v2/directions/driving-car";
+
+    private static final String PROVIDER =
+            "OPENROUTESERVICE";
 
     private final ObjectMapper objectMapper;
 
     private final HttpClient httpClient;
 
-    private final String googleMapsApiKey;
+    private final String openRouteServiceApiKey;
 
     public DeliveryQuoteService(
             ObjectMapper objectMapper,
-            @Value("${GOOGLE_MAPS_API_KEY:}")
-            String googleMapsApiKey
+            @Value("${OPENROUTESERVICE_API_KEY:}")
+            String openRouteServiceApiKey
     ) {
 
         this.objectMapper =
                 objectMapper;
 
-        this.googleMapsApiKey =
-                googleMapsApiKey != null
-                        ? googleMapsApiKey.trim()
+        this.openRouteServiceApiKey =
+                openRouteServiceApiKey != null
+                        ? openRouteServiceApiKey.trim()
                         : "";
 
         this.httpClient =
@@ -65,12 +72,16 @@ public class DeliveryQuoteService {
     }
 
     public boolean isConfigured() {
-        return !googleMapsApiKey.isBlank();
+        return !openRouteServiceApiKey
+                .isBlank();
+    }
+
+    public String getProviderName() {
+        return PROVIDER;
     }
 
     public DeliveryQuoteResponse quote(
             Store store,
-            DeliveryArea area,
             DeliveryQuoteRequest request
     ) {
 
@@ -81,62 +92,10 @@ public class DeliveryQuoteService {
             );
         }
 
-        if (area == null
-                || !area.isActive()) {
-
+        if (request == null) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Área de entrega indisponível."
-            );
-        }
-
-        String pricingMode =
-                area.getPricingMode() == null
-                        ? "FIXED"
-                        : area.getPricingMode()
-                                .trim()
-                                .toUpperCase();
-
-        if ("FIXED".equals(
-                pricingMode
-        )) {
-
-            BigDecimal fee =
-                    normalizeMoney(
-                            area.getFee()
-                    );
-
-            return new DeliveryQuoteResponse(
-                    "FIXED",
-                    null,
-                    null,
-                    fee,
-                    area.getCity(),
-                    area.getNeighborhood()
-            );
-        }
-
-        if (!"PER_KM".equals(
-                pricingMode
-        )) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Tipo de entrega inválido."
-            );
-        }
-
-        BigDecimal feePerKm =
-                area.getFeePerKm();
-
-        if (feePerKm == null
-                || feePerKm.compareTo(
-                        BigDecimal.ZERO
-                ) < 0) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Valor por km não configurado para esta área."
+                    "Endereço de entrega não informado."
             );
         }
 
@@ -153,24 +112,49 @@ public class DeliveryQuoteService {
             );
         }
 
-        if (googleMapsApiKey.isBlank()) {
+        BigDecimal feePerKm =
+                store.getDeliveryFeePerKm();
+
+        if (
+                feePerKm == null ||
+                feePerKm.compareTo(
+                        BigDecimal.ZERO
+                ) < 0
+        ) {
 
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
-                    "O cálculo automático por distância ainda não está configurado."
+                    "O valor por km ainda não foi configurado."
+            );
+        }
+
+        if (openRouteServiceApiKey.isBlank()) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "O provedor de rotas ainda não está configurado."
             );
         }
 
         String destinationAddress =
                 buildDestinationAddress(
-                        request,
-                        area
+                        request
+                );
+
+        Coordinates origin =
+                geocode(
+                        originAddress
+                );
+
+        Coordinates destination =
+                geocode(
+                        destinationAddress
                 );
 
         BigDecimal distanceKm =
                 calculateDistanceKm(
-                        originAddress,
-                        destinationAddress
+                        origin,
+                        destination
                 );
 
         BigDecimal maxDistance =
@@ -192,41 +176,86 @@ public class DeliveryQuoteService {
             );
         }
 
+        BigDecimal normalizedFeePerKm =
+                feePerKm.setScale(
+                        2,
+                        RoundingMode.HALF_UP
+                );
+
+        BigDecimal subtotal =
+                request.orderSubtotal() != null
+                        ? request.orderSubtotal()
+                                .max(
+                                        BigDecimal.ZERO
+                                )
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                )
+                        : BigDecimal.ZERO
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                );
+
+        BigDecimal freeDeliveryAbove =
+                store.getDeliveryFreeAbove();
+
+        boolean freeDelivery =
+                freeDeliveryAbove != null &&
+                freeDeliveryAbove.compareTo(
+                        BigDecimal.ZERO
+                ) > 0 &&
+                subtotal.compareTo(
+                        freeDeliveryAbove
+                ) >= 0;
+
         BigDecimal fee =
-                distanceKm
-                        .multiply(
-                                feePerKm
-                        )
-                        .setScale(
-                                2,
-                                RoundingMode.HALF_UP
-                        );
+                freeDelivery
+                        ? BigDecimal.ZERO
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                )
+                        : distanceKm
+                                .multiply(
+                                        normalizedFeePerKm
+                                )
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                );
 
         return new DeliveryQuoteResponse(
                 "PER_KM",
                 distanceKm,
-                feePerKm.setScale(
-                        2,
-                        RoundingMode.HALF_UP
-                ),
+                normalizedFeePerKm,
                 fee,
-                area.getCity(),
-                area.getNeighborhood()
+                clean(
+                        request.city()
+                ),
+                clean(
+                        request.neighborhood()
+                ),
+                freeDelivery,
+                freeDeliveryAbove != null
+                        ? freeDeliveryAbove
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                )
+                        : null,
+                PROVIDER,
+                buildGoogleMapsUrl(
+                        originAddress,
+                        destinationAddress
+                )
         );
     }
 
     private String buildDestinationAddress(
-            DeliveryQuoteRequest request,
-            DeliveryArea area
+            DeliveryQuoteRequest request
     ) {
-
-        if (request == null) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Endereço de entrega não informado."
-            );
-        }
 
         String street =
                 clean(
@@ -236,6 +265,16 @@ public class DeliveryQuoteService {
         String number =
                 clean(
                         request.number()
+                );
+
+        String neighborhood =
+                clean(
+                        request.neighborhood()
+                );
+
+        String city =
+                clean(
+                        request.city()
                 );
 
         if (street.isBlank()) {
@@ -254,15 +293,21 @@ public class DeliveryQuoteService {
             );
         }
 
-        String city =
-                clean(
-                        area.getCity()
-                );
+        if (neighborhood.isBlank()) {
 
-        String neighborhood =
-                clean(
-                        area.getNeighborhood()
-                );
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Informe o bairro para calcular a entrega."
+            );
+        }
+
+        if (city.isBlank()) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Informe a cidade para calcular a entrega."
+            );
+        }
 
         return String.join(
                 ", ",
@@ -274,53 +319,28 @@ public class DeliveryQuoteService {
         );
     }
 
-    private BigDecimal calculateDistanceKm(
-            String originAddress,
-            String destinationAddress
+    private Coordinates geocode(
+            String address
     ) {
 
         try {
 
-            ObjectNode body =
-                    objectMapper
-                            .createObjectNode();
-
-            body.put(
-                    "travelMode",
-                    "DRIVE"
-            );
-
-            body.put(
-                    "routingPreference",
-                    "TRAFFIC_UNAWARE"
-            );
-
-            body.set(
-                    "origin",
-                    objectMapper
-                            .createObjectNode()
-                            .put(
-                                    "address",
-                                    originAddress
+            String url =
+                    GEOCODE_URL
+                            + "?text="
+                            + URLEncoder.encode(
+                                    address,
+                                    StandardCharsets.UTF_8
                             )
-            );
-
-            body.set(
-                    "destination",
-                    objectMapper
-                            .createObjectNode()
-                            .put(
-                                    "address",
-                                    destinationAddress
-                            )
-            );
+                            + "&size=1"
+                            + "&boundary.country=BR";
 
             HttpRequest request =
                     HttpRequest
                             .newBuilder()
                             .uri(
                                     URI.create(
-                                            ROUTES_URL
+                                            url
                                     )
                             )
                             .timeout(
@@ -329,16 +349,206 @@ public class DeliveryQuoteService {
                                     )
                             )
                             .header(
+                                    "Accept",
+                                    "application/json"
+                            )
+                            .header(
+                                    "Authorization",
+                                    openRouteServiceApiKey
+                            )
+                            .GET()
+                            .build();
+
+            HttpResponse<String> response =
+                    httpClient.send(
+                            request,
+                            HttpResponse
+                                    .BodyHandlers
+                                    .ofString(
+                                            StandardCharsets.UTF_8
+                                    )
+                    );
+
+            if (
+                    response.statusCode() < 200 ||
+                    response.statusCode() >= 300
+            ) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_GATEWAY,
+                        "Não foi possível localizar o endereço informado."
+                );
+            }
+
+            JsonNode root =
+                    objectMapper.readTree(
+                            response.body()
+                    );
+
+            JsonNode features =
+                    root.path(
+                            "features"
+                    );
+
+            if (
+                    !features.isArray() ||
+                    features.isEmpty()
+            ) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Endereço não encontrado. Revise rua, número, bairro e cidade."
+                );
+            }
+
+            JsonNode coordinates =
+                    features
+                            .get(
+                                    0
+                            )
+                            .path(
+                                    "geometry"
+                            )
+                            .path(
+                                    "coordinates"
+                            );
+
+            if (
+                    !coordinates.isArray() ||
+                    coordinates.size() < 2
+            ) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_GATEWAY,
+                        "O provedor de mapas não retornou coordenadas válidas."
+                );
+            }
+
+            double longitude =
+                    coordinates
+                            .get(
+                                    0
+                            )
+                            .asDouble();
+
+            double latitude =
+                    coordinates
+                            .get(
+                                    1
+                            )
+                            .asDouble();
+
+            return new Coordinates(
+                    longitude,
+                    latitude
+            );
+
+        } catch (
+                ResponseStatusException exception
+        ) {
+
+            throw exception;
+
+        } catch (
+                InterruptedException exception
+        ) {
+
+            Thread
+                    .currentThread()
+                    .interrupt();
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "A consulta do endereço foi interrompida."
+            );
+
+        } catch (
+                Exception exception
+        ) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Não foi possível localizar o endereço informado."
+            );
+        }
+    }
+
+    private BigDecimal calculateDistanceKm(
+            Coordinates origin,
+            Coordinates destination
+    ) {
+
+        try {
+
+            ObjectNode body =
+                    objectMapper
+                            .createObjectNode();
+
+            ArrayNode coordinates =
+                    objectMapper
+                            .createArrayNode();
+
+            ArrayNode originNode =
+                    objectMapper
+                            .createArrayNode();
+
+            originNode.add(
+                    origin.longitude()
+            );
+
+            originNode.add(
+                    origin.latitude()
+            );
+
+            ArrayNode destinationNode =
+                    objectMapper
+                            .createArrayNode();
+
+            destinationNode.add(
+                    destination.longitude()
+            );
+
+            destinationNode.add(
+                    destination.latitude()
+            );
+
+            coordinates.add(
+                    originNode
+            );
+
+            coordinates.add(
+                    destinationNode
+            );
+
+            body.set(
+                    "coordinates",
+                    coordinates
+            );
+
+            HttpRequest request =
+                    HttpRequest
+                            .newBuilder()
+                            .uri(
+                                    URI.create(
+                                            DIRECTIONS_URL
+                                    )
+                            )
+                            .timeout(
+                                    Duration.ofSeconds(
+                                            15
+                                    )
+                            )
+                            .header(
                                     "Content-Type",
                                     "application/json; charset=utf-8"
                             )
                             .header(
-                                    "X-Goog-Api-Key",
-                                    googleMapsApiKey
+                                    "Accept",
+                                    "application/json"
                             )
                             .header(
-                                    "X-Goog-FieldMask",
-                                    "routes.distanceMeters"
+                                    "Authorization",
+                                    openRouteServiceApiKey
                             )
                             .POST(
                                     HttpRequest
@@ -370,7 +580,7 @@ public class DeliveryQuoteService {
 
                 throw new ResponseStatusException(
                         HttpStatus.BAD_GATEWAY,
-                        "Não foi possível consultar a distância da entrega."
+                        "Não foi possível consultar a rota da entrega."
                 );
             }
 
@@ -379,31 +589,21 @@ public class DeliveryQuoteService {
                             response.body()
                     );
 
-            JsonNode routes =
-                    root.path(
-                            "routes"
-                    );
-
-            if (
-                    !routes.isArray() ||
-                    routes.isEmpty()
-            ) {
-
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Não foi possível encontrar uma rota para este endereço."
-                );
-            }
-
-            long distanceMeters =
-                    routes
-                            .get(
+            double distanceMeters =
+                    root
+                            .path(
+                                    "routes"
+                            )
+                            .path(
                                     0
                             )
                             .path(
-                                    "distanceMeters"
+                                    "summary"
                             )
-                            .asLong(
+                            .path(
+                                    "distance"
+                            )
+                            .asDouble(
                                     -1
                             );
 
@@ -411,9 +611,35 @@ public class DeliveryQuoteService {
                     distanceMeters <= 0
             ) {
 
+                distanceMeters =
+                        root
+                                .path(
+                                        "features"
+                                )
+                                .path(
+                                        0
+                                )
+                                .path(
+                                        "properties"
+                                )
+                                .path(
+                                        "summary"
+                                )
+                                .path(
+                                        "distance"
+                                )
+                                .asDouble(
+                                        -1
+                                );
+            }
+
+            if (
+                    distanceMeters <= 0
+            ) {
+
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "Não foi possível calcular a distância deste endereço."
+                        "Não foi possível encontrar uma rota para este endereço."
                 );
             }
 
@@ -445,7 +671,7 @@ public class DeliveryQuoteService {
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
-                    "A consulta de distância foi interrompida."
+                    "A consulta de rota foi interrompida."
             );
 
         } catch (
@@ -459,22 +685,23 @@ public class DeliveryQuoteService {
         }
     }
 
-    private BigDecimal normalizeMoney(
-            BigDecimal value
+    private String buildGoogleMapsUrl(
+            String origin,
+            String destination
     ) {
 
-        if (value == null) {
-            return BigDecimal.ZERO
-                    .setScale(
-                            2,
-                            RoundingMode.HALF_UP
-                    );
-        }
-
-        return value.setScale(
-                2,
-                RoundingMode.HALF_UP
-        );
+        return "https://www.google.com/maps/dir/?api=1"
+                + "&origin="
+                + URLEncoder.encode(
+                        origin,
+                        StandardCharsets.UTF_8
+                )
+                + "&destination="
+                + URLEncoder.encode(
+                        destination,
+                        StandardCharsets.UTF_8
+                )
+                + "&travelmode=driving";
     }
 
     private String clean(
@@ -489,5 +716,11 @@ public class DeliveryQuoteService {
                                 "\\s+",
                                 " "
                         );
+    }
+
+    private record Coordinates(
+            double longitude,
+            double latitude
+    ) {
     }
 }
