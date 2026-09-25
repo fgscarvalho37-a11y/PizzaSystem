@@ -64,6 +64,10 @@ public class DeliveryQuoteService {
                         .build();
     }
 
+    public boolean isConfigured() {
+        return !googleMapsApiKey.isBlank();
+    }
+
     public DeliveryQuoteResponse quote(
             Store store,
             DeliveryArea area,
