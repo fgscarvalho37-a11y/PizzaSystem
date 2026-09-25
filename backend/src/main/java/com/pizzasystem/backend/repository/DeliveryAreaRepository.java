@@ -10,27 +10,15 @@ import java.util.Optional;
 public interface DeliveryAreaRepository
         extends JpaRepository<DeliveryArea, Long> {
 
-    // =========================
-    // SAAS - TODAS DA LOJA
-    // =========================
-
     List<DeliveryArea>
-    findByStoreIdOrderByNeighborhoodAsc(
+    findByStoreIdOrderByCityAscNeighborhoodAsc(
             Long storeId
     );
 
-    // =========================
-    // SAAS - ATIVAS DA LOJA
-    // =========================
-
     List<DeliveryArea>
-    findByStoreIdAndActiveTrueOrderByNeighborhoodAsc(
+    findByStoreIdAndActiveTrueOrderByCityAscNeighborhoodAsc(
             Long storeId
     );
-
-    // =========================
-    // SAAS - BUSCAR POR ID
-    // =========================
 
     Optional<DeliveryArea>
     findByIdAndStoreId(
@@ -38,19 +26,45 @@ public interface DeliveryAreaRepository
             Long storeId
     );
 
-    // =========================
-    // SAAS - BAIRRO ATIVO
-    // =========================
+    Optional<DeliveryArea>
+    findByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCaseAndActiveTrue(
+            Long storeId,
+            String city,
+            String neighborhood
+    );
+
+    Optional<DeliveryArea>
+    findByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCase(
+            Long storeId,
+            String city,
+            String neighborhood
+    );
+
+    boolean existsByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCase(
+            Long storeId,
+            String city,
+            String neighborhood
+    );
+
+    /*
+     * Métodos mantidos para compatibilidade com
+     * registros antigos que ainda não têm cidade.
+     */
+    List<DeliveryArea>
+    findByStoreIdOrderByNeighborhoodAsc(
+            Long storeId
+    );
+
+    List<DeliveryArea>
+    findByStoreIdAndActiveTrueOrderByNeighborhoodAsc(
+            Long storeId
+    );
 
     Optional<DeliveryArea>
     findByStoreIdAndNeighborhoodIgnoreCaseAndActiveTrue(
             Long storeId,
             String neighborhood
     );
-
-    // =========================
-    // SAAS - BAIRRO DA LOJA
-    // =========================
 
     Optional<DeliveryArea>
     findByStoreIdAndNeighborhoodIgnoreCase(
@@ -62,15 +76,6 @@ public interface DeliveryAreaRepository
             Long storeId,
             String neighborhood
     );
-
-    // =========================
-    // MÉTODOS LEGADOS
-    // =========================
-
-    /*
-     * Mantidos temporariamente enquanto
-     * terminamos a migração SaaS.
-     */
 
     List<DeliveryArea>
     findByActiveTrueOrderByNeighborhoodAsc();
