@@ -216,7 +216,7 @@ public class OrderController {
         if (request.getStoreSlug() == null
                 || request.getStoreSlug().isBlank()) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "Loja não informada"
             );
         }
@@ -231,7 +231,7 @@ public class OrderController {
 
         if (!store.isActive()) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "Esta loja não está disponível"
             );
         }
@@ -241,7 +241,7 @@ public class OrderController {
                         store
                 )) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "O estabelecimento não está recebendo pedidos neste momento"
             );
         }
@@ -249,7 +249,7 @@ public class OrderController {
         if (request.getCustomerName() == null
                 || request.getCustomerName().isBlank()) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "Nome do cliente não informado"
             );
         }
@@ -257,7 +257,7 @@ public class OrderController {
         if (request.getCustomerPhone() == null
                 || request.getCustomerPhone().isBlank()) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "Telefone do cliente não informado"
             );
         }
@@ -265,7 +265,7 @@ public class OrderController {
         if (request.getCity() == null
                 || request.getCity().isBlank()) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "Cidade não informada"
             );
         }
@@ -273,7 +273,7 @@ public class OrderController {
         if (request.getNeighborhood() == null
                 || request.getNeighborhood().isBlank()) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "Bairro não informado"
             );
         }
@@ -281,14 +281,14 @@ public class OrderController {
         if (request.getItems() == null
                 || request.getItems().isEmpty()) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "O pedido precisa ter pelo menos um item"
             );
         }
 
         if (request.getPaymentMethod() == null) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "Forma de pagamento não informada"
             );
         }
@@ -298,7 +298,7 @@ public class OrderController {
                 request.getStreet().isBlank()
         ) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "Rua não informada"
             );
         }
@@ -308,7 +308,7 @@ public class OrderController {
                 request.getNumber().isBlank()
         ) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "Número não informado"
             );
         }
@@ -470,14 +470,14 @@ public class OrderController {
                                     store.getId()
                             )
                             .orElseThrow(() ->
-                                    new RuntimeException(
+                                    new IllegalArgumentException(
                                             "Produto não encontrado"
                                     )
                             );
 
             if (!product.isAvailable()) {
 
-                throw new RuntimeException(
+                throw new IllegalArgumentException(
                         "Produto indisponível: "
                                 + product.getName()
                 );
@@ -486,7 +486,7 @@ public class OrderController {
             if (itemRequest.getQuantity() == null
                     || itemRequest.getQuantity() <= 0) {
 
-                throw new RuntimeException(
+                throw new IllegalArgumentException(
                         "Quantidade inválida para "
                                 + product.getName()
                 );
@@ -502,7 +502,7 @@ public class OrderController {
 
             if (unitPrice == null) {
 
-                throw new RuntimeException(
+                throw new IllegalArgumentException(
                         "Produto sem preço cadastrado: "
                                 + product.getName()
                 );
@@ -574,7 +574,7 @@ public class OrderController {
             if (!requestedAddonIds.isEmpty()
                     && activeGroupsById.isEmpty()) {
 
-                throw new RuntimeException(
+                throw new IllegalArgumentException(
                         "O produto "
                                 + product.getName()
                                 + " não possui grupos de adicionais disponíveis"
@@ -601,14 +601,14 @@ public class OrderController {
                                         store.getId()
                                 )
                                 .orElseThrow(() ->
-                                        new RuntimeException(
+                                        new IllegalArgumentException(
                                                 "Adicional não encontrado"
                                         )
                                 );
 
                 if (!addon.isActive()) {
 
-                    throw new RuntimeException(
+                    throw new IllegalArgumentException(
                             "Adicional indisponível: "
                                     + addon.getName()
                     );
@@ -620,14 +620,14 @@ public class OrderController {
                 if (group == null
                         || group.getId() == null) {
 
-                    throw new RuntimeException(
+                    throw new IllegalArgumentException(
                             "Grupo do adicional inválido"
                     );
                 }
 
                 if (!group.isActive()) {
 
-                    throw new RuntimeException(
+                    throw new IllegalArgumentException(
                             "O grupo "
                                     + group.getName()
                                     + " não está disponível"
@@ -639,7 +639,7 @@ public class OrderController {
                                 group.getId()
                         )) {
 
-                    throw new RuntimeException(
+                    throw new IllegalArgumentException(
                             "O adicional "
                                     + addon.getName()
                                     + " não está disponível para "
@@ -683,7 +683,7 @@ public class OrderController {
                 if (selectedCount
                         < group.getMinSelections()) {
 
-                    throw new RuntimeException(
+                    throw new IllegalArgumentException(
                             "Selecione pelo menos "
                                     + group.getMinSelections()
                                     + " opção(ões) em "
@@ -694,7 +694,7 @@ public class OrderController {
                 if (selectedCount
                         > group.getMaxSelections()) {
 
-                    throw new RuntimeException(
+                    throw new IllegalArgumentException(
                             "Selecione no máximo "
                                     + group.getMaxSelections()
                                     + " opção(ões) em "
@@ -718,7 +718,7 @@ public class OrderController {
 
                 if (!product.isAllowCrust()) {
 
-                    throw new RuntimeException(
+                    throw new IllegalArgumentException(
                             "O produto "
                                     + product.getName()
                                     + " não aceita borda recheada"
@@ -733,14 +733,14 @@ public class OrderController {
                                         store.getId()
                                 )
                                 .orElseThrow(() ->
-                                        new RuntimeException(
+                                        new IllegalArgumentException(
                                                 "Borda não encontrada"
                                         )
                                 );
 
                 if (!crust.isActive()) {
 
-                    throw new RuntimeException(
+                    throw new IllegalArgumentException(
                             "Borda indisponível: "
                                     + crust.getName()
                     );
