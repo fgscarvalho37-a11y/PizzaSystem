@@ -3,7 +3,6 @@
 import {
   FormEvent,
   useEffect,
-  useMemo,
   useState,
 } from "react";
 
@@ -27,12 +26,17 @@ type DeliveryArea = {
   active: boolean;
 };
 
+type DeliveryConfig = {
+  originAddress: string | null;
+  maxDistanceKm: number | null;
+  mapsConfigured: boolean;
+};
+
 type AreaDraft = {
   city: string;
   neighborhood: string;
   pricingMode: PricingMode;
   fee: string;
-  distanceKm: string;
   feePerKm: string;
 };
 
@@ -48,6 +52,33 @@ function money(
       currency: "BRL",
     }
   );
+}
+
+async function readMessage(
+  response: Response
+) {
+  const text =
+    await response.text();
+
+  if (!text) {
+    return "";
+  }
+
+  try {
+    const data =
+      JSON.parse(
+        text
+      );
+
+    return (
+      data?.message ??
+      data?.detail ??
+      data?.error ??
+      text
+    );
+  } catch {
+    return text;
+  }
 }
 
 function toDraft(
@@ -67,14 +98,6 @@ function toDraft(
           area.fee ?? 0
         )
       ),
-    distanceKm:
-      area.distanceKm != null
-        ? String(
-            Number(
-              area.distanceKm
-            )
-          )
-        : "",
     feePerKm:
       area.feePerKm != null
         ? String(
@@ -107,10 +130,24 @@ export default function AdminEntregasPage() {
     >({});
 
   const [
-    loading,
-    setLoading,
+    config,
+    setConfig,
   ] =
-    useState(true);
+    useState<DeliveryConfig | null>(
+      null
+    );
+
+  const [
+    originAddress,
+    setOriginAddress,
+  ] =
+    useState("");
+
+  const [
+    maxDistanceKm,
+    setMaxDistanceKm,
+  ] =
+    useState("");
 
   const [
     city,
@@ -139,16 +176,22 @@ export default function AdminEntregasPage() {
     useState("");
 
   const [
-    distanceKm,
-    setDistanceKm,
-  ] =
-    useState("");
-
-  const [
     feePerKm,
     setFeePerKm,
   ] =
     useState("");
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(true);
+
+  const [
+    savingConfig,
+    setSavingConfig,
+  ] =
+    useState(false);
 
   const [
     submitting,
@@ -176,65 +219,68 @@ export default function AdminEntregasPage() {
   ] =
     useState("");
 
-  const calculatedNewFee =
-    useMemo(
-      () =>
-        pricingMode ===
-        "PER_KM"
-          ? Number(
-              distanceKm ||
-                0
-            ) *
-            Number(
-              feePerKm ||
-                0
-            )
-          : Number(
-              fee ||
-                0
-            ),
-      [
-        pricingMode,
-        distanceKm,
-        feePerKm,
-        fee,
-      ]
-    );
-
-  async function loadAreas() {
+  async function loadData() {
     try {
+      setLoading(
+        true
+      );
+
       setErrorMessage(
         ""
       );
 
-      const response =
-        await adminFetch(
-          `${API_URL}/api/delivery-areas`,
-          {
-            cache:
-              "no-store",
-            credentials:
-              "include",
-          }
-        );
+      const [
+        areasResponse,
+        configResponse,
+      ] =
+        await Promise.all([
+          adminFetch(
+            `${API_URL}/api/delivery-areas`,
+            {
+              cache:
+                "no-store",
+            }
+          ),
+          adminFetch(
+            `${API_URL}/api/delivery-areas/config`,
+            {
+              cache:
+                "no-store",
+            }
+          ),
+        ]);
 
-      if (!response.ok) {
+      if (
+        !areasResponse.ok
+      ) {
         throw new Error(
-          "Erro ao carregar áreas"
+          "Não foi possível carregar as áreas de entrega."
         );
       }
 
-      const data:
+      if (
+        !configResponse.ok
+      ) {
+        throw new Error(
+          "Não foi possível carregar a configuração de entrega."
+        );
+      }
+
+      const areasData:
         DeliveryArea[] =
-        await response.json();
+        await areasResponse.json();
+
+      const configData:
+        DeliveryConfig =
+        await configResponse.json();
 
       setAreas(
-        data
+        areasData
       );
 
       setDrafts(
         Object.fromEntries(
-          data.map(
+          areasData.map(
             (
               area
             ) => [
@@ -247,9 +293,34 @@ export default function AdminEntregasPage() {
         )
       );
 
-    } catch {
+      setConfig(
+        configData
+      );
+
+      setOriginAddress(
+        configData.originAddress ??
+          ""
+      );
+
+      setMaxDistanceKm(
+        configData.maxDistanceKm !=
+          null
+          ? String(
+              Number(
+                configData.maxDistanceKm
+              )
+            )
+          : ""
+      );
+
+    } catch (
+      error
+    ) {
       setErrorMessage(
-        "Não foi possível carregar as áreas de entrega."
+        error instanceof
+          Error
+          ? error.message
+          : "Não foi possível carregar as entregas."
       );
 
     } finally {
@@ -260,15 +331,121 @@ export default function AdminEntregasPage() {
   }
 
   useEffect(() => {
-    void loadAreas();
+    void loadData();
   }, []);
 
-  function validatePricing(
+  async function saveConfig(
+    event:
+      FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    setErrorMessage(
+      ""
+    );
+
+    setSuccessMessage(
+      ""
+    );
+
+    const maxDistance =
+      maxDistanceKm.trim()
+        ? Number(
+            maxDistanceKm
+          )
+        : null;
+
+    if (
+      maxDistance != null &&
+      (
+        Number.isNaN(
+          maxDistance
+        ) ||
+        maxDistance <=
+          0
+      )
+    ) {
+      setErrorMessage(
+        "A distância máxima precisa ser maior que zero."
+      );
+
+      return;
+    }
+
+    try {
+      setSavingConfig(
+        true
+      );
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/delivery-areas/config`,
+          {
+            method:
+              "PUT",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body:
+              JSON.stringify({
+                originAddress:
+                  originAddress.trim() ||
+                  null,
+                maxDistanceKm:
+                  maxDistance,
+              }),
+          }
+        );
+
+      if (
+        !response.ok
+      ) {
+        throw new Error(
+          (
+            await readMessage(
+              response
+            )
+          ) ||
+            "Não foi possível salvar a configuração."
+        );
+      }
+
+      const data:
+        DeliveryConfig =
+        await response.json();
+
+      setConfig(
+        data
+      );
+
+      setSuccessMessage(
+        "Configuração de entrega salva."
+      );
+
+    } catch (
+      error
+    ) {
+      setErrorMessage(
+        error instanceof
+          Error
+          ? error.message
+          : "Não foi possível salvar a configuração."
+      );
+
+    } finally {
+      setSavingConfig(
+        false
+      );
+    }
+  }
+
+  function validateArea(
     mode: PricingMode,
     fixedFee: string,
-    km: string,
     perKm: string
   ) {
+
     if (
       mode ===
       "FIXED"
@@ -292,26 +469,10 @@ export default function AdminEntregasPage() {
       return "";
     }
 
-    const kmValue =
-      Number(
-        km
-      );
-
     const perKmValue =
       Number(
         perKm
       );
-
-    if (
-      km.trim() ===
-        "" ||
-      Number.isNaN(
-        kmValue
-      ) ||
-      kmValue <= 0
-    ) {
-      return "Informe a distância em km.";
-    }
 
     if (
       perKm.trim() ===
@@ -321,7 +482,7 @@ export default function AdminEntregasPage() {
       ) ||
       perKmValue < 0
     ) {
-      return "Informe o valor por km.";
+      return "Informe um valor por km válido.";
     }
 
     return "";
@@ -341,32 +502,29 @@ export default function AdminEntregasPage() {
       ""
     );
 
-    if (!city.trim()) {
+    if (
+      !city.trim() ||
+      !neighborhood.trim()
+    ) {
       setErrorMessage(
-        "Informe a cidade."
+        "Informe cidade e bairro."
       );
+
       return;
     }
 
-    if (!neighborhood.trim()) {
-      setErrorMessage(
-        "Informe o bairro."
-      );
-      return;
-    }
-
-    const pricingError =
-      validatePricing(
+    const validation =
+      validateArea(
         pricingMode,
         fee,
-        distanceKm,
         feePerKm
       );
 
-    if (pricingError) {
+    if (validation) {
       setErrorMessage(
-        pricingError
+        validation
       );
+
       return;
     }
 
@@ -385,8 +543,6 @@ export default function AdminEntregasPage() {
               "Content-Type":
                 "application/json",
             },
-            credentials:
-              "include",
             body:
               JSON.stringify({
                 city:
@@ -400,14 +556,9 @@ export default function AdminEntregasPage() {
                     ? Number(
                         fee
                       )
-                    : calculatedNewFee,
+                    : 0,
                 distanceKm:
-                  pricingMode ===
-                  "PER_KM"
-                    ? Number(
-                        distanceKm
-                      )
-                    : null,
+                  null,
                 feePerKm:
                   pricingMode ===
                   "PER_KM"
@@ -421,13 +572,16 @@ export default function AdminEntregasPage() {
           }
         );
 
-      if (!response.ok) {
-        const text =
-          await response.text();
-
+      if (
+        !response.ok
+      ) {
         throw new Error(
-          text ||
-            "Erro ao cadastrar área"
+          (
+            await readMessage(
+              response
+            )
+          ) ||
+            "Não foi possível cadastrar a área."
         );
       }
 
@@ -437,28 +591,30 @@ export default function AdminEntregasPage() {
       setNeighborhood(
         ""
       );
-      setFee(
-        ""
+      setPricingMode(
+        "FIXED"
       );
-      setDistanceKm(
+      setFee(
         ""
       );
       setFeePerKm(
         ""
-      );
-      setPricingMode(
-        "FIXED"
       );
 
       setSuccessMessage(
         "Área de entrega cadastrada."
       );
 
-      await loadAreas();
+      await loadData();
 
-    } catch {
+    } catch (
+      error
+    ) {
       setErrorMessage(
-        "Não foi possível cadastrar a área. Confira cidade, bairro e valores."
+        error instanceof
+          Error
+          ? error.message
+          : "Não foi possível cadastrar a área."
       );
 
     } finally {
@@ -500,6 +656,14 @@ export default function AdminEntregasPage() {
       return;
     }
 
+    setErrorMessage(
+      ""
+    );
+
+    setSuccessMessage(
+      ""
+    );
+
     if (
       !draft.city.trim() ||
       !draft.neighborhood.trim()
@@ -507,35 +671,28 @@ export default function AdminEntregasPage() {
       setErrorMessage(
         "Cidade e bairro são obrigatórios."
       );
+
       return;
     }
 
-    const pricingError =
-      validatePricing(
+    const validation =
+      validateArea(
         draft.pricingMode,
         draft.fee,
-        draft.distanceKm,
         draft.feePerKm
       );
 
-    if (pricingError) {
+    if (validation) {
       setErrorMessage(
-        pricingError
+        validation
       );
+
       return;
     }
 
     try {
       setUpdatingId(
         area.id
-      );
-
-      setErrorMessage(
-        ""
-      );
-
-      setSuccessMessage(
-        ""
       );
 
       const response =
@@ -548,8 +705,6 @@ export default function AdminEntregasPage() {
               "Content-Type":
                 "application/json",
             },
-            credentials:
-              "include",
             body:
               JSON.stringify({
                 city:
@@ -564,19 +719,9 @@ export default function AdminEntregasPage() {
                     ? Number(
                         draft.fee
                       )
-                    : Number(
-                        draft.distanceKm
-                      ) *
-                      Number(
-                        draft.feePerKm
-                      ),
+                    : 0,
                 distanceKm:
-                  draft.pricingMode ===
-                  "PER_KM"
-                    ? Number(
-                        draft.distanceKm
-                      )
-                    : null,
+                  null,
                 feePerKm:
                   draft.pricingMode ===
                   "PER_KM"
@@ -590,9 +735,16 @@ export default function AdminEntregasPage() {
           }
         );
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
         throw new Error(
-          "Erro ao salvar"
+          (
+            await readMessage(
+              response
+            )
+          ) ||
+            "Não foi possível salvar esta área."
         );
       }
 
@@ -600,11 +752,16 @@ export default function AdminEntregasPage() {
         "Área atualizada."
       );
 
-      await loadAreas();
+      await loadData();
 
-    } catch {
+    } catch (
+      error
+    ) {
       setErrorMessage(
-        "Não foi possível salvar esta área."
+        error instanceof
+          Error
+          ? error.message
+          : "Não foi possível salvar esta área."
       );
 
     } finally {
@@ -632,16 +789,18 @@ export default function AdminEntregasPage() {
           {
             method:
               "PATCH",
-            credentials:
-              "include",
           }
         );
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
         throw new Error(
-          "Erro ao alterar status"
+          "Não foi possível alterar o status."
         );
       }
+
+      await loadData();
 
       setSuccessMessage(
         area.active
@@ -649,11 +808,14 @@ export default function AdminEntregasPage() {
           : "Área ativada."
       );
 
-      await loadAreas();
-
-    } catch {
+    } catch (
+      error
+    ) {
       setErrorMessage(
-        "Não foi possível alterar o status."
+        error instanceof
+          Error
+          ? error.message
+          : "Não foi possível alterar o status."
       );
 
     } finally {
@@ -673,70 +835,165 @@ export default function AdminEntregasPage() {
 
       <div className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8">
 
-        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <section className="border-b border-border pb-6">
 
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-              Entrega
-            </p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+            Entrega
+          </p>
 
-            <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-              Taxas de entrega
-            </h1>
+          <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
+            Taxas de entrega
+          </h1>
 
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-              Use taxa fixa por região ou calcule pelo valor do km. Para taxa por km, você informa a distância daquela região e o preço por quilômetro.
-            </p>
-          </div>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
+            Defina bairros com taxa fixa ou valor por km. Quando a área usa cobrança por km, o PizzaSystem calcula a rota real entre a pizzaria e o endereço do cliente no checkout.
+          </p>
 
-          <div className="rounded-2xl border border-border bg-card px-5 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-              Áreas ativas
-            </p>
-
-            <p className="mt-1 text-3xl font-bold">
-              {
-                areas.filter(
-                  (
-                    area
-                  ) =>
-                    area.active
-                ).length
-              }
-            </p>
-          </div>
-
-        </div>
+        </section>
 
         {errorMessage && (
-          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {errorMessage}
           </div>
         )}
 
         {successMessage && (
-          <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+          <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
             {successMessage}
           </div>
         )}
 
         <form
           onSubmit={
-            handleCreate
+            saveConfig
           }
-          className="rounded-3xl border border-border bg-card p-5 shadow-sm"
+          className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-sm"
         >
-          <div>
-            <h2 className="font-display text-2xl uppercase">
-              Nova área
-            </h2>
 
-            <p className="mt-1 text-sm text-muted-foreground">
-              A cidade será escolhida primeiro pelo cliente no checkout.
-            </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                Cálculo automático
+              </p>
+
+              <h2 className="mt-1 text-xl font-bold text-foreground">
+                Endereço de saída da pizzaria
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Esse endereço é o ponto inicial da rota. Informe rua, número, bairro, cidade, estado e CEP para aumentar a precisão.
+              </p>
+            </div>
+
+            <span
+              className={[
+                "w-fit rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em]",
+                config?.mapsConfigured
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-amber-200 bg-amber-50 text-amber-700",
+              ].join(
+                " "
+              )}
+            >
+              {config?.mapsConfigured
+                ? "API de rotas conectada"
+                : "API de rotas pendente"}
+            </span>
+
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_220px]">
+
+            <div>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                Endereço completo
+              </label>
+
+              <input
+                value={
+                  originAddress
+                }
+                onChange={(
+                  event
+                ) =>
+                  setOriginAddress(
+                    event.target.value
+                  )
+                }
+                placeholder="Ex: Av. X, 123, Centro, Jaguariúna - SP, 13910-000"
+                className={
+                  fieldClass
+                }
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                Distância máxima
+              </label>
+
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={
+                    maxDistanceKm
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setMaxDistanceKm(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Ex: 15"
+                  className={
+                    `${fieldClass} pr-12`
+                  }
+                />
+
+                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  km
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          <button
+            type="submit"
+            disabled={
+              savingConfig
+            }
+            className="mt-5 h-11 rounded-xl bg-foreground px-5 text-sm font-bold text-background transition hover:opacity-90 disabled:opacity-50"
+          >
+            {savingConfig
+              ? "Salvando..."
+              : "Salvar cálculo de entrega"}
+          </button>
+
+        </form>
+
+        <form
+          onSubmit={
+            handleCreate
+          }
+          className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-sm"
+        >
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+              Área atendida
+            </p>
+
+            <h2 className="mt-1 text-xl font-bold text-foreground">
+              Nova cidade / bairro
+            </h2>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 
             <div>
               <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
@@ -777,7 +1034,7 @@ export default function AdminEntregasPage() {
                     event.target.value
                   )
                 }
-                placeholder="Ex: Centro"
+                placeholder="Ex: Cruzeiro do Sul"
                 className={
                   fieldClass
                 }
@@ -786,7 +1043,7 @@ export default function AdminEntregasPage() {
 
             <div>
               <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                Tipo de taxa
+                Tipo da taxa
               </label>
 
               <select
@@ -810,126 +1067,113 @@ export default function AdminEntregasPage() {
                 </option>
 
                 <option value="PER_KM">
-                  Por km
+                  Automática por km
                 </option>
               </select>
             </div>
 
-            {pricingMode ===
-            "FIXED" ? (
-              <div>
-                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                  Taxa fixa
-                </label>
+            <div>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                {pricingMode ===
+                "FIXED"
+                  ? "Valor da entrega"
+                  : "Valor por km"}
+              </label>
 
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={
-                    fee
-                  }
-                  onChange={(
-                    event
-                  ) =>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={
+                  pricingMode ===
+                  "FIXED"
+                    ? fee
+                    : feePerKm
+                }
+                onChange={(
+                  event
+                ) => {
+                  if (
+                    pricingMode ===
+                    "FIXED"
+                  ) {
                     setFee(
                       event.target.value
-                    )
+                    );
+                  } else {
+                    setFeePerKm(
+                      event.target.value
+                    );
                   }
-                  placeholder="0,00"
-                  className={
-                    fieldClass
-                  }
-                />
-              </div>
-            ) : (
-              <>
-                <div>
-                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                    Distância da região
-                  </label>
-
-                  <input
-                    type="number"
-                    min="0.1"
-                    step="0.1"
-                    value={
-                      distanceKm
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setDistanceKm(
-                        event.target.value
-                      )
-                    }
-                    placeholder="Ex: 8,5 km"
-                    className={
-                      fieldClass
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                    Valor por km
-                  </label>
-
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={
-                      feePerKm
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setFeePerKm(
-                        event.target.value
-                      )
-                    }
-                    placeholder="Ex: 2,50"
-                    className={
-                      fieldClass
-                    }
-                  />
-                </div>
-
-                <div className="flex h-11 items-center rounded-xl border border-primary/15 bg-primary/5 px-4 text-sm font-bold text-foreground">
-                  Taxa calculada:{" "}
-                  <span className="ml-2 text-primary">
-                    {
-                      money(
-                        calculatedNewFee
-                      )
-                    }
-                  </span>
-                </div>
-              </>
-            )}
+                }}
+                placeholder={
+                  pricingMode ===
+                  "FIXED"
+                    ? "Ex: 8,00"
+                    : "Ex: 2,50"
+                }
+                className={
+                  fieldClass
+                }
+              />
+            </div>
 
           </div>
+
+          {pricingMode ===
+            "PER_KM" && (
+            <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
+              O cliente informa o endereço no checkout. O sistema calcula a rota de carro automaticamente e multiplica a distância pelo valor por km. Exemplo: 7 km × R$ 2,50 = R$ 17,50.
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={
               submitting
             }
-            className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+            className="mt-5 h-11 rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
           >
             {submitting
-              ? "Salvando..."
+              ? "Cadastrando..."
               : "Cadastrar área"}
           </button>
+
         </form>
 
-        <section className="mt-6 space-y-4">
+        <section className="mt-6 space-y-3">
+
+          <div className="flex items-end justify-between gap-4">
+
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                Cobertura
+              </p>
+
+              <h2 className="mt-1 text-xl font-bold">
+                Áreas cadastradas
+              </h2>
+            </div>
+
+            <span className="text-sm text-muted-foreground">
+              {
+                areas.filter(
+                  (
+                    area
+                  ) =>
+                    area.active
+                ).length
+              }{" "}
+              ativa(s)
+            </span>
+
+          </div>
 
           {loading ? (
-            <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
+            <div className="rounded-3xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
               Carregando áreas...
             </div>
+
           ) : areas.length ===
             0 ? (
             <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
@@ -940,7 +1184,12 @@ export default function AdminEntregasPage() {
               <p className="mt-3 font-bold">
                 Nenhuma área cadastrada
               </p>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                Cadastre pelo menos um bairro para liberar opções de entrega no checkout.
+              </p>
             </div>
+
           ) : (
             areas.map(
               (
@@ -954,22 +1203,6 @@ export default function AdminEntregasPage() {
                     area
                   );
 
-                const previewFee =
-                  draft.pricingMode ===
-                  "PER_KM"
-                    ? Number(
-                        draft.distanceKm ||
-                          0
-                      ) *
-                      Number(
-                        draft.feePerKm ||
-                          0
-                      )
-                    : Number(
-                        draft.fee ||
-                          0
-                      );
-
                 return (
                   <article
                     key={
@@ -977,9 +1210,13 @@ export default function AdminEntregasPage() {
                     }
                     className="rounded-3xl border border-border bg-card p-5 shadow-sm"
                   >
-                    <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
 
-                      <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                    <div className="grid gap-3 lg:grid-cols-[1fr_1fr_190px_180px_auto] lg:items-end">
+
+                      <div>
+                        <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                          Cidade
+                        </label>
 
                         <input
                           value={
@@ -996,11 +1233,16 @@ export default function AdminEntregasPage() {
                               }
                             )
                           }
-                          placeholder="Cidade"
                           className={
                             fieldClass
                           }
                         />
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                          Bairro
+                        </label>
 
                         <input
                           value={
@@ -1017,11 +1259,16 @@ export default function AdminEntregasPage() {
                               }
                             )
                           }
-                          placeholder="Bairro"
                           className={
                             fieldClass
                           }
                         />
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                          Tipo
+                        </label>
 
                         <select
                           value={
@@ -1034,7 +1281,8 @@ export default function AdminEntregasPage() {
                               area.id,
                               {
                                 pricingMode:
-                                  event.target.value as PricingMode,
+                                  event.target
+                                    .value as PricingMode,
                               }
                             )
                           }
@@ -1050,125 +1298,80 @@ export default function AdminEntregasPage() {
                             Por km
                           </option>
                         </select>
+                      </div>
 
-                        {draft.pricingMode ===
-                        "FIXED" ? (
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={
-                              draft.fee
-                            }
-                            onChange={(
-                              event
-                            ) =>
-                              updateDraft(
-                                area.id,
-                                {
-                                  fee:
-                                    event.target.value,
-                                }
-                              )
-                            }
-                            placeholder="Taxa"
-                            className={
-                              fieldClass
-                            }
-                          />
-                        ) : (
-                          <>
-                            <input
-                              type="number"
-                              min="0.1"
-                              step="0.1"
-                              value={
-                                draft.distanceKm
-                              }
-                              onChange={(
-                                event
-                              ) =>
-                                updateDraft(
-                                  area.id,
-                                  {
-                                    distanceKm:
+                      <div>
+                        <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                          {draft.pricingMode ===
+                          "FIXED"
+                            ? "Valor"
+                            : "R$ por km"}
+                        </label>
+
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={
+                            draft.pricingMode ===
+                            "FIXED"
+                              ? draft.fee
+                              : draft.feePerKm
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            updateDraft(
+                              area.id,
+                              draft.pricingMode ===
+                                "FIXED"
+                                ? {
+                                    fee:
                                       event.target.value,
                                   }
-                                )
-                              }
-                              placeholder="Distância km"
-                              className={
-                                fieldClass
-                              }
-                            />
-
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={
-                                draft.feePerKm
-                              }
-                              onChange={(
-                                event
-                              ) =>
-                                updateDraft(
-                                  area.id,
-                                  {
+                                : {
                                     feePerKm:
                                       event.target.value,
                                   }
-                                )
-                              }
-                              placeholder="R$ / km"
-                              className={
-                                fieldClass
-                              }
-                            />
-                          </>
-                        )}
-
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2">
-
-                        <span className="rounded-full bg-muted px-3 py-2 text-xs font-bold text-foreground">
-                          {
-                            money(
-                              previewFee
                             )
                           }
-                        </span>
+                          className={
+                            fieldClass
+                          }
+                        />
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
 
                         <button
                           type="button"
+                          disabled={
+                            updatingId ===
+                            area.id
+                          }
                           onClick={() =>
                             saveArea(
                               area
                             )
                           }
-                          disabled={
-                            updatingId ===
-                            area.id
-                          }
-                          className="h-10 rounded-xl bg-foreground px-4 text-xs font-bold text-background transition hover:opacity-90 disabled:opacity-50"
+                          className="h-11 rounded-xl bg-foreground px-4 text-xs font-bold text-background disabled:opacity-50"
                         >
                           Salvar
                         </button>
 
                         <button
                           type="button"
+                          disabled={
+                            updatingId ===
+                            area.id
+                          }
                           onClick={() =>
                             toggleActive(
                               area
                             )
                           }
-                          disabled={
-                            updatingId ===
-                            area.id
-                          }
                           className={[
-                            "h-10 rounded-xl border px-4 text-xs font-bold transition disabled:opacity-50",
+                            "h-11 rounded-xl border px-4 text-xs font-bold disabled:opacity-50",
                             area.active
                               ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                               : "border-border bg-muted text-muted-foreground",
@@ -1185,21 +1388,23 @@ export default function AdminEntregasPage() {
 
                     </div>
 
-                    <p className="mt-3 text-xs text-muted-foreground">
+                    <p className="mt-3 text-xs leading-5 text-muted-foreground">
                       {draft.pricingMode ===
                       "PER_KM"
-                        ? `${draft.distanceKm || "0"} km × ${money(
+                        ? `A distância será calculada automaticamente no checkout e cobrada a ${money(
                             Number(
                               draft.feePerKm ||
                                 0
                             )
-                          )}/km = ${money(
-                            previewFee
-                          )}`
+                          )} por km.`
                         : `Taxa fixa de ${money(
-                            previewFee
-                          )}`}
+                            Number(
+                              draft.fee ||
+                                0
+                            )
+                          )}.`}
                     </p>
+
                   </article>
                 );
               }
