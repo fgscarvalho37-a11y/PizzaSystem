@@ -40,20 +40,17 @@ public class DeliveryQuoteService {
     private static final String PROVIDER =
             "OPENROUTESERVICE";
 
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper =
+            new ObjectMapper();
 
     private final HttpClient httpClient;
 
     private final String openRouteServiceApiKey;
 
     public DeliveryQuoteService(
-            ObjectMapper objectMapper,
             @Value("${OPENROUTESERVICE_API_KEY:}")
             String openRouteServiceApiKey
     ) {
-
-        this.objectMapper =
-                objectMapper;
 
         this.openRouteServiceApiKey =
                 openRouteServiceApiKey != null
