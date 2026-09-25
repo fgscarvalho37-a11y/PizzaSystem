@@ -261,6 +261,14 @@ public class OrderController {
             );
         }
 
+        if (request.getCity() == null
+                || request.getCity().isBlank()) {
+
+            throw new RuntimeException(
+                    "Cidade não informada"
+            );
+        }
+
         if (request.getNeighborhood() == null
                 || request.getNeighborhood().isBlank()) {
 
@@ -286,8 +294,11 @@ public class OrderController {
 
         DeliveryArea deliveryArea =
                 deliveryAreaRepository
-                        .findByStoreIdAndNeighborhoodIgnoreCaseAndActiveTrue(
+                        .findByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCaseAndActiveTrue(
                                 store.getId(),
+                                request
+                                        .getCity()
+                                        .trim(),
                                 request
                                         .getNeighborhood()
                                         .trim()
@@ -385,6 +396,11 @@ public class OrderController {
 
         order.setNumber(
                 request.getNumber()
+        );
+
+        order.setCity(
+                deliveryArea
+                        .getCity()
         );
 
         order.setNeighborhood(
