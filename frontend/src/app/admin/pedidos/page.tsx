@@ -63,6 +63,9 @@ type Order = {
   complement: string;
 
   deliveryFee: number;
+  deliveryDistanceKm?: number | null;
+  deliveryRouteProvider?: string | null;
+  deliveryRouteUrl?: string | null;
   total: number;
 
   status: OrderStatus;
@@ -1518,6 +1521,35 @@ export default function AdminPedidosPage() {
                                     order.deliveryFee
                                   )}
                                 </p>
+
+                                {order.deliveryDistanceKm !=
+                                  null && (
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {Number(
+                                      order.deliveryDistanceKm
+                                    ).toLocaleString(
+                                      "pt-BR",
+                                      {
+                                        maximumFractionDigits:
+                                          2,
+                                      }
+                                    )}{" "}
+                                    km pela rota
+                                  </p>
+                                )}
+
+                                {order.deliveryRouteUrl && (
+                                  <a
+                                    href={
+                                      order.deliveryRouteUrl
+                                    }
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mt-3 inline-flex text-xs font-bold text-primary underline underline-offset-2"
+                                  >
+                                    Abrir rota no Google Maps
+                                  </a>
+                                )}
 
                               </div>
 
