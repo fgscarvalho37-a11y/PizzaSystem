@@ -58,6 +58,7 @@ type Order = {
 
   street: string;
   number: string;
+  city?: string | null;
   neighborhood: string;
   complement: string;
 
@@ -1495,6 +1496,9 @@ export default function AdminPedidosPage() {
 
                               <p className="mt-1 text-sm text-muted-foreground">
                                 {order.neighborhood}
+                                {order.city
+                                  ? ` · ${order.city}`
+                                  : ""}
                               </p>
 
                               {order.complement && (
