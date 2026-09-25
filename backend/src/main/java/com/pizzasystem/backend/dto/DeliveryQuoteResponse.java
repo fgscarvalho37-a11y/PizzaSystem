@@ -8,6 +8,10 @@ public record DeliveryQuoteResponse(
         BigDecimal feePerKm,
         BigDecimal fee,
         String city,
-        String neighborhood
+        String neighborhood,
+        boolean freeDelivery,
+        BigDecimal freeDeliveryAbove,
+        String routeProvider,
+        String googleMapsUrl
 ) {
 }
