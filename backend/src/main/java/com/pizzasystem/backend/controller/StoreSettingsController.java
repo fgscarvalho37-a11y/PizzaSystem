@@ -3,6 +3,7 @@ package com.pizzasystem.backend.controller;
 import com.pizzasystem.backend.dto.StoreStatusResponse;
 import com.pizzasystem.backend.entity.LoyaltyEarningType;
 import com.pizzasystem.backend.entity.Store;
+import com.pizzasystem.backend.repository.StoreRepository;
 
 import com.pizzasystem.backend.service.CurrentStoreService;
 import com.pizzasystem.backend.service.PublicStoreService;
@@ -26,10 +27,14 @@ public class StoreSettingsController {
     private final PublicStoreService
             publicStoreService;
 
+    private final StoreRepository
+            storeRepository;
+
     public StoreSettingsController(
             CurrentStoreService currentStoreService,
             StoreStatusService storeStatusService,
-            PublicStoreService publicStoreService
+            PublicStoreService publicStoreService,
+            StoreRepository storeRepository
     ) {
 
         this.currentStoreService =
@@ -40,6 +45,9 @@ public class StoreSettingsController {
 
         this.publicStoreService =
                 publicStoreService;
+
+        this.storeRepository =
+                storeRepository;
     }
 
     // =========================
@@ -464,8 +472,14 @@ public class StoreSettingsController {
                 )
         );
 
+        Store saved =
+                storeRepository
+                        .saveAndFlush(
+                                store
+                        );
+
         return toProfileResponse(
-                store
+                saved
         );
     }
 
@@ -487,8 +501,14 @@ public class StoreSettingsController {
                 open
         );
 
+        Store saved =
+                storeRepository
+                        .saveAndFlush(
+                                store
+                        );
+
         return toSettingsResponse(
-                store
+                saved
         );
     }
 
