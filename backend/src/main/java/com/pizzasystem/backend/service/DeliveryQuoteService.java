@@ -223,6 +223,29 @@ public class DeliveryQuoteService {
                 freeByOrderValue ||
                 freeByDistance;
 
+        BigDecimal billableDistanceKm =
+                distanceKm;
+
+        if (
+                freeDeliveryDistanceKm != null &&
+                freeDeliveryDistanceKm.compareTo(
+                        BigDecimal.ZERO
+                ) > 0 &&
+                distanceKm.compareTo(
+                        freeDeliveryDistanceKm
+                ) > 0
+        ) {
+
+            billableDistanceKm =
+                    distanceKm
+                            .subtract(
+                                    freeDeliveryDistanceKm
+                            )
+                            .max(
+                                    BigDecimal.ZERO
+                            );
+        }
+
         BigDecimal fee =
                 freeDelivery
                         ? BigDecimal.ZERO
@@ -230,7 +253,7 @@ public class DeliveryQuoteService {
                                         2,
                                         RoundingMode.HALF_UP
                                 )
-                        : distanceKm
+                        : billableDistanceKm
                                 .multiply(
                                         normalizedFeePerKm
                                 )
