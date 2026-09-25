@@ -51,6 +51,26 @@ export function proxy(
     return NextResponse.next();
   }
 
+  /*
+   * Segurança extra para o domínio institucional.
+   * Se o wildcard receber www.orbitta.space,
+   * não tentamos abrir uma loja chamada "www".
+   */
+  if (
+    slug === "www"
+  ) {
+    const institutionalUrl =
+      new URL(
+        request.nextUrl.pathname +
+          request.nextUrl.search,
+        `https://${STOREFRONT_BASE_DOMAIN}`
+      );
+
+    return NextResponse.redirect(
+      institutionalUrl
+    );
+  }
+
   const pathname =
     request.nextUrl.pathname;
 
