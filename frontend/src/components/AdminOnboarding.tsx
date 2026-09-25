@@ -93,16 +93,16 @@ const steps: Step[] = [
   },
   {
     eyebrow: "Entrega",
-    title: "Acompanhe as saídas",
+    title: "Configure a taxa por distância",
     description:
-      "Use a área de entregas para separar o que está pronto, saiu para entrega e foi concluído.",
+      "Defina o endereço da pizzaria, o valor por quilômetro e até onde sua loja entrega. A rota é calculada automaticamente no checkout.",
     tips: [
-      "Atualize os status conforme o pedido avança.",
-      "O histórico preserva os pedidos finalizados.",
-      "Configure as áreas e taxas de entrega nas configurações.",
+      "O OpenRouteService calcula a distância real da rota.",
+      "O Google Maps fica disponível como atalho para visualizar o trajeto.",
+      "Você pode definir distância máxima e frete grátis acima de um valor.",
     ],
     href: "/admin/entregas",
-    action: "Ver entregas",
+    action: "Configurar entrega",
     icon: "delivery",
   },
   {
