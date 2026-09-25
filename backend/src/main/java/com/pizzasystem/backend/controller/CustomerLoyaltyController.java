@@ -10,6 +10,7 @@ import com.pizzasystem.backend.repository.LoyaltyRedemptionRepository;
 import com.pizzasystem.backend.repository.LoyaltyTransactionRepository;
 
 import com.pizzasystem.backend.service.LoyaltyService;
+import com.pizzasystem.backend.service.PublicStoreService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -49,11 +51,15 @@ public class CustomerLoyaltyController {
     private final LoyaltyService
             loyaltyService;
 
+    private final PublicStoreService
+            publicStoreService;
+
     public CustomerLoyaltyController(
             LoyaltyAccountRepository loyaltyAccountRepository,
             LoyaltyTransactionRepository loyaltyTransactionRepository,
             LoyaltyRedemptionRepository loyaltyRedemptionRepository,
-            LoyaltyService loyaltyService
+            LoyaltyService loyaltyService,
+            PublicStoreService publicStoreService
     ) {
 
         this.loyaltyAccountRepository =
@@ -67,6 +73,9 @@ public class CustomerLoyaltyController {
 
         this.loyaltyService =
                 loyaltyService;
+
+        this.publicStoreService =
+                publicStoreService;
     }
 
     // =========================
@@ -76,6 +85,7 @@ public class CustomerLoyaltyController {
     @GetMapping
     @Transactional(readOnly = true)
     public ResponseEntity<?> getMyLoyalty(
+            @RequestParam(required = false) String store,
             HttpServletRequest request
     ) {
 
@@ -92,11 +102,45 @@ public class CustomerLoyaltyController {
         // CONTAS DE FIDELIDADE
         // =========================
 
-        List<LoyaltyAccount> accounts =
-                loyaltyAccountRepository
-                        .findByCustomerIdOrderByUpdatedAtDesc(
-                                customerId
-                        );
+        Store requestedStore =
+                null;
+
+        if (
+                store != null &&
+                !store.isBlank()
+        ) {
+            requestedStore =
+                    publicStoreService
+                            .getBySlug(
+                                    store.trim()
+                            );
+        }
+
+        List<LoyaltyAccount> accounts;
+
+        if (requestedStore != null) {
+
+            LoyaltyAccount account =
+                    loyaltyAccountRepository
+                            .findByCustomerIdAndStoreId(
+                                    customerId,
+                                    requestedStore.getId()
+                            )
+                            .orElse(null);
+
+            accounts =
+                    account != null
+                            ? List.of(account)
+                            : List.of();
+
+        } else {
+
+            accounts =
+                    loyaltyAccountRepository
+                            .findByCustomerIdOrderByUpdatedAtDesc(
+                                    customerId
+                            );
+        }
 
         List<Map<String, Object>> accountResponses =
                 new ArrayList<>();
@@ -304,11 +348,25 @@ public class CustomerLoyaltyController {
         // RESGATES DO CLIENTE
         // =========================
 
-        List<LoyaltyRedemption> redemptions =
-                loyaltyRedemptionRepository
-                        .findByCustomerIdOrderByCreatedAtDesc(
-                                customerId
-                        );
+        List<LoyaltyRedemption> redemptions;
+
+        if (requestedStore != null) {
+
+            redemptions =
+                    loyaltyRedemptionRepository
+                            .findByCustomerIdAndStoreIdOrderByCreatedAtDesc(
+                                    customerId,
+                                    requestedStore.getId()
+                            );
+
+        } else {
+
+            redemptions =
+                    loyaltyRedemptionRepository
+                            .findByCustomerIdOrderByCreatedAtDesc(
+                                    customerId
+                            );
+        }
 
         List<Map<String, Object>> redemptionResponses =
                 new ArrayList<>();
