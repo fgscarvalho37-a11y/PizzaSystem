@@ -106,6 +106,53 @@ public class DeliveryQuoteService {
             );
         }
 
+
+        /*
+         * Se houver uma taxa fixa ativa cadastrada para
+         * cidade + bairro, ela tem prioridade sobre o cálculo
+         * por rota. Isso evita geocodificação imprecisa em
+         * endereços locais e mantém o checkout previsível.
+         */
+        String requestCity =
+                clean(
+                        request.city()
+                );
+
+        String requestNeighborhood =
+                clean(
+                        request.neighborhood()
+                );
+
+        if (
+                !requestCity.isBlank() &&
+                !requestNeighborhood.isBlank()
+        ) {
+
+            DeliveryArea fixedArea =
+                    deliveryAreaRepository
+                            .findByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCaseAndActiveTrue(
+                                    store.getId(),
+                                    requestCity,
+                                    requestNeighborhood
+                            )
+                            .orElse(
+                                    null
+                            );
+
+            if (
+                    fixedArea != null &&
+                    "FIXED".equalsIgnoreCase(
+                            fixedArea.getPricingMode()
+                    )
+            ) {
+                return quoteFromFixedArea(
+                        store,
+                        request,
+                        fixedArea
+                );
+            }
+        }
+
         if (openRouteServiceApiKey.isBlank()) {
 
             return quoteByFixedArea(
@@ -359,6 +406,19 @@ public class DeliveryQuoteService {
             );
         }
 
+        return quoteFromFixedArea(
+                store,
+                request,
+                area
+        );
+    }
+
+    private DeliveryQuoteResponse quoteFromFixedArea(
+            Store store,
+            DeliveryQuoteRequest request,
+            DeliveryArea area
+    ) {
+
         BigDecimal subtotal =
                 request.orderSubtotal() != null
                         ? request.orderSubtotal()
@@ -387,6 +447,11 @@ public class DeliveryQuoteService {
                         freeDeliveryAbove
                 ) >= 0;
 
+        BigDecimal fixedFee =
+                area.getFee() != null
+                        ? area.getFee()
+                        : BigDecimal.ZERO;
+
         BigDecimal fee =
                 freeDelivery
                         ? BigDecimal.ZERO
@@ -394,19 +459,22 @@ public class DeliveryQuoteService {
                                         2,
                                         RoundingMode.HALF_UP
                                 )
-                        : area.getFee()
-                                .setScale(
-                                        2,
-                                        RoundingMode.HALF_UP
-                                );
+                        : fixedFee.setScale(
+                                2,
+                                RoundingMode.HALF_UP
+                        );
 
         return new DeliveryQuoteResponse(
                 "FIXED",
                 null,
                 null,
                 fee,
-                city,
-                neighborhood,
+                clean(
+                        request.city()
+                ),
+                clean(
+                        request.neighborhood()
+                ),
                 freeDelivery,
                 freeDeliveryAbove != null
                         ? freeDeliveryAbove
