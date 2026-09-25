@@ -7,6 +7,7 @@ import com.pizzasystem.backend.entity.DeliveryArea;
 import com.pizzasystem.backend.entity.Store;
 
 import com.pizzasystem.backend.repository.DeliveryAreaRepository;
+import com.pizzasystem.backend.repository.StoreRepository;
 
 import com.pizzasystem.backend.service.CurrentStoreService;
 import com.pizzasystem.backend.service.DeliveryQuoteService;
@@ -30,6 +31,9 @@ public class DeliveryAreaController {
     private final DeliveryAreaRepository
             deliveryAreaRepository;
 
+    private final StoreRepository
+            storeRepository;
+
     private final CurrentStoreService
             currentStoreService;
 
@@ -41,6 +45,7 @@ public class DeliveryAreaController {
 
     public DeliveryAreaController(
             DeliveryAreaRepository deliveryAreaRepository,
+            StoreRepository storeRepository,
             CurrentStoreService currentStoreService,
             PublicStoreService publicStoreService,
             DeliveryQuoteService deliveryQuoteService
@@ -48,6 +53,9 @@ public class DeliveryAreaController {
 
         this.deliveryAreaRepository =
                 deliveryAreaRepository;
+
+        this.storeRepository =
+                storeRepository;
 
         this.currentStoreService =
                 currentStoreService;
@@ -251,12 +259,18 @@ public class DeliveryAreaController {
                         : null
         );
 
+        Store saved =
+                storeRepository
+                        .saveAndFlush(
+                                store
+                        );
+
         return new DeliveryConfigResponse(
-                store.getDeliveryOriginAddress(),
-                store.getDeliveryMaxDistanceKm(),
-                store.getDeliveryFeePerKm(),
-                store.getDeliveryFreeAbove(),
-                store.getDeliveryFreeDistanceKm(),
+                saved.getDeliveryOriginAddress(),
+                saved.getDeliveryMaxDistanceKm(),
+                saved.getDeliveryFeePerKm(),
+                saved.getDeliveryFreeAbove(),
+                saved.getDeliveryFreeDistanceKm(),
                 deliveryQuoteService.isConfigured(),
                 deliveryQuoteService.getProviderName()
         );
