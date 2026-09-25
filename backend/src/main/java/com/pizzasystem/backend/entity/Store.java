@@ -153,6 +153,19 @@ public class Store {
     private Integer dailyOrderLimit =
             30;
 
+    @Column(
+            name = "delivery_origin_address",
+            length = 350
+    )
+    private String deliveryOriginAddress;
+
+    @Column(
+            name = "delivery_max_distance_km",
+            precision = 8,
+            scale = 2
+    )
+    private BigDecimal deliveryMaxDistanceKm;
+
     // =========================
     // FIDELIDADE
     // =========================
@@ -413,6 +426,28 @@ public class Store {
     ) {
         this.dailyOrderLimit =
                 dailyOrderLimit;
+    }
+
+    public String getDeliveryOriginAddress() {
+        return deliveryOriginAddress;
+    }
+
+    public void setDeliveryOriginAddress(
+            String deliveryOriginAddress
+    ) {
+        this.deliveryOriginAddress =
+                deliveryOriginAddress;
+    }
+
+    public BigDecimal getDeliveryMaxDistanceKm() {
+        return deliveryMaxDistanceKm;
+    }
+
+    public void setDeliveryMaxDistanceKm(
+            BigDecimal deliveryMaxDistanceKm
+    ) {
+        this.deliveryMaxDistanceKm =
+                deliveryMaxDistanceKm;
     }
 
     public boolean isLoyaltyEnabled() {
