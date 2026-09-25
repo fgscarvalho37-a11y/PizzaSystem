@@ -6,6 +6,8 @@ import {
   useState,
 } from "react";
 
+import Link from "next/link";
+
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
 
@@ -1129,6 +1131,33 @@ export default function ConfiguracoesPage() {
             Controle o funcionamento, limites, informações de contato e programa de fidelidade.
           </p>
         </div>
+
+        <section className="mt-6 rounded-2xl border border-border bg-card p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                Entregas
+              </p>
+
+              <h2 className="mt-1 text-lg font-bold text-foreground">
+                Taxa por distância
+              </h2>
+
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Configure endereço da pizzaria, valor por km, distância máxima e frete grátis.
+              </p>
+            </div>
+
+            <Link
+              href="/admin/entregas"
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-bold text-foreground transition hover:bg-muted"
+            >
+              Configurar entrega
+            </Link>
+
+          </div>
+        </section>
 
         {errorMessage && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
