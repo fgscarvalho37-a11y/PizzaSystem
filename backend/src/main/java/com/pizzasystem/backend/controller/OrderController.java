@@ -951,6 +951,8 @@ public class OrderController {
                                         request.getNumber(),
                                         request.getCity(),
                                         request.getNeighborhood(),
+                                        request.getState(),
+                                        request.getPostalCode(),
                                         request.getComplement(),
                                         productsTotal
                                 )

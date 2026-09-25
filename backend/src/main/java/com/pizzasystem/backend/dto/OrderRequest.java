@@ -39,6 +39,10 @@ public class OrderRequest {
 
     private String neighborhood;
 
+    private String state;
+
+    private String postalCode;
+
     private String complement;
 
     // =========================
@@ -138,6 +142,28 @@ public class OrderRequest {
     ) {
         this.neighborhood =
                 neighborhood;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(
+            String state
+    ) {
+        this.state =
+                state;
+    }
+
+    public String getPostalCode() {
+        return postalCode;
+    }
+
+    public void setPostalCode(
+            String postalCode
+    ) {
+        this.postalCode =
+                postalCode;
     }
 
     public String getComplement() {

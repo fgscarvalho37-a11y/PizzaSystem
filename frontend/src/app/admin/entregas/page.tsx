@@ -14,6 +14,15 @@ const API_URL = "";
 
 type DeliveryArea = { id: number; city: string; neighborhood: string; fee: number; pricingMode: string; active: boolean };
 
+type ViaCepResponse = {
+  cep?: string;
+  logradouro?: string;
+  bairro?: string;
+  localidade?: string;
+  uf?: string;
+  erro?: boolean;
+};
+
 type DeliveryConfig = {
   pricingMode: "FIXED" | "PER_KM";
   originAddress: string | null;
@@ -52,6 +61,13 @@ async function readMessage(
   }
 }
 
+function formatCep(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  return digits.length > 5
+    ? `${digits.slice(0, 5)}-${digits.slice(5)}`
+    : digits;
+}
+
 function money(
   value: number
 ) {
@@ -87,6 +103,31 @@ export default function AdminEntregasPage() {
     setOriginAddress,
   ] =
     useState("");
+
+  const [
+    originCep,
+    setOriginCep,
+  ] = useState("");
+
+  const [
+    originNumber,
+    setOriginNumber,
+  ] = useState("");
+
+  const [
+    originCepLoading,
+    setOriginCepLoading,
+  ] = useState(false);
+
+  const [
+    originCepError,
+    setOriginCepError,
+  ] = useState("");
+
+  const [
+    originCepData,
+    setOriginCepData,
+  ] = useState<ViaCepResponse | null>(null);
 
   const [
     feePerKm,
@@ -245,6 +286,125 @@ export default function AdminEntregasPage() {
     void loadConfig();
   }, []);
 
+
+  useEffect(() => {
+    const digits =
+      originCep.replace(/\D/g, "");
+
+    if (digits.length !== 8) {
+      setOriginCepLoading(false);
+      setOriginCepData(null);
+      if (!digits) {
+        setOriginCepError("");
+      }
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    const timer =
+      window.setTimeout(
+        async () => {
+          try {
+            setOriginCepLoading(true);
+            setOriginCepError("");
+
+            const response =
+              await fetch(
+                `https://viacep.com.br/ws/${digits}/json/`,
+                {
+                  signal:
+                    controller.signal,
+                }
+              );
+
+            if (!response.ok) {
+              throw new Error(
+                "Não foi possível consultar o CEP."
+              );
+            }
+
+            const data:
+              ViaCepResponse =
+              await response.json();
+
+            if (data.erro) {
+              throw new Error(
+                "CEP não encontrado."
+              );
+            }
+
+            setOriginCepData(data);
+          } catch (
+            error
+          ) {
+            if (
+              error instanceof DOMException &&
+              error.name === "AbortError"
+            ) {
+              return;
+            }
+
+            setOriginCepData(null);
+            setOriginCepError(
+              error instanceof Error
+                ? error.message
+                : "Não foi possível consultar o CEP."
+            );
+          } finally {
+            if (!controller.signal.aborted) {
+              setOriginCepLoading(false);
+            }
+          }
+        },
+        250
+      );
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [originCep]);
+
+  useEffect(() => {
+    if (!originCepData) {
+      return;
+    }
+
+    const street =
+      originCepData.logradouro?.trim() ??
+      "";
+    const neighborhood =
+      originCepData.bairro?.trim() ??
+      "";
+    const city =
+      originCepData.localidade?.trim() ??
+      "";
+    const state =
+      originCepData.uf?.trim().toUpperCase() ??
+      "";
+    const cep =
+      originCep.replace(/\D/g, "");
+
+    if (!street || !city || !state) {
+      return;
+    }
+
+    setOriginAddress(
+      [
+        street,
+        originNumber.trim() || "s/n",
+        neighborhood,
+        `${city} - ${state}`,
+        cep,
+        "Brasil",
+      ]
+        .filter(Boolean)
+        .join(", ")
+    );
+  }, [originCepData, originNumber, originCep]);
+
   const googleMapsOriginUrl =
     useMemo(
       () =>
@@ -300,6 +460,14 @@ export default function AdminEntregasPage() {
             freeDeliveryDistanceKm
           )
         : null;
+
+    if (pricingMode === "PER_KM" && originCep.replace(/\D/g, "").length === 8 && !originNumber.trim()) {
+      setErrorMessage(
+        "Informe o número da pizzaria para completar o endereço pelo CEP."
+      );
+
+      return;
+    }
 
     if (pricingMode === "PER_KM" && (!normalizedOrigin || normalizedOrigin.split(",").length < 3)) {
       setErrorMessage(
@@ -612,28 +780,61 @@ export default function AdminEntregasPage() {
                   Endereço de saída da pizzaria
                 </label>
 
-                <input
-                  value={
-                    originAddress
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setOriginAddress(
-                      event.target.value
-                    )
-                  }
-                  placeholder="Ex: Av. X, 123, Centro, Jaguariúna - SP, 13910-000"
-                  className={
-                    fieldClass
-                  }
-                />
+                <div className="grid gap-3 md:grid-cols-[180px_140px_1fr]">
+                  <input
+                    inputMode="numeric"
+                    maxLength={9}
+                    value={originCep}
+                    onChange={(event) => {
+                      setOriginCep(formatCep(event.target.value));
+                      setOriginCepError("");
+                    }}
+                    placeholder="CEP"
+                    className={fieldClass}
+                  />
+
+                  <input
+                    value={originNumber}
+                    onChange={(event) => setOriginNumber(event.target.value)}
+                    placeholder="Número"
+                    className={fieldClass}
+                  />
+
+                  <input
+                    value={
+                      originAddress
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setOriginAddress(
+                        event.target.value
+                      )
+                    }
+                    placeholder="Endereço completo da pizzaria"
+                    className={
+                      fieldClass
+                    }
+                  />
+                </div>
 
                 <div className="mt-2 flex flex-wrap items-center gap-3">
 
                   <p className="text-xs leading-5 text-muted-foreground">
-                    Informe rua, número, bairro, cidade, estado e CEP para melhorar a precisão.
+                    Digite o CEP e o número. Rua, bairro, cidade e UF são preenchidos automaticamente. O endereço completo continua editável.
                   </p>
+
+                  {originCepLoading && (
+                    <span className="text-xs text-muted-foreground">
+                      Buscando CEP...
+                    </span>
+                  )}
+
+                  {originCepError && (
+                    <span className="text-xs font-semibold text-primary">
+                      {originCepError}
+                    </span>
+                  )}
 
                   {googleMapsOriginUrl && (
                     <a

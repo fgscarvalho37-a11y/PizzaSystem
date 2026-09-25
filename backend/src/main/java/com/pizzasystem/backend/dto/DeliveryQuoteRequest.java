@@ -7,6 +7,8 @@ public record DeliveryQuoteRequest(
         String number,
         String city,
         String neighborhood,
+        String state,
+        String postalCode,
         String complement,
         BigDecimal orderSubtotal
 ) {

@@ -71,6 +71,15 @@ type PaymentMethod =
   | "CREDIT_CARD"
   | "DEBIT_CARD";
 
+type ViaCepResponse = {
+  cep?: string;
+  logradouro?: string;
+  bairro?: string;
+  localidade?: string;
+  uf?: string;
+  erro?: boolean;
+};
+
 type CouponValidationResponse = {
   valid: boolean;
   couponId: number;
@@ -83,6 +92,13 @@ type CouponValidationResponse = {
   originalValue: number;
   finalValue: number;
 };
+
+function formatCep(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  return digits.length > 5
+    ? `${digits.slice(0, 5)}-${digits.slice(5)}`
+    : digits;
+}
 
 function formatMoney(
   value: number
@@ -202,6 +218,26 @@ export default function CheckoutPage() {
   const [
     customerPhone,
     setCustomerPhone,
+  ] = useState("");
+
+  const [
+    postalCode,
+    setPostalCode,
+  ] = useState("");
+
+  const [
+    state,
+    setState,
+  ] = useState("");
+
+  const [
+    cepLoading,
+    setCepLoading,
+  ] = useState(false);
+
+  const [
+    cepError,
+    setCepError,
   ] = useState("");
 
   const [
@@ -687,6 +723,102 @@ export default function CheckoutPage() {
       [cart]
     );
 
+
+  useEffect(() => {
+    const digits =
+      postalCode.replace(/\D/g, "");
+
+    if (digits.length !== 8) {
+      setCepLoading(false);
+      if (!digits) {
+        setCepError("");
+      }
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    const timer =
+      window.setTimeout(
+        async () => {
+          try {
+            setCepLoading(true);
+            setCepError("");
+
+            const response =
+              await fetch(
+                `https://viacep.com.br/ws/${digits}/json/`,
+                {
+                  signal:
+                    controller.signal,
+                }
+              );
+
+            if (!response.ok) {
+              throw new Error(
+                "Não foi possível consultar o CEP."
+              );
+            }
+
+            const data:
+              ViaCepResponse =
+              await response.json();
+
+            if (data.erro) {
+              throw new Error(
+                "CEP não encontrado."
+              );
+            }
+
+            setStreet(
+              data.logradouro ??
+                ""
+            );
+            setNeighborhood(
+              data.bairro ??
+                ""
+            );
+            setCity(
+              data.localidade ??
+                ""
+            );
+            setState(
+              (
+                data.uf ??
+                ""
+              ).toUpperCase()
+            );
+          } catch (
+            error
+          ) {
+            if (
+              error instanceof DOMException &&
+              error.name === "AbortError"
+            ) {
+              return;
+            }
+
+            setCepError(
+              error instanceof Error
+                ? error.message
+                : "Não foi possível consultar o CEP."
+            );
+          } finally {
+            if (!controller.signal.aborted) {
+              setCepLoading(false);
+            }
+          }
+        },
+        250
+      );
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [postalCode]);
+
   // =========================
   // ENTREGA - CÁLCULO AUTOMÁTICO
   // =========================
@@ -698,9 +830,11 @@ export default function CheckoutPage() {
     setDeliveryQuote(null);
 
     if (
+      postalCode.replace(/\D/g, "").length !== 8 ||
       !street.trim() ||
       !number.trim() ||
       !city.trim() ||
+      !state.trim() ||
       !neighborhood.trim() ||
       !storeSlug ||
       subtotal <= 0
@@ -755,6 +889,10 @@ export default function CheckoutPage() {
                         city.trim(),
                       neighborhood:
                         neighborhood.trim(),
+                      state:
+                        state.trim().toUpperCase(),
+                      postalCode:
+                        postalCode.replace(/\D/g, ""),
                       complement:
                         complement.trim() ||
                         null,
@@ -855,9 +993,11 @@ export default function CheckoutPage() {
       controller.abort();
     };
   }, [
+    postalCode,
     street,
     number,
     city,
+    state,
     neighborhood,
     complement,
     storeSlug,
@@ -1196,6 +1336,11 @@ export default function CheckoutPage() {
         city,
 
         neighborhood,
+
+        state,
+
+        postalCode:
+          postalCode.replace(/\D/g, ""),
 
         complement,
 
@@ -2013,6 +2158,48 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
+                  inputMode="numeric"
+                  maxLength={9}
+                  placeholder="CEP"
+                  required
+                  value={
+                    postalCode
+                  }
+                  onChange={(
+                    event
+                  ) => {
+                    setPostalCode(
+                      formatCep(
+                        event.target.value
+                      )
+                    );
+                    setState("");
+                    setCepError("");
+                  }}
+                />
+
+                <input
+                  className={
+                    inputClass
+                  }
+                  placeholder="Número"
+                  required
+                  value={
+                    number
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setNumber(
+                      event.target.value
+                    )
+                  }
+                />
+
+                <input
+                  className={
+                    inputClass
+                  }
                   placeholder="Rua"
                   required
                   value={
@@ -2031,15 +2218,15 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
-                  placeholder="Número"
+                  placeholder="Bairro"
                   required
                   value={
-                    number
+                    neighborhood
                   }
                   onChange={(
                     event
                   ) =>
-                    setNumber(
+                    setNeighborhood(
                       event.target.value
                     )
                   }
@@ -2067,19 +2254,37 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
-                  placeholder="Bairro"
+                  maxLength={2}
+                  placeholder="UF"
                   required
                   value={
-                    neighborhood
+                    state
                   }
                   onChange={(
                     event
                   ) =>
-                    setNeighborhood(
+                    setState(
                       event.target.value
+                        .replace(/[^a-zA-Z]/g, "")
+                        .slice(0, 2)
+                        .toUpperCase()
                     )
                   }
                 />
+
+                {(cepLoading || cepError) && (
+                  <p
+                    className={
+                      cepError
+                        ? "text-xs font-medium text-primary sm:col-span-2"
+                        : "text-xs text-muted-foreground sm:col-span-2"
+                    }
+                  >
+                    {cepLoading
+                      ? "Buscando endereço pelo CEP..."
+                      : cepError}
+                  </p>
+                )}
 
                 <input
                   className={
@@ -2186,7 +2391,7 @@ export default function CheckoutPage() {
 
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Informe rua, número, cidade e bairro para calcular a rota automaticamente.
+                    Informe o CEP e o número. Rua, bairro, cidade e UF são preenchidos automaticamente e você pode corrigi-los se necessário.
                   </p>
                 )}
 

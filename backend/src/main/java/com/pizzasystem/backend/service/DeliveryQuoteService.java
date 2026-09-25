@@ -158,7 +158,17 @@ public class DeliveryQuoteService {
                 geocode(originAddress, DeliveryAddress.fromOrigin(originAddress), "saída da pizzaria");
 
         Coordinates destination =
-                geocode(destinationAddress, new DeliveryAddress(request.street(), request.number(), request.city(), ""), "entrega");
+                geocode(
+                        destinationAddress,
+                        new DeliveryAddress(
+                                request.street(),
+                                request.number(),
+                                request.city(),
+                                request.state(),
+                                request.postalCode()
+                        ),
+                        "entrega"
+                );
 
         BigDecimal distanceKm =
                 calculateDistanceKm(
@@ -470,6 +480,16 @@ public class DeliveryQuoteService {
                         request.city()
                 );
 
+        String state =
+                clean(
+                        request.state()
+                ).toUpperCase(java.util.Locale.ROOT);
+
+        String postalCode =
+                clean(
+                        request.postalCode()
+                ).replaceAll("\\D", "");
+
         if (street.isBlank()) {
 
             throw new ResponseStatusException(
@@ -502,14 +522,25 @@ public class DeliveryQuoteService {
             );
         }
 
-        return String.join(
-                ", ",
-                street,
-                number,
-                neighborhood,
-                city,
-                "Brasil"
-        );
+        String cityRegion =
+                state.isBlank()
+                        ? city
+                        : city + " - " + state;
+
+        String destination =
+                String.join(
+                        ", ",
+                        street,
+                        number,
+                        neighborhood,
+                        cityRegion
+                );
+
+        if (!postalCode.isBlank()) {
+            destination += ", " + postalCode;
+        }
+
+        return destination + ", Brasil";
     }
 
     private Coordinates geocode(String text, DeliveryAddress address, String role) {
@@ -522,7 +553,8 @@ public class DeliveryQuoteService {
         String structured = GEOCODE_URL + "/structured?address="
                 + encode(address.street() + " " + address.number())
                 + "&locality=" + encode(address.city()) + "&country=BR"
-                + (address.region().isBlank() ? "" : "&region=" + encode(address.region()));
+                + (address.region().isBlank() ? "" : "&region=" + encode(address.region()))
+                + (address.postalCode().isBlank() ? "" : "&postalcode=" + encode(address.postalCode()));
         Coordinates result = searchCoordinates(structured, address);
         if (result == null) {
             result = searchCoordinates(GEOCODE_URL + "?text=" + encode(text), address);
