@@ -147,6 +147,34 @@ public class AdminAuthService {
     }
 
     // =========================
+    // CONCLUIR ONBOARDING
+    // =========================
+
+    @Transactional
+    public AdminUser completeOnboarding(
+            String email
+    ) {
+
+        AdminUser user =
+                findByEmail(
+                        email
+                );
+
+        if (!user.isOnboardingCompleted()) {
+            user.setOnboardingCompleted(
+                    true
+            );
+
+            user =
+                    adminUserRepository.save(
+                            user
+                    );
+        }
+
+        return user;
+    }
+
+    // =========================
     // CRIAR ADMIN
     // =========================
 
