@@ -28,6 +28,9 @@ public class Product {
     )
     private String description;
 
+    @Column(
+            columnDefinition = "TEXT"
+    )
     private String imageUrl;
 
     @Column(
