@@ -34,6 +34,7 @@ type Order = {
   customerPhone: string;
   street: string;
   number: string;
+  city?: string | null;
   neighborhood: string;
   complement: string | null;
   deliveryFee: number;
@@ -214,7 +215,7 @@ export default function PrintOrderPage() {
       "",
       `Cliente: ${order.customerName}`,
       `Telefone: ${order.customerPhone}`,
-      `Endereco: ${order.street}, ${order.number} - ${order.neighborhood}`,
+      `Endereco: ${order.street}, ${order.number} - ${order.neighborhood}${order.city ? ` - ${order.city}` : ""}`,
       order.complement
         ? `Complemento: ${order.complement}`
         : "",
@@ -429,6 +430,9 @@ export default function PrintOrderPage() {
 
           <p>
             {order.neighborhood}
+            {order.city
+              ? ` · ${order.city}`
+              : ""}
           </p>
 
           {order.complement && (
