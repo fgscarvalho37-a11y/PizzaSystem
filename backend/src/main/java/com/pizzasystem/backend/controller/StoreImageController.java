@@ -145,12 +145,18 @@ public class StoreImageController {
                 store
         );
 
-        imageStorageService
-                .deleteOldImage(
-                        store.getId(),
-                        oldUrl,
-                        imageUrl
-                );
+        try {
+            imageStorageService
+                    .deleteOldImage(
+                            store.getId(),
+                            oldUrl,
+                            imageUrl
+                    );
+
+        } catch (IOException ignored) {
+            // A nova imagem já foi persistida.
+            // Falha ao limpar a antiga não pode desfazer o upload.
+        }
 
         return Map.of(
                 "success", true,
