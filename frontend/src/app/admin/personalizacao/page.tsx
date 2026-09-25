@@ -417,6 +417,149 @@ export default function PersonalizacaoPage() {
     }
   }
 
+
+  async function prepareImageForUpload(
+    file: File,
+    kind: "logo" | "cover"
+  ) {
+    const sourceUrl =
+      URL.createObjectURL(
+        file
+      );
+
+    try {
+      const image =
+        await new Promise<HTMLImageElement>(
+          (
+            resolve,
+            reject
+          ) => {
+            const element =
+              new Image();
+
+            element.onload =
+              () =>
+                resolve(
+                  element
+                );
+
+            element.onerror =
+              () =>
+                reject(
+                  new Error(
+                    "Não foi possível processar a imagem."
+                  )
+                );
+
+            element.src =
+              sourceUrl;
+          }
+        );
+
+      const maxDimension =
+        kind === "logo"
+          ? 900
+          : 1800;
+
+      const scale =
+        Math.min(
+          1,
+          maxDimension /
+            Math.max(
+              image.naturalWidth,
+              image.naturalHeight
+            )
+        );
+
+      const width =
+        Math.max(
+          1,
+          Math.round(
+            image.naturalWidth *
+              scale
+          )
+        );
+
+      const height =
+        Math.max(
+          1,
+          Math.round(
+            image.naturalHeight *
+              scale
+          )
+        );
+
+      const canvas =
+        document.createElement(
+          "canvas"
+        );
+
+      canvas.width =
+        width;
+
+      canvas.height =
+        height;
+
+      const context =
+        canvas.getContext(
+          "2d"
+        );
+
+      if (!context) {
+        return file;
+      }
+
+      context.drawImage(
+        image,
+        0,
+        0,
+        width,
+        height
+      );
+
+      const blob =
+        await new Promise<Blob | null>(
+          (
+            resolve
+          ) => {
+            canvas.toBlob(
+              resolve,
+              "image/webp",
+              kind === "logo"
+                ? 0.9
+                : 0.84
+            );
+          }
+        );
+
+      if (!blob) {
+        return file;
+      }
+
+      const baseName =
+        file.name.replace(
+          /\.[^.]+$/,
+          ""
+        );
+
+      return new File(
+        [
+          blob,
+        ],
+        `${baseName}.webp`,
+        {
+          type:
+            "image/webp",
+        }
+      );
+
+    } finally {
+      URL.revokeObjectURL(
+        sourceUrl
+      );
+    }
+  }
+
   async function uploadImage(
     kind: "logo" | "cover",
     event: ChangeEvent<HTMLInputElement>
@@ -441,8 +584,19 @@ export default function PersonalizacaoPage() {
       setErrorMessage("");
       setSuccessMessage("");
 
-      const body = new FormData();
-      body.append("file", file);
+      const preparedFile =
+        await prepareImageForUpload(
+          file,
+          kind
+        );
+
+      const body =
+        new FormData();
+
+      body.append(
+        "file",
+        preparedFile
+      );
 
       const response =
         await adminFetch(
@@ -466,7 +620,23 @@ export default function PersonalizacaoPage() {
               "string" &&
             data.message
           ) {
-            message = data.message;
+            message =
+              data.message;
+          } else if (
+            typeof data?.detail ===
+              "string" &&
+            data.detail
+          ) {
+            message =
+              data.detail;
+          } else if (
+            typeof data?.error ===
+              "string" &&
+            data.error !==
+              "Internal Server Error"
+          ) {
+            message =
+              data.error;
           }
         } catch {
           // mantém a mensagem padrão
@@ -720,7 +890,23 @@ export default function PersonalizacaoPage() {
               "string" &&
             data.message
           ) {
-            message = data.message;
+            message =
+              data.message;
+          } else if (
+            typeof data?.detail ===
+              "string" &&
+            data.detail
+          ) {
+            message =
+              data.detail;
+          } else if (
+            typeof data?.error ===
+              "string" &&
+            data.error !==
+              "Internal Server Error"
+          ) {
+            message =
+              data.error;
           }
         } catch {
           // mantém a mensagem padrão
