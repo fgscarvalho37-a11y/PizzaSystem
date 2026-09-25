@@ -175,17 +175,17 @@ public class CustomerLoyaltyController {
             totalRewardsRedeemed +=
                     rewardsRedeemed;
 
-            Store store =
+            Store accountStore =
                     account.getStore();
 
             Integer stampGoal =
-                    store.getLoyaltyStampGoal();
+                    accountStore.getLoyaltyStampGoal();
 
             String rewardDescription =
-                    store.getLoyaltyRewardDescription();
+                    accountStore.getLoyaltyRewardDescription();
 
             boolean loyaltyEnabled =
-                    store.isLoyaltyEnabled();
+                    accountStore.isLoyaltyEnabled();
 
             boolean rewardAvailable =
                     loyaltyEnabled
@@ -276,12 +276,12 @@ public class CustomerLoyaltyController {
 
             accountResponse.put(
                     "storeId",
-                    store.getId()
+                    accountStore.getId()
             );
 
             accountResponse.put(
                     "storeName",
-                    store.getName()
+                    accountStore.getName()
             );
 
             accountResponse.put(
