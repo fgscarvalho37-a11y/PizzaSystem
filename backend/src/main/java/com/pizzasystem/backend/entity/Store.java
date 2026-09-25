@@ -166,6 +166,20 @@ public class Store {
     )
     private BigDecimal deliveryMaxDistanceKm;
 
+    @Column(
+            name = "delivery_fee_per_km",
+            precision = 12,
+            scale = 2
+    )
+    private BigDecimal deliveryFeePerKm;
+
+    @Column(
+            name = "delivery_free_above",
+            precision = 12,
+            scale = 2
+    )
+    private BigDecimal deliveryFreeAbove;
+
     // =========================
     // FIDELIDADE
     // =========================
@@ -448,6 +462,28 @@ public class Store {
     ) {
         this.deliveryMaxDistanceKm =
                 deliveryMaxDistanceKm;
+    }
+
+    public BigDecimal getDeliveryFeePerKm() {
+        return deliveryFeePerKm;
+    }
+
+    public void setDeliveryFeePerKm(
+            BigDecimal deliveryFeePerKm
+    ) {
+        this.deliveryFeePerKm =
+                deliveryFeePerKm;
+    }
+
+    public BigDecimal getDeliveryFreeAbove() {
+        return deliveryFreeAbove;
+    }
+
+    public void setDeliveryFreeAbove(
+            BigDecimal deliveryFreeAbove
+    ) {
+        this.deliveryFreeAbove =
+                deliveryFreeAbove;
     }
 
     public boolean isLoyaltyEnabled() {
