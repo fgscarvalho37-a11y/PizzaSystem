@@ -12,6 +12,8 @@ import {
   useRouter,
 } from "next/navigation";
 
+import { setBrowserIcon } from "@/lib/browserIcon";
+
 import ProductAddonSelector, {
   getSelectedAddonsPrice,
   validateAddonSelections,
@@ -459,6 +461,24 @@ export default function CardapioPage() {
     customerSessionLoaded,
     setCustomerSessionLoaded,
   ] = useState(false);
+
+  useEffect(() => {
+    if (!storeProfile) {
+      return;
+    }
+
+    setBrowserIcon(
+      resolveStoreImageUrl(
+        storeProfile.logoUrl
+      )
+    );
+
+    document.title =
+      `${storeProfile.name} | PizzaSystem`;
+
+  }, [
+    storeProfile,
+  ]);
 
   // =========================
   // SESSÃO DO CLIENTE
