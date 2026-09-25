@@ -259,13 +259,51 @@ export default function CheckoutPage() {
         window.location.search
       );
 
-    setStoreSlug(
+    const storeFromQuery =
       params
         .get(
           "store"
         )
         ?.trim() ??
-        ""
+        "";
+
+    if (storeFromQuery) {
+      setStoreSlug(
+        storeFromQuery
+      );
+
+      setStoreResolved(
+        true
+      );
+
+      return;
+    }
+
+    const host =
+      window.location.hostname
+        .trim()
+        .toLowerCase();
+
+    const suffix =
+      ".orbitta.space";
+
+    const hostedSlug =
+      host.endsWith(
+        suffix
+      )
+        ? host.slice(
+            0,
+            -suffix.length
+          )
+        : "";
+
+    setStoreSlug(
+      hostedSlug &&
+      !hostedSlug.includes(
+        "."
+      )
+        ? hostedSlug
+        : ""
     );
 
     setStoreResolved(
@@ -447,6 +485,12 @@ export default function CheckoutPage() {
         console.error(
           error
         );
+
+        if (mounted) {
+          setCheckoutError(
+            "Não foi possível carregar os dados da loja agora. Atualize a página e tente novamente."
+          );
+        }
       }
     }
 
@@ -1248,7 +1292,7 @@ export default function CheckoutPage() {
     !storeSlug
   ) {
     return (
-      <main className="min-h-screen bg-background px-4 py-16 text-foreground">
+      <main className="min-h-screen overflow-x-hidden bg-background px-4 py-16 text-foreground">
 
         <div className="mx-auto max-w-xl rounded-2xl bg-card p-8 text-center ring-1 ring-black/5">
 
@@ -1282,7 +1326,7 @@ export default function CheckoutPage() {
 
         </header>
 
-        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
 
           <div className="skeleton h-4 w-28" />
           <div className="skeleton mt-3 h-12 w-72" />
@@ -1343,13 +1387,13 @@ export default function CheckoutPage() {
 
         </header>
 
-        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
 
           <span className="font-mono-brand text-xs uppercase tracking-[0.2em] text-muted-foreground">
             (b) Finalizar
           </span>
 
-          <h1 className="mt-1 font-display text-4xl tracking-tight sm:text-5xl">
+          <h1 className="mt-1 font-display text-3xl sm:text-4xl tracking-tight sm:text-5xl">
             Seu pedido
           </h1>
 
@@ -1466,13 +1510,13 @@ export default function CheckoutPage() {
 
       </header>
 
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
 
         <span className="font-mono-brand text-xs uppercase tracking-[0.2em] text-muted-foreground">
           (b) Finalizar
         </span>
 
-        <h1 className="mt-1 font-display text-4xl tracking-tight sm:text-5xl">
+        <h1 className="mt-1 font-display text-3xl sm:text-4xl tracking-tight sm:text-5xl">
           Seu pedido
         </h1>
 
