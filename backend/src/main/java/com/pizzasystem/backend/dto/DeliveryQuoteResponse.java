@@ -11,6 +11,7 @@ public record DeliveryQuoteResponse(
         String neighborhood,
         boolean freeDelivery,
         BigDecimal freeDeliveryAbove,
+        BigDecimal freeDeliveryDistanceKm,
         String routeProvider,
         String googleMapsUrl
 ) {
