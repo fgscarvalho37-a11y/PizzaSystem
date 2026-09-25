@@ -106,6 +106,7 @@ public class DeliveryAreaController {
                 store.getDeliveryMaxDistanceKm(),
                 store.getDeliveryFeePerKm(),
                 store.getDeliveryFreeAbove(),
+                store.getDeliveryFreeDistanceKm(),
                 deliveryQuoteService.isConfigured(),
                 deliveryQuoteService.getProviderName()
         );
@@ -141,6 +142,11 @@ public class DeliveryAreaController {
         BigDecimal freeDeliveryAbove =
                 request != null
                         ? request.freeDeliveryAbove()
+                        : null;
+
+        BigDecimal freeDeliveryDistanceKm =
+                request != null
+                        ? request.freeDeliveryDistanceKm()
                         : null;
 
         if (
@@ -179,6 +185,31 @@ public class DeliveryAreaController {
             );
         }
 
+        if (
+                freeDeliveryDistanceKm != null &&
+                freeDeliveryDistanceKm.compareTo(
+                        BigDecimal.ZERO
+                ) <= 0
+        ) {
+
+            throw new IllegalArgumentException(
+                    "A distância de frete grátis deve ser maior que zero."
+            );
+        }
+
+        if (
+                freeDeliveryDistanceKm != null &&
+                maxDistanceKm != null &&
+                freeDeliveryDistanceKm.compareTo(
+                        maxDistanceKm
+                ) > 0
+        ) {
+
+            throw new IllegalArgumentException(
+                    "A distância de frete grátis não pode ser maior que a distância máxima."
+            );
+        }
+
         store.setDeliveryOriginAddress(
                 originAddress
         );
@@ -210,11 +241,22 @@ public class DeliveryAreaController {
                         : null
         );
 
+        store.setDeliveryFreeDistanceKm(
+                freeDeliveryDistanceKm != null
+                        ? freeDeliveryDistanceKm
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                )
+                        : null
+        );
+
         return new DeliveryConfigResponse(
                 store.getDeliveryOriginAddress(),
                 store.getDeliveryMaxDistanceKm(),
                 store.getDeliveryFeePerKm(),
                 store.getDeliveryFreeAbove(),
+                store.getDeliveryFreeDistanceKm(),
                 deliveryQuoteService.isConfigured(),
                 deliveryQuoteService.getProviderName()
         );
@@ -578,7 +620,8 @@ public class DeliveryAreaController {
             String originAddress,
             BigDecimal maxDistanceKm,
             BigDecimal feePerKm,
-            BigDecimal freeDeliveryAbove
+            BigDecimal freeDeliveryAbove,
+            BigDecimal freeDeliveryDistanceKm
     ) {
     }
 
@@ -587,6 +630,7 @@ public class DeliveryAreaController {
             BigDecimal maxDistanceKm,
             BigDecimal feePerKm,
             BigDecimal freeDeliveryAbove,
+            BigDecimal freeDeliveryDistanceKm,
             boolean mapsConfigured,
             String routeProvider
     ) {
