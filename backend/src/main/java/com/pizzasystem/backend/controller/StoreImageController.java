@@ -33,6 +33,24 @@ public class StoreImageController {
                 imageStorageService;
     }
 
+    @GetMapping("/status")
+    public Map<String, Object> storageStatus() {
+
+        boolean persistent =
+                imageStorageService
+                        .isPersistentStorageConfigured();
+
+        return Map.of(
+                "persistent",
+                persistent,
+                "provider",
+                imageStorageService
+                        .storageProvider(),
+                "bucket",
+                "pizzasystem-assets"
+        );
+    }
+
     @PostMapping(
             value = "/logo",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
