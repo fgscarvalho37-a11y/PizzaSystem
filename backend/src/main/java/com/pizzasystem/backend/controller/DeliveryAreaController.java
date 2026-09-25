@@ -104,7 +104,10 @@ public class DeliveryAreaController {
         return new DeliveryConfigResponse(
                 store.getDeliveryOriginAddress(),
                 store.getDeliveryMaxDistanceKm(),
-                deliveryQuoteService.isConfigured()
+                store.getDeliveryFeePerKm(),
+                store.getDeliveryFreeAbove(),
+                deliveryQuoteService.isConfigured(),
+                deliveryQuoteService.getProviderName()
         );
     }
 
@@ -130,6 +133,16 @@ public class DeliveryAreaController {
                         ? request.maxDistanceKm()
                         : null;
 
+        BigDecimal feePerKm =
+                request != null
+                        ? request.feePerKm()
+                        : null;
+
+        BigDecimal freeDeliveryAbove =
+                request != null
+                        ? request.freeDeliveryAbove()
+                        : null;
+
         if (
                 maxDistanceKm != null &&
                 maxDistanceKm.compareTo(
@@ -139,6 +152,30 @@ public class DeliveryAreaController {
 
             throw new IllegalArgumentException(
                     "A distância máxima deve ser maior que zero."
+            );
+        }
+
+        if (
+                feePerKm == null ||
+                feePerKm.compareTo(
+                        BigDecimal.ZERO
+                ) < 0
+        ) {
+
+            throw new IllegalArgumentException(
+                    "O valor por km deve ser zero ou maior."
+            );
+        }
+
+        if (
+                freeDeliveryAbove != null &&
+                freeDeliveryAbove.compareTo(
+                        BigDecimal.ZERO
+                ) <= 0
+        ) {
+
+            throw new IllegalArgumentException(
+                    "O valor para frete grátis deve ser maior que zero."
             );
         }
 
@@ -156,10 +193,30 @@ public class DeliveryAreaController {
                         : null
         );
 
+        store.setDeliveryFeePerKm(
+                feePerKm.setScale(
+                        2,
+                        RoundingMode.HALF_UP
+                )
+        );
+
+        store.setDeliveryFreeAbove(
+                freeDeliveryAbove != null
+                        ? freeDeliveryAbove
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                )
+                        : null
+        );
+
         return new DeliveryConfigResponse(
                 store.getDeliveryOriginAddress(),
                 store.getDeliveryMaxDistanceKm(),
-                deliveryQuoteService.isConfigured()
+                store.getDeliveryFeePerKm(),
+                store.getDeliveryFreeAbove(),
+                deliveryQuoteService.isConfigured(),
+                deliveryQuoteService.getProviderName()
         );
     }
 
@@ -180,40 +237,9 @@ public class DeliveryAreaController {
                                 store
                         );
 
-        String city =
-                normalizeRequired(
-                        request != null
-                                ? request.city()
-                                : null,
-                        "Cidade"
-                );
-
-        String neighborhood =
-                normalizeRequired(
-                        request != null
-                                ? request.neighborhood()
-                                : null,
-                        "Bairro"
-                );
-
-        DeliveryArea area =
-                deliveryAreaRepository
-                        .findByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCaseAndActiveTrue(
-                                publicStore.getId(),
-                                city,
-                                neighborhood
-                        )
-                        .orElseThrow(
-                                () ->
-                                        new IllegalArgumentException(
-                                                "Não realizamos entrega para este bairro."
-                                        )
-                        );
-
         return deliveryQuoteService
                 .quote(
                         publicStore,
-                        area,
                         request
                 );
     }
@@ -550,14 +576,19 @@ public class DeliveryAreaController {
 
     public record DeliveryConfigRequest(
             String originAddress,
-            BigDecimal maxDistanceKm
+            BigDecimal maxDistanceKm,
+            BigDecimal feePerKm,
+            BigDecimal freeDeliveryAbove
     ) {
     }
 
     public record DeliveryConfigResponse(
             String originAddress,
             BigDecimal maxDistanceKm,
-            boolean mapsConfigured
+            BigDecimal feePerKm,
+            BigDecimal freeDeliveryAbove,
+            boolean mapsConfigured,
+            String routeProvider
     ) {
     }
 }
