@@ -11,9 +11,7 @@ import {
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:8080";
+const API_URL = "";
 
 const DEFAULT_PRIMARY = "#E63946";
 const DEFAULT_SECONDARY = "#F4C95D";
