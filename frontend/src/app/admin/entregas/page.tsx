@@ -784,9 +784,18 @@ export default function AdminEntregasPage() {
                 <p className="mt-2 text-sm leading-6 text-foreground">
                   {feePerKm.trim()
                     ? `Uma entrega de 5 km custaria ${money(
-                        Number(
-                          feePerKm || 0
-                        ) * 5
+                        Math.max(
+                          0,
+                          5 -
+                            Number(
+                              freeDeliveryDistanceKm ||
+                                0
+                            )
+                        ) *
+                          Number(
+                            feePerKm ||
+                              0
+                          )
                       )}.`
                     : "Defina o valor por km para visualizar um exemplo."}
 
