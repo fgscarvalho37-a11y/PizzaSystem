@@ -1319,6 +1319,24 @@ export default function AdminPedidosPage() {
                           />
                         </button>
 
+                        <Link
+                          href={`/admin/pedidos/${order.id}/imprimir`}
+                          className="
+                            inline-flex h-9
+                            items-center gap-2
+                            rounded-lg
+                            border border-border
+                            bg-background
+                            px-3.5
+                            text-sm font-bold
+                            text-foreground
+                            transition
+                            hover:bg-muted
+                          "
+                        >
+                          Imprimir
+                        </Link>
+
                         {active && (
                           <Link
                             href="/admin/cozinha"
