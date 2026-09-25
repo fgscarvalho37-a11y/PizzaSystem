@@ -198,7 +198,10 @@ public class DeliveryQuoteService {
         BigDecimal freeDeliveryAbove =
                 store.getDeliveryFreeAbove();
 
-        boolean freeDelivery =
+        BigDecimal freeDeliveryDistanceKm =
+                store.getDeliveryFreeDistanceKm();
+
+        boolean freeByOrderValue =
                 freeDeliveryAbove != null &&
                 freeDeliveryAbove.compareTo(
                         BigDecimal.ZERO
@@ -206,6 +209,19 @@ public class DeliveryQuoteService {
                 subtotal.compareTo(
                         freeDeliveryAbove
                 ) >= 0;
+
+        boolean freeByDistance =
+                freeDeliveryDistanceKm != null &&
+                freeDeliveryDistanceKm.compareTo(
+                        BigDecimal.ZERO
+                ) > 0 &&
+                distanceKm.compareTo(
+                        freeDeliveryDistanceKm
+                ) <= 0;
+
+        boolean freeDelivery =
+                freeByOrderValue ||
+                freeByDistance;
 
         BigDecimal fee =
                 freeDelivery
@@ -237,6 +253,13 @@ public class DeliveryQuoteService {
                 freeDelivery,
                 freeDeliveryAbove != null
                         ? freeDeliveryAbove
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                )
+                        : null,
+                freeDeliveryDistanceKm != null
+                        ? freeDeliveryDistanceKm
                                 .setScale(
                                         2,
                                         RoundingMode.HALF_UP
