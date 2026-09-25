@@ -350,6 +350,26 @@ function PersonalizationIcon({
   );
 }
 
+function GuideIcon({
+  className = "h-5 w-5",
+}: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v17H6.5A2.5 2.5 0 0 0 4 22V5.5Z" />
+      <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v17h4.5A2.5 2.5 0 0 1 20 22V5.5Z" />
+    </svg>
+  );
+}
+
 function SettingsIcon({
   className = "h-5 w-5",
 }: IconProps) {
@@ -555,6 +575,11 @@ const sections = [
         label: "Configurações",
         href: "/admin/configuracoes",
         icon: SettingsIcon,
+      },
+      {
+        label: "Guia",
+        href: "/admin/guia",
+        icon: GuideIcon,
       },
     ],
   },
