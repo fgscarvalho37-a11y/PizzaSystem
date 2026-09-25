@@ -561,6 +561,11 @@ const sections = [
     title: "Sistema",
     items: [
       {
+        label: "Loja online",
+        href: "/admin/loja",
+        icon: ExternalIcon,
+      },
+      {
         label: "Horários",
         href: "/admin/horarios",
         icon: ClockIcon,
