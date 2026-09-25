@@ -40,6 +40,10 @@ export const metadata: Metadata = {
 
   description:
     "Peça suas pizzas favoritas de forma rápida e acompanhe seu pedido.",
+
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 // =========================
