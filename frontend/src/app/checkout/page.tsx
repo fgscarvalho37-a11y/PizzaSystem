@@ -153,6 +153,8 @@ export default function CheckoutPage() {
     []
   );
 
+  const [deliveryQuoteAttempt, setDeliveryQuoteAttempt] = useState(0);
+
   const [
     deliveryQuote,
     setDeliveryQuote,
@@ -860,6 +862,7 @@ export default function CheckoutPage() {
     complement,
     storeSlug,
     subtotal,
+    deliveryQuoteAttempt,
   ]);
 
   // =========================
@@ -2170,7 +2173,11 @@ export default function CheckoutPage() {
 
                 ) : deliveryQuoteError ? (
                   <div className="text-sm text-primary">
-                    <p className="font-medium">{deliveryQuoteError} Confira se a rua, número, bairro e cidade estão completos.</p>
+                    <p className="font-medium">{deliveryQuoteError}</p>
+                    <button type="button" onClick={() => setDeliveryQuoteAttempt((attempt) => attempt + 1)}
+                      className="mt-2 mr-4 inline-block font-bold underline underline-offset-2">
+                      Recalcular entrega
+                    </button>
                     <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent([street, number, neighborhood, city].filter(Boolean).join(", "))}`}
                       target="_blank" rel="noreferrer" className="mt-2 inline-block font-bold underline underline-offset-2">
                       Conferir endereço no OpenStreetMap

@@ -30,6 +30,9 @@ jobs:
           java-version: "21"
           cache: maven
 
+      - name: Test delivery address matching
+        run: mvn --batch-mode --no-transfer-progress -Dtest=DeliveryAddressTest test
+
       - name: Compile backend
         run: mvn --batch-mode --no-transfer-progress -DskipTests package
 
