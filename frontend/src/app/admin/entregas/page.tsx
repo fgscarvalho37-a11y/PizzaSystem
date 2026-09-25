@@ -566,7 +566,7 @@ export default function AdminEntregasPage() {
                   )}
                 >
                   {config?.mapsConfigured
-                    ? "Rotas conectadas"
+                    ? "Chave configurada"
                     : "Falta chave de rotas"}
                 </span>
 

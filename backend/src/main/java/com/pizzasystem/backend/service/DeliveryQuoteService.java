@@ -155,14 +155,10 @@ public class DeliveryQuoteService {
                 );
 
         Coordinates origin =
-                geocode(
-                        originAddress
-                );
+                geocode(originAddress, DeliveryAddress.fromOrigin(originAddress), "saída da pizzaria");
 
         Coordinates destination =
-                geocode(
-                        destinationAddress
-                );
+                geocode(destinationAddress, new DeliveryAddress(request.street(), request.number(), request.city(), ""), "entrega");
 
         BigDecimal distanceKm =
                 calculateDistanceKm(
@@ -185,7 +181,9 @@ public class DeliveryQuoteService {
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Endereço fora da distância máxima de entrega."
+                    "A rota calculada tem " + distanceKm.toPlainString() + " km; o limite da loja é "
+                            + maxDistance.toPlainString() + " km. Pontos encontrados: "
+                            + origin.label() + " → " + destination.label() + "."
             );
         }
 
@@ -514,157 +512,73 @@ public class DeliveryQuoteService {
         );
     }
 
-    private Coordinates geocode(
-            String address
-    ) {
+    private Coordinates geocode(String text, DeliveryAddress address, String role) {
+        if (address.city().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Informe a cidade no endereço de " + role + ". Use: rua, número, cidade - UF.");
+        }
+        // Keep city and street separate: free-text searches can match a similarly
+        // named road elsewhere in Brazil, even when the requested city is present.
+        String structured = GEOCODE_URL + "/structured?address="
+                + encode(address.street() + " " + address.number())
+                + "&locality=" + encode(address.city()) + "&country=BR"
+                + (address.region().isBlank() ? "" : "&region=" + encode(address.region()));
+        Coordinates result = searchCoordinates(structured, address);
+        if (result == null) {
+            result = searchCoordinates(GEOCODE_URL + "?text=" + encode(text), address);
+        }
+        if (result == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Não foi possível confirmar a rua na cidade informada para " + role
+                            + ". Confira o nome completo da rua e a cidade; nenhum ponto aproximado de outra cidade foi usado.");
+        }
+        return result;
+    }
 
+    private String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    private Coordinates searchCoordinates(String url, DeliveryAddress address) {
         try {
-
-            String url =
-                    GEOCODE_URL
-                            + "?text="
-                            + URLEncoder.encode(
-                                    address,
-                                    StandardCharsets.UTF_8
-                            )
-                            + "&size=1"
-                            + "&boundary.country=BR";
-
-            HttpRequest request =
-                    HttpRequest
-                            .newBuilder()
-                            .uri(
-                                    URI.create(
-                                            url
-                                    )
-                            )
-                            .timeout(
-                                    Duration.ofSeconds(
-                                            12
-                                    )
-                            )
-                            .header(
-                                    "Accept",
-                                    "application/json"
-                            )
-                            .header(
-                                    "Authorization",
-                                    openRouteServiceApiKey
-                            )
-                            .GET()
-                            .build();
-
-            HttpResponse<String> response =
-                    httpClient.send(
-                            request,
-                            HttpResponse
-                                    .BodyHandlers
-                                    .ofString(
-                                            StandardCharsets.UTF_8
-                                    )
-                    );
-
-            if (
-                    response.statusCode() < 200 ||
-                    response.statusCode() >= 300
-            ) {
-
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_GATEWAY,
-                        "Não foi possível localizar o endereço informado."
-                );
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url + "&size=10&boundary.country=BR"))
+                    .timeout(Duration.ofSeconds(12))
+                    .header("Accept", "application/json")
+                    .header("Authorization", openRouteServiceApiKey).GET().build();
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (response.statusCode() == 429) {
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "O serviço de mapas atingiu o limite de consultas. Aguarde um pouco e tente recalcular.");
             }
-
-            JsonNode root =
-                    objectMapper.readTree(
-                            response.body()
-                    );
-
-            JsonNode features =
-                    root.path(
-                            "features"
-                    );
-
-            if (
-                    !features.isArray() ||
-                    features.isEmpty()
-            ) {
-
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Endereço não encontrado. Revise rua, número, bairro e cidade."
-                );
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "O serviço de localização está indisponível. Tente recalcular em instantes.");
             }
-
-            JsonNode coordinates =
-                    features
-                            .get(
-                                    0
-                            )
-                            .path(
-                                    "geometry"
-                            )
-                            .path(
-                                    "coordinates"
-                            );
-
-            if (
-                    !coordinates.isArray() ||
-                    coordinates.size() < 2
-            ) {
-
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_GATEWAY,
-                        "O provedor de mapas não retornou coordenadas válidas."
-                );
+            JsonNode features = objectMapper.readTree(response.body()).path("features");
+            if (!features.isArray()) return null;
+            for (JsonNode feature : features) {
+                JsonNode properties = feature.path("properties");
+                if (!address.matches(properties)) continue;
+                JsonNode point = feature.path("geometry").path("coordinates");
+                if (!point.isArray() || point.size() < 2
+                        || !point.get(0).isNumber() || !point.get(1).isNumber()) continue;
+                double longitude = point.get(0).asDouble();
+                double latitude = point.get(1).asDouble();
+                if (!Double.isFinite(longitude) || !Double.isFinite(latitude)
+                        || Math.abs(longitude) > 180 || Math.abs(latitude) > 90) continue;
+                return new Coordinates(longitude, latitude, properties.path("label").asText(address.city()));
             }
-
-            double longitude =
-                    coordinates
-                            .get(
-                                    0
-                            )
-                            .asDouble();
-
-            double latitude =
-                    coordinates
-                            .get(
-                                    1
-                            )
-                            .asDouble();
-
-            return new Coordinates(
-                    longitude,
-                    latitude
-            );
-
-        } catch (
-                ResponseStatusException exception
-        ) {
-
+            return null;
+        } catch (ResponseStatusException exception) {
             throw exception;
-
-        } catch (
-                InterruptedException exception
-        ) {
-
-            Thread
-                    .currentThread()
-                    .interrupt();
-
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_GATEWAY,
-                    "A consulta do endereço foi interrompida."
-            );
-
-        } catch (
-                Exception exception
-        ) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_GATEWAY,
-                    "Não foi possível localizar o endereço informado."
-            );
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "A consulta do endereço foi interrompida.");
+        } catch (Exception exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Não foi possível consultar o serviço de localização. Tente recalcular.");
         }
     }
 
@@ -714,6 +628,8 @@ public class DeliveryQuoteService {
             coordinates.add(
                     destinationNode
             );
+
+            body.put("units", "m");
 
             body.set(
                     "coordinates",
@@ -915,7 +831,8 @@ public class DeliveryQuoteService {
 
     private record Coordinates(
             double longitude,
-            double latitude
+            double latitude,
+            String label
     ) {
     }
 }
