@@ -7,23 +7,7 @@ import {
 
 import Link from "next/link";
 
-import {
-  BarChart3,
-  Bike,
-  Check,
-  ChefHat,
-  ChevronLeft,
-  ChevronRight,
-  CreditCard,
-  ExternalLink,
-  Globe2,
-  LayoutDashboard,
-  Palette,
-  ReceiptText,
-  ShoppingBag,
-  Sparkles,
-  X,
-} from "lucide-react";
+import GuideFeatureIcon from "@/components/GuideFeatureIcon";
 
 import { adminFetch } from "@/lib/adminFetch";
 
@@ -40,7 +24,14 @@ type Step = {
   href: string;
   action: string;
   icon:
-    typeof LayoutDashboard;
+    | "dashboard"
+    | "menu"
+    | "store"
+    | "kitchen"
+    | "delivery"
+    | "payment"
+    | "reports"
+    | "palette";
 };
 
 const steps: Step[] = [
@@ -56,7 +47,7 @@ const steps: Step[] = [
     ],
     href: "/admin",
     action: "Abrir painel",
-    icon: LayoutDashboard,
+    icon: "dashboard",
   },
   {
     eyebrow: "Monte sua operação",
@@ -70,7 +61,7 @@ const steps: Step[] = [
     ],
     href: "/admin/cardapio",
     action: "Gerenciar cardápio",
-    icon: ShoppingBag,
+    icon: "menu",
   },
   {
     eyebrow: "Venda online",
@@ -84,7 +75,7 @@ const steps: Step[] = [
     ],
     href: "/admin/loja",
     action: "Configurar loja",
-    icon: Globe2,
+    icon: "store",
   },
   {
     eyebrow: "Operação",
@@ -98,7 +89,7 @@ const steps: Step[] = [
     ],
     href: "/admin/pedidos",
     action: "Ver pedidos",
-    icon: ChefHat,
+    icon: "kitchen",
   },
   {
     eyebrow: "Entrega",
@@ -112,7 +103,7 @@ const steps: Step[] = [
     ],
     href: "/admin/entregas",
     action: "Ver entregas",
-    icon: Bike,
+    icon: "delivery",
   },
   {
     eyebrow: "Pagamentos",
@@ -126,7 +117,7 @@ const steps: Step[] = [
     ],
     href: "/admin/configuracoes",
     action: "Abrir configurações",
-    icon: CreditCard,
+    icon: "payment",
   },
   {
     eyebrow: "Financeiro",
@@ -140,7 +131,7 @@ const steps: Step[] = [
     ],
     href: "/admin/caixa",
     action: "Abrir caixa",
-    icon: BarChart3,
+    icon: "reports",
   },
   {
     eyebrow: "Sua marca",
@@ -154,7 +145,7 @@ const steps: Step[] = [
     ],
     href: "/admin/personalizacao",
     action: "Personalizar",
-    icon: Palette,
+    icon: "palette",
   },
 ];
 
@@ -187,7 +178,7 @@ export default function AdminOnboarding({
     return null;
   }
 
-  const Icon =
+  const iconKind =
     step.icon;
 
   const last =
@@ -241,7 +232,7 @@ export default function AdminOnboarding({
           <div className="flex items-center gap-3">
 
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-              <Sparkles className="h-5 w-5" />
+              <span className="text-lg" aria-hidden="true">✦</span>
             </div>
 
             <div>
@@ -264,7 +255,7 @@ export default function AdminOnboarding({
             aria-label="Pular introdução"
             className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
-            <X className="h-5 w-5" />
+            <span className="text-xl leading-none" aria-hidden="true">×</span>
           </button>
 
         </div>
@@ -317,9 +308,12 @@ export default function AdminOnboarding({
 
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-background/80">
                           {passed ? (
-                            <Check className="h-4 w-4" />
+                            <span className="text-sm font-bold">✓</span>
                           ) : (
-                            <StepIcon className="h-4 w-4" />
+                            <GuideFeatureIcon
+                              kind={item.icon}
+                              className="h-4 w-4"
+                            />
                           )}
                         </div>
 
@@ -349,7 +343,10 @@ export default function AdminOnboarding({
             <section className="p-6 sm:p-8 lg:p-10">
 
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Icon className="h-7 w-7" />
+                <GuideFeatureIcon
+                kind={iconKind}
+                className="h-7 w-7"
+              />
               </div>
 
               <p className="mt-7 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
@@ -378,7 +375,7 @@ export default function AdminOnboarding({
                     >
 
                       <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <Check className="h-3.5 w-3.5" />
+                        <span className="text-xs font-bold">✓</span>
                       </div>
 
                       <p className="text-sm leading-6 text-foreground/80">
@@ -401,7 +398,7 @@ export default function AdminOnboarding({
                 className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-bold text-foreground transition hover:bg-muted"
               >
                 {step.action}
-                <ExternalLink className="h-4 w-4" />
+                <span aria-hidden="true">↗</span>
               </Link>
 
             </section>
@@ -450,7 +447,7 @@ export default function AdminOnboarding({
                 }
                 className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-bold text-foreground transition hover:bg-muted"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <span aria-hidden="true">←</span>
                 Voltar
               </button>
             )}
@@ -466,7 +463,7 @@ export default function AdminOnboarding({
                 }
                 className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
               >
-                <Check className="h-4 w-4" />
+                <span aria-hidden="true">✓</span>
                 {finishing
                   ? "Salvando..."
                   : "Concluir"}
@@ -487,7 +484,7 @@ export default function AdminOnboarding({
                 className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:opacity-90"
               >
                 Próximo
-                <ChevronRight className="h-4 w-4" />
+                <span aria-hidden="true">→</span>
               </button>
             )}
 
