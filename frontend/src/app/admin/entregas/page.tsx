@@ -9,9 +9,7 @@ import {
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:8080";
+const API_URL = "";
 
 
 type DeliveryArea = {
