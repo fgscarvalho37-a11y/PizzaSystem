@@ -13,6 +13,8 @@ import {
 } from "next/navigation";
 
 import { setBrowserIcon } from "@/lib/browserIcon";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 import ProductAddonSelector, {
   getSelectedAddonsPrice,
@@ -341,6 +343,12 @@ function AccountIcon({
 export default function CardapioPage() {
   const router =
     useRouter();
+
+  const {
+    locale,
+    text,
+  } =
+    useLanguage();
 
   const params =
     useParams<{
@@ -728,7 +736,7 @@ export default function CardapioPage() {
 
         if (mounted) {
           setLoadError(
-            "Não foi possível carregar o cardápio agora. Tente novamente em instantes."
+            text("Não foi possível carregar o cardápio agora. Tente novamente em instantes.", "We could not load the menu right now. Please try again shortly.")
           );
         }
       } finally {
@@ -944,10 +952,10 @@ export default function CardapioPage() {
     if (!storeStatus?.open) {
       showToast({
         type: "error",
-        title: "Pedidos indisponíveis",
+        title: text("Pedidos indisponíveis", "Ordering unavailable"),
         message:
           storeStatus?.message ||
-          "O estabelecimento não está recebendo pedidos agora.",
+          text("O estabelecimento não está recebendo pedidos agora.", "This store is not accepting orders right now."),
       });
 
       return;
@@ -958,13 +966,14 @@ export default function CardapioPage() {
         selectedProduct
           .addonGroups ??
           [],
-        selectedAddonIds
+        selectedAddonIds,
+        locale
       );
 
     if (!addonValidation.valid) {
       showToast({
         type: "warning",
-        title: "Complete suas escolhas",
+        title: text("Complete suas escolhas", "Complete your selections"),
         message:
           addonValidation.message,
       });
@@ -1045,7 +1054,7 @@ export default function CardapioPage() {
     showToast({
       type: "success",
       title:
-        "Adicionado ao pedido",
+        text("Adicionado ao pedido", "Added to your order"),
       message:
         `${selectedQuantity}x ${selectedProduct.name}`,
     });
@@ -1144,7 +1153,7 @@ export default function CardapioPage() {
       showToast({
         type: "warning",
         title:
-          "Item removido",
+          text("Item removido", "Item removed"),
         message:
           item.product.name,
       });
@@ -1176,10 +1185,10 @@ export default function CardapioPage() {
       showToast({
         type: "error",
         title:
-          "Pedidos indisponíveis",
+          text("Pedidos indisponíveis", "Ordering unavailable"),
         message:
           storeStatus?.message ||
-          "O estabelecimento não está recebendo pedidos agora.",
+          text("O estabelecimento não está recebendo pedidos agora.", "This store is not accepting orders right now."),
       });
 
       return;
@@ -1192,9 +1201,9 @@ export default function CardapioPage() {
       showToast({
         type: "warning",
         title:
-          "Seu pedido está vazio",
+          text("Seu pedido está vazio", "Your order is empty"),
         message:
-          "Adicione pelo menos um item para continuar.",
+          text("Adicione pelo menos um item para continuar.", "Add at least one item to continue."),
       });
 
       return;
@@ -1532,7 +1541,7 @@ export default function CardapioPage() {
 
               <span className="mt-1 hidden font-mono-brand text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:block">
                 {storeProfile?.footerTagline ||
-                  "Pedidos online"}
+                  text("Pedidos online", "Online ordering")}
               </span>
 
             </span>
@@ -1540,6 +1549,8 @@ export default function CardapioPage() {
           </button>
 
           <div className="flex shrink-0 items-center gap-2">
+
+            <LanguageSwitcher />
 
             <button
               type="button"
@@ -1553,8 +1564,8 @@ export default function CardapioPage() {
               className="flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 text-xs font-bold transition-colors hover:border-foreground/30 hover:bg-secondary sm:min-h-10 sm:gap-2 sm:px-4 sm:text-sm"
               aria-label={
                 customer
-                  ? "Abrir minha conta"
-                  : "Entrar ou criar conta"
+                  ? text("Abrir minha conta", "Open my account")
+                  : text("Entrar ou criar conta", "Sign in or create account")
               }
             >
 
@@ -1576,10 +1587,10 @@ export default function CardapioPage() {
 
               <span className="hidden max-w-24 truncate sm:inline">
                 {!customerSessionLoaded
-                  ? "Conta"
+                  ? text("Conta", "Account")
                   : customer
                     ? customerFirstName
-                    : "Entrar"}
+                    : text("Entrar", "Sign in")}
               </span>
 
             </button>
@@ -1597,7 +1608,7 @@ export default function CardapioPage() {
               <ShoppingBagIcon className="h-4 w-4" />
 
               <span className="hidden sm:inline">
-                Pedido
+                {text("Pedido", "Order")}
               </span>
 
               <span
@@ -1638,7 +1649,7 @@ export default function CardapioPage() {
                   : "brand-chip shrink-0 px-3 py-1.5 text-xs font-semibold active:scale-95 sm:px-4 sm:py-2 sm:text-sm"
               }
             >
-              Todos
+              {text("Todos", "All")}
             </button>
 
             {categories.map(
@@ -1710,27 +1721,27 @@ export default function CardapioPage() {
 
               {storeStatus?.open
                 ? storeProfile?.heroOpenStatusText ||
-                  "Recebendo pedidos"
+                  text("Recebendo pedidos", "Accepting orders")
                 : storeProfile?.heroClosedStatusText ||
-                  "Pedidos encerrados"}
+                  text("Pedidos encerrados", "Ordering closed")}
             </div>
 
             <h1 className="mt-2 font-display text-[2.2rem] leading-[0.92] tracking-[-0.035em] min-[390px]:text-[2.5rem] sm:mt-3 sm:text-[3.5rem] lg:text-[5rem]">
               {storeProfile?.heroTitleLine1 ||
-                "ESCOLHA."}
+                text("ESCOLHA.", "CHOOSE.")}
               <br />
               {storeProfile?.heroTitleLine2 ||
-                "PEÇA."}
+                text("PEÇA.", "ORDER.")}
               <br />
               <span className="text-primary">
                 {storeProfile?.heroTitleLine3 ||
-                  "APROVEITE."}
+                  text("APROVEITE.", "ENJOY.")}
               </span>
             </h1>
 
             <p className="mt-2 max-w-xl text-[13px] leading-5 text-muted-foreground sm:mt-3 sm:text-base sm:leading-6">
               {storeProfile?.heroDescription ||
-                "Escolha seus favoritos, monte seu pedido e acompanhe tudo pelo site."}
+                text("Escolha seus favoritos, monte seu pedido e acompanhe tudo pelo site.", "Choose your favorites, build your order and track everything online.")}
             </p>
 
             {!storeStatus?.open && (
@@ -1742,7 +1753,7 @@ export default function CardapioPage() {
 
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
                   {storeStatus?.message ||
-                    "Você pode consultar o cardápio e voltar quando os pedidos forem liberados."}
+                    text("Você pode consultar o cardápio e voltar quando os pedidos forem liberados.", "You can browse the menu and come back when ordering is available.")}
                 </p>
 
               </div>
@@ -1787,7 +1798,7 @@ export default function CardapioPage() {
                 src={
                   coverImageUrl
                 }
-                alt="Destaque do cardápio"
+                alt=text("Destaque do cardápio", "Menu highlight")
                 className="aspect-[16/7] max-h-44 w-full object-cover sm:aspect-[16/9] sm:max-h-none"
               />
 
@@ -1853,7 +1864,7 @@ export default function CardapioPage() {
                 }
                 placeholder={
                   storeProfile?.menuSearchPlaceholder ||
-                  "Buscar no cardápio"
+                  text("Buscar no cardápio", "Search the menu")
                 }
                 className="h-12 w-full rounded-full border border-border bg-white/70 pl-11 pr-5 text-sm font-semibold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
               />
@@ -1885,18 +1896,18 @@ export default function CardapioPage() {
                   {products.length === 0 &&
                   !search &&
                   activeCategoryId === "ALL"
-                    ? "Cardápio em preparação"
+                    ? text("Cardápio em preparação", "Menu coming soon")
                     : storeProfile?.menuEmptyTitle ||
-                      "Nenhum item encontrado"}
+                      text("Nenhum item encontrado", "No items found")}
                 </p>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
                   {products.length === 0 &&
                   !search &&
                   activeCategoryId === "ALL"
-                    ? "Esta loja ainda não publicou produtos. Volte em breve."
+                    ? text("Esta loja ainda não publicou produtos. Volte em breve.", "This store has not published any products yet. Check back soon.")
                     : storeProfile?.menuEmptyDescription ||
-                      "Tente outra categoria ou altere sua busca."}
+                      text("Tente outra categoria ou altere sua busca.", "Try another category or change your search.")}
                 </p>
 
                 {(search ||
@@ -1915,7 +1926,7 @@ export default function CardapioPage() {
                     }}
                     className="mt-5 rounded-full border-2 border-foreground px-5 py-2.5 text-sm font-bold transition-colors hover:bg-foreground hover:text-cream"
                   >
-                    Limpar filtros
+                    {text("Limpar filtros", "Clear filters")}
                   </button>
                 )}
 
@@ -2024,7 +2035,7 @@ export default function CardapioPage() {
 
                       <p className="mt-1.5 hidden flex-1 text-[13px] leading-5 text-muted-foreground sm:line-clamp-2 sm:block">
                         {product.description ||
-                          "Confira este item do nosso cardápio."}
+                          text("Confira este item do nosso cardápio.", "Check out this item from our menu.")}
                       </p>
 
                       {(product.addonGroups ?? []).some(
@@ -2056,7 +2067,7 @@ export default function CardapioPage() {
 
                         {storeStatus?.open
                           ? "Ver opções"
-                          : "Indisponível agora"}
+                          : text("Indisponível agora", "Unavailable right now")}
                       </button>
 
                     </div>
@@ -2091,7 +2102,7 @@ export default function CardapioPage() {
 
             <p className="mt-1 font-mono-brand text-xs uppercase tracking-[0.15em] text-muted-foreground">
               {storeProfile?.footerTagline ||
-                "Pedidos online"}
+                text("Pedidos online", "Online ordering")}
             </p>
 
           </div>
@@ -2165,7 +2176,7 @@ export default function CardapioPage() {
 
           <button
             type="button"
-            aria-label="Fechar produto"
+            aria-label=text("Fechar produto", "Close product")
             onClick={
               closeProduct
             }
@@ -2252,7 +2263,7 @@ export default function CardapioPage() {
 
               <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
                 {selectedProduct.description ||
-                  "Confira este item do nosso cardápio."}
+                  text("Confira este item do nosso cardápio.", "Check out this item from our menu.")}
               </p>
 
               <ProductAddonSelector
@@ -2419,7 +2430,7 @@ export default function CardapioPage() {
 
                     <button
                       type="button"
-                      aria-label="Diminuir quantidade"
+                      aria-label=text("Diminuir quantidade", "Decrease quantity")
                       onClick={() =>
                         setSelectedQuantity(
                           (
@@ -2443,7 +2454,7 @@ export default function CardapioPage() {
 
                     <button
                       type="button"
-                      aria-label="Aumentar quantidade"
+                      aria-label=text("Aumentar quantidade", "Increase quantity")
                       onClick={() =>
                         setSelectedQuantity(
                           (
@@ -2519,7 +2530,7 @@ export default function CardapioPage() {
                       selectedUnitPrice *
                         selectedQuantity
                     )}`
-                  : "Pedidos encerrados"}
+                  : text("Pedidos encerrados", "Ordering closed")}
 
               </button>
 
@@ -2539,7 +2550,7 @@ export default function CardapioPage() {
 
           <button
             type="button"
-            aria-label="Fechar pedido"
+            aria-label=text("Fechar pedido", "Close order")
             onClick={() =>
               setCartOpen(
                 false
@@ -2726,7 +2737,7 @@ export default function CardapioPage() {
 
                                 <button
                                   type="button"
-                                  aria-label={`Remover ${item.product.name}`}
+                                  aria-label={text(`Remover ${item.product.name}`, `Remove ${item.product.name}`)}
                                   onClick={() =>
                                     removeFromCart(
                                       itemIndex
@@ -2743,7 +2754,7 @@ export default function CardapioPage() {
 
                                 <button
                                   type="button"
-                                  aria-label={`Diminuir quantidade de ${item.product.name}`}
+                                  aria-label={text(`Diminuir quantidade de ${item.product.name}`, `Decrease quantity of ${item.product.name}`)}
                                   onClick={() =>
                                     decreaseQuantity(
                                       itemIndex
@@ -2760,7 +2771,7 @@ export default function CardapioPage() {
 
                                 <button
                                   type="button"
-                                  aria-label={`Aumentar quantidade de ${item.product.name}`}
+                                  aria-label={text(`Aumentar quantidade de ${item.product.name}`, `Increase quantity of ${item.product.name}`)}
                                   onClick={() =>
                                     increaseQuantity(
                                       itemIndex
@@ -2854,8 +2865,8 @@ export default function CardapioPage() {
               >
 
                 {storeStatus?.open
-                  ? "Continuar para checkout"
-                  : "Pedidos encerrados"}
+                  ? text("Continuar para checkout", "Continue to checkout")
+                  : text("Pedidos encerrados", "Ordering closed")}
 
                 {storeStatus?.open && (
                   <ArrowRightIcon className="h-4 w-4" />

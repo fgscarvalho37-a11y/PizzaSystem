@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage, type AppLocale } from "@/i18n/LanguageProvider";
+
 export type ProductAddon = {
   id: number;
   name: string;
@@ -47,8 +49,11 @@ function formatMoney(
 
 export function validateAddonSelections(
   groups: ProductAddonGroup[],
-  selectedAddonIds: number[]
+  selectedAddonIds: number[],
+  locale: AppLocale = "pt-BR"
 ) {
+  const isEnglish =
+    locale === "en-US";
   const selected =
     new Set(
       selectedAddonIds
@@ -89,8 +94,12 @@ export function validateAddonSelections(
         valid: false,
         message:
           group.minSelections === 1
-            ? `Escolha uma opção em ${group.name}.`
-            : `Escolha pelo menos ${group.minSelections} opções em ${group.name}.`,
+            ? isEnglish
+              ? `Choose an option in ${group.name}.`
+              : `Escolha uma opção em ${group.name}.`
+            : isEnglish
+              ? `Choose at least ${group.minSelections} options in ${group.name}.`
+              : `Escolha pelo menos ${group.minSelections} opções em ${group.name}.`,
       };
     }
 
@@ -101,7 +110,9 @@ export function validateAddonSelections(
       return {
         valid: false,
         message:
-          `Escolha no máximo ${group.maxSelections} opções em ${group.name}.`,
+          isEnglish
+            ? `Choose up to ${group.maxSelections} options in ${group.name}.`
+            : `Escolha no máximo ${group.maxSelections} opções em ${group.name}.`,
       };
     }
   }
@@ -162,6 +173,10 @@ export default function ProductAddonSelector({
   selectedAddonIds,
   onChange,
 }: ProductAddonSelectorProps) {
+  const {
+    text,
+  } =
+    useLanguage();
 
   const activeGroups =
     groups
@@ -330,7 +345,7 @@ export default function ProductAddonSelector({
 
                     {group.required && (
                       <span className="rounded-full bg-primary/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-primary">
-                        Obrigatório
+                        {text("Obrigatório", "Required")}
                       </span>
                     )}
 
@@ -344,8 +359,11 @@ export default function ProductAddonSelector({
 
                   <p className="mt-1 text-xs text-muted-foreground">
                     {group.maxSelections === 1
-                      ? "Escolha 1 opção"
-                      : `Escolha até ${group.maxSelections} opções`}
+                      ? text("Escolha 1 opção", "Choose 1 option")
+                      : text(
+                          `Escolha até ${group.maxSelections} opções`,
+                          `Choose up to ${group.maxSelections} options`
+                        )}
                   </p>
 
                 </div>
@@ -451,7 +469,7 @@ export default function ProductAddonSelector({
                           {Number(
                             addon.price
                           ) === 0
-                            ? "Grátis"
+                            ? text("Grátis", "Free")
                             : `+ ${formatMoney(
                                 Number(
                                   addon.price

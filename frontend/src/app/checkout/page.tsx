@@ -12,6 +12,8 @@ import {
 } from "next/navigation";
 
 import MapboxLocationPicker from "@/components/MapboxLocationPicker";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 const API_URL = "";
 
@@ -157,6 +159,11 @@ function getItemUnitPrice(
 export default function CheckoutPage() {
   const router =
     useRouter();
+
+  const {
+    text,
+  } =
+    useLanguage();
 
   const [
     storeSlug,
@@ -511,7 +518,7 @@ export default function CheckoutPage() {
 
         if (mounted) {
           setCheckoutError(
-            "Não foi possível carregar os dados da loja agora. Atualize a página e tente novamente."
+            text("Não foi possível carregar os dados da loja agora. Atualize a página e tente novamente.", "We could not load the store right now. Refresh the page and try again.")
           );
         }
       }
@@ -763,7 +770,7 @@ export default function CheckoutPage() {
 
             if (!response.ok) {
               throw new Error(
-                "Não foi possível consultar o CEP."
+                text("Não foi possível consultar o CEP.", "We could not look up this postal code.")
               );
             }
 
@@ -773,7 +780,7 @@ export default function CheckoutPage() {
 
             if (data.erro) {
               throw new Error(
-                "CEP não encontrado."
+                text("CEP não encontrado.", "Postal code not found.")
               );
             }
 
@@ -808,7 +815,7 @@ export default function CheckoutPage() {
             setCepError(
               error instanceof Error
                 ? error.message
-                : "Não foi possível consultar o CEP."
+                : text("Não foi possível consultar o CEP.", "We could not look up this postal code.")
             );
           } finally {
             if (!controller.signal.aborted) {
@@ -916,7 +923,7 @@ export default function CheckoutPage() {
 
             if (!response.ok) {
               let message =
-                "Não foi possível calcular a entrega para este endereço.";
+                text("Não foi possível calcular a entrega para este endereço.", "We could not calculate delivery for this address.");
 
               try {
                 const data =
@@ -974,7 +981,7 @@ export default function CheckoutPage() {
               error instanceof
                 Error
                 ? error.message
-                : "Não foi possível calcular a entrega."
+                : text("Não foi possível calcular a entrega.", "We could not calculate delivery.")
             );
 
           } finally {
@@ -1040,7 +1047,7 @@ export default function CheckoutPage() {
       );
 
       setCouponError(
-        "O valor do pedido mudou. Aplique o cupom novamente."
+        text("O valor do pedido mudou. Aplique o cupom novamente.", "The order amount changed. Apply the coupon again.")
       );
     }
   }, [
@@ -1068,7 +1075,7 @@ export default function CheckoutPage() {
 
     if (!code) {
       setCouponError(
-        "Digite um código de cupom."
+        text("Digite um código de cupom.", "Enter a coupon code.")
       );
 
       return;
@@ -1079,7 +1086,7 @@ export default function CheckoutPage() {
       0
     ) {
       setCouponError(
-        "Não há valor para aplicar o cupom."
+        text("Não há valor para aplicar o cupom.", "There is no order value to apply the coupon to.")
       );
 
       return;
@@ -1107,7 +1114,7 @@ export default function CheckoutPage() {
         !response.ok
       ) {
         let message =
-          "Cupom inválido ou indisponível.";
+          text("Cupom inválido ou indisponível.", "Invalid or unavailable coupon.");
 
         try {
           const data =
@@ -1167,7 +1174,7 @@ export default function CheckoutPage() {
         );
 
         setCouponError(
-          "Este cupom não é válido."
+          text("Este cupom não é válido.", "This coupon is not valid.")
         );
 
         return;
@@ -1182,7 +1189,7 @@ export default function CheckoutPage() {
       );
 
       setCouponMessage(
-        `Cupom ${data.code} aplicado com sucesso.`
+        text(`Cupom ${data.code} aplicado com sucesso.`, `Coupon ${data.code} applied successfully.`)
       );
     } catch (
       error
@@ -1197,7 +1204,7 @@ export default function CheckoutPage() {
       );
 
       setCouponError(
-        "Não foi possível validar o cupom."
+        text("Não foi possível validar o cupom.", "We could not validate the coupon.")
       );
     } finally {
       setCouponLoading(
@@ -1243,7 +1250,7 @@ export default function CheckoutPage() {
       "DEBIT_CARD"
     ) {
       setCheckoutError(
-        "O pagamento com cartão de débito está temporariamente indisponível."
+        text("O pagamento com cartão de débito está temporariamente indisponível.", "Debit card payments are temporarily unavailable.")
       );
 
       return;
@@ -1254,7 +1261,7 @@ export default function CheckoutPage() {
     ) {
       setCheckoutError(
         storeStatus?.message ||
-          "O estabelecimento não está recebendo pedidos agora."
+          text("O estabelecimento não está recebendo pedidos agora.", "This store is not accepting orders right now.")
       );
 
       return;
@@ -1265,7 +1272,7 @@ export default function CheckoutPage() {
       0
     ) {
       setCheckoutError(
-        "Seu carrinho está vazio."
+        text("Seu carrinho está vazio.", "Your cart is empty.")
       );
 
       return;
@@ -1275,7 +1282,7 @@ export default function CheckoutPage() {
       !city
     ) {
       setCheckoutError(
-        "Informe a cidade para continuar."
+        text("Informe a cidade para continuar.", "Enter the city to continue.")
       );
 
       return;
@@ -1285,7 +1292,7 @@ export default function CheckoutPage() {
       !neighborhood
     ) {
       setCheckoutError(
-        "Informe o bairro para continuar."
+        text("Informe o bairro para continuar.", "Enter the neighborhood to continue.")
       );
 
       return;
@@ -1296,7 +1303,7 @@ export default function CheckoutPage() {
     ) {
       setCheckoutError(
         deliveryQuoteError ||
-          "Aguarde o cálculo da taxa de entrega."
+          text("Aguarde o cálculo da taxa de entrega.", "Wait for the delivery fee to be calculated.")
       );
 
       return;
@@ -1306,7 +1313,7 @@ export default function CheckoutPage() {
       !paymentMethod
     ) {
       setCheckoutError(
-        "Selecione a forma de pagamento."
+        text("Selecione a forma de pagamento.", "Select a payment method.")
       );
 
       return;
@@ -1317,7 +1324,7 @@ export default function CheckoutPage() {
       !appliedCoupon
     ) {
       setCheckoutError(
-        "Você digitou um cupom. Clique em Aplicar antes de finalizar o pedido."
+        text("Você digitou um cupom. Clique em Aplicar antes de finalizar o pedido.", "You entered a coupon. Click Apply before placing the order.")
       );
 
       return;
@@ -1419,7 +1426,7 @@ export default function CheckoutPage() {
         );
 
         let message =
-          "Não foi possível criar o pedido.";
+          text("Não foi possível criar o pedido.", "We could not create the order.");
 
         try {
           const data =
@@ -1458,7 +1465,7 @@ export default function CheckoutPage() {
         !publicAccessToken
       ) {
         throw new Error(
-          "Pedido criado, mas o token de acesso não foi retornado."
+          text("Pedido criado, mas o token de acesso não foi retornado.", "The order was created, but the access token was not returned.")
         );
       }
 
@@ -1497,7 +1504,7 @@ export default function CheckoutPage() {
           );
 
           throw new Error(
-            "Pedido criado, mas não foi possível gerar o Pix."
+            text("Pedido criado, mas não foi possível gerar o Pix.", "The order was created, but we could not generate the Pix payment.")
           );
         }
 
@@ -1553,7 +1560,7 @@ export default function CheckoutPage() {
         error instanceof
           Error
           ? error.message
-          : "Não foi possível finalizar o pedido."
+          : text("Não foi possível finalizar o pedido.", "We could not complete the order.")
       );
     } finally {
       setSubmitting(
@@ -1662,29 +1669,23 @@ export default function CheckoutPage() {
               </span>
             </button>
 
+            <LanguageSwitcher />
+
           </div>
 
         </header>
 
         <div className="mx-auto max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
 
-          <span className="font-mono-brand text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            (b) Finalizar
-          </span>
+          <span className="font-mono-brand text-xs uppercase tracking-[0.2em] text-muted-foreground">{text("(b) Finalizar", "(b) Checkout")}</span>
 
-          <h1 className="mt-1 font-display text-3xl sm:text-4xl tracking-tight sm:text-5xl">
-            Seu pedido
-          </h1>
+          <h1 className="mt-1 font-display text-3xl sm:text-4xl tracking-tight sm:text-5xl">{text("Seu pedido", "Your order")}</h1>
 
           <div className="mt-8 rounded-2xl bg-card p-8 text-center ring-1 ring-black/5">
 
-            <p className="font-display text-2xl tracking-tight">
-              Carrinho vazio
-            </p>
+            <p className="font-display text-2xl tracking-tight">{text("Carrinho vazio", "Your cart is empty")}</p>
 
-            <p className="mt-2 text-sm text-muted-foreground">
-              Adicione itens do cardápio para continuar.
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">{text("Adicione itens do cardápio para continuar.", "Add menu items to continue.")}</p>
 
             <button
               type="button"
@@ -1696,9 +1697,7 @@ export default function CheckoutPage() {
                 )
               }
               className="mt-5 inline-block rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-[0_4px_0_0] shadow-foreground/30 transition-transform active:scale-95"
-            >
-              Ver cardápio
-            </button>
+            >{text("Ver cardápio", "View menu")}</button>
 
           </div>
 
@@ -1761,6 +1760,8 @@ export default function CheckoutPage() {
 
           <nav className="flex items-center gap-3 text-sm font-medium text-muted-foreground sm:gap-5">
 
+            <LanguageSwitcher />
+
             <button
               type="button"
               onClick={() =>
@@ -1771,16 +1772,14 @@ export default function CheckoutPage() {
                 )
               }
               className="hidden transition-colors hover:text-foreground sm:block"
-            >
-              Cardápio
-            </button>
+            >{text("Cardápio", "Menu")}</button>
 
             <span className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-cream">
               {totalItems}{" "}
               {totalItems ===
               1
-                ? "item"
-                : "itens"}
+                ? text("item", "item")
+                : text("itens", "items")}
             </span>
 
           </nav>
@@ -1791,28 +1790,28 @@ export default function CheckoutPage() {
 
       <div className="mx-auto max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
 
-        <span className="font-mono-brand text-xs uppercase tracking-[0.2em] text-muted-foreground">
-          (b) Finalizar
-        </span>
+        <span className="font-mono-brand text-xs uppercase tracking-[0.2em] text-muted-foreground">{text("(b) Finalizar", "(b) Checkout")}</span>
 
-        <h1 className="mt-1 font-display text-3xl sm:text-4xl tracking-tight sm:text-5xl">
-          Seu pedido
-        </h1>
+        <h1 className="mt-1 font-display text-3xl sm:text-4xl tracking-tight sm:text-5xl">{text("Seu pedido", "Your order")}</h1>
 
         <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-          Confira seus itens, informe a entrega e escolha a forma de pagamento.
+          {text(
+            "Confira seus itens, informe a entrega e escolha a forma de pagamento.",
+            "Review your items, enter the delivery address and choose a payment method."
+          )}
         </p>
 
         {!storeStatus?.open && (
           <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4">
 
-            <p className="font-bold text-primary">
-              Pedidos encerrados no momento
-            </p>
+            <p className="font-bold text-primary">{text("Pedidos encerrados no momento", "Ordering is currently closed")}</p>
 
             <p className="mt-1 text-sm text-muted-foreground">
               {storeStatus?.message ||
-                "O estabelecimento não está recebendo novos pedidos."}
+                text(
+                  "O estabelecimento não está recebendo novos pedidos.",
+                  "This store is not accepting new orders."
+                )}
             </p>
 
           </div>
@@ -1826,9 +1825,7 @@ export default function CheckoutPage() {
 
             <div>
 
-              <p className="font-bold text-primary">
-                Não foi possível continuar
-              </p>
+              <p className="font-bold text-primary">{text("Não foi possível continuar", "Unable to continue")}</p>
 
               <p className="mt-1 text-sm text-muted-foreground">
                 {checkoutError}
@@ -1844,7 +1841,7 @@ export default function CheckoutPage() {
                 )
               }
               className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border bg-card text-sm font-bold"
-              aria-label="Fechar mensagem"
+              aria-label={text("Fechar mensagem", "Close message")}
             >
               ×
             </button>
@@ -1873,13 +1870,9 @@ export default function CheckoutPage() {
 
                 <div>
 
-                  <p className="font-mono-brand text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                    Carrinho
-                  </p>
+                  <p className="font-mono-brand text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{text("Carrinho", "Cart")}</p>
 
-                  <h2 className="mt-1 font-display text-xl tracking-tight">
-                    Itens
-                  </h2>
+                  <h2 className="mt-1 font-display text-xl tracking-tight">{text("Itens", "Items")}</h2>
 
                 </div>
 
@@ -1893,9 +1886,7 @@ export default function CheckoutPage() {
                     )
                   }
                   className="font-mono-brand text-[11px] uppercase tracking-wider text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
-                >
-                  Adicionar mais
-                </button>
+                >{text("Adicionar mais", "Add more")}</button>
 
               </div>
 
@@ -2023,9 +2014,7 @@ export default function CheckoutPage() {
                                 )
                               }
                               className="mt-1 font-mono-brand text-[11px] uppercase tracking-wider text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
-                            >
-                              Remover
-                            </button>
+                            >{text("Remover", "Remove")}</button>
 
                           </div>
 
@@ -2078,9 +2067,7 @@ export default function CheckoutPage() {
 
                         <label className="mt-2.5 block">
 
-                          <span className="font-mono-brand text-[10px] uppercase tracking-wider text-muted-foreground">
-                            Observação
-                          </span>
+                          <span className="font-mono-brand text-[10px] uppercase tracking-wider text-muted-foreground">{text("Observação", "Note")}</span>
 
                           <textarea
                             value={
@@ -2094,7 +2081,7 @@ export default function CheckoutPage() {
                                 event.target.value
                               )
                             }
-                            placeholder="Ex: sem cebola"
+                            placeholder={text("Ex: sem cebola", "Example: no onions")}
                             rows={1}
                             className="mt-1.5 min-h-11 w-full resize-y rounded-xl border border-border bg-white/60 px-3 py-2.5 text-sm outline-none transition focus:border-foreground"
                           />
@@ -2114,12 +2101,13 @@ export default function CheckoutPage() {
 
             <section className="rounded-2xl bg-card p-4 ring-1 ring-black/5">
 
-              <h2 className="font-display text-xl tracking-tight">
-                Entrega
-              </h2>
+              <h2 className="font-display text-xl tracking-tight">{text("Entrega", "Delivery")}</h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Informe seus dados e o endereço.
+                {text(
+                  "Informe seus dados e o endereço.",
+                  "Enter your contact details and delivery address."
+                )}
               </p>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -2128,7 +2116,7 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
-                  placeholder="Seu nome"
+                  placeholder={text("Seu nome", "Your name")}
                   required
                   value={
                     customerName
@@ -2146,7 +2134,7 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
-                  placeholder="Telefone / WhatsApp"
+                  placeholder={text("Telefone / WhatsApp", "Phone / WhatsApp")}
                   required
                   value={
                     customerPhone
@@ -2166,7 +2154,7 @@ export default function CheckoutPage() {
                   }
                   inputMode="numeric"
                   maxLength={9}
-                  placeholder="CEP"
+                  placeholder={text("CEP", "Postal code")}
                   required
                   value={
                     postalCode
@@ -2188,7 +2176,7 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
-                  placeholder="Número"
+                  placeholder={text("Número", "Number")}
                   required
                   value={
                     number
@@ -2206,7 +2194,7 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
-                  placeholder="Rua"
+                  placeholder={text("Rua", "Street")}
                   required
                   value={
                     street
@@ -2224,7 +2212,7 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
-                  placeholder="Bairro"
+                  placeholder={text("Bairro", "Neighborhood")}
                   required
                   value={
                     neighborhood
@@ -2242,7 +2230,7 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
-                  placeholder="Cidade"
+                  placeholder={text("Cidade", "City")}
                   required
                   value={
                     city
@@ -2261,7 +2249,7 @@ export default function CheckoutPage() {
                     inputClass
                   }
                   maxLength={2}
-                  placeholder="UF"
+                  placeholder={text("UF", "State")}
                   required
                   value={
                     state
@@ -2287,7 +2275,7 @@ export default function CheckoutPage() {
                     }
                   >
                     {cepLoading
-                      ? "Buscando endereço pelo CEP..."
+                      ? text("Buscando endereço pelo CEP...", "Looking up address...")
                       : cepError}
                   </p>
                 )}
@@ -2296,7 +2284,7 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
-                  placeholder="Complemento / referência"
+                  placeholder={text("Complemento / referência", "Apartment / reference")}
                   value={
                     complement
                   }
@@ -2315,7 +2303,10 @@ export default function CheckoutPage() {
 
                 {deliveryQuoteLoading ? (
                   <p className="text-sm font-medium text-muted-foreground">
-                    Calculando distância e taxa de entrega...
+                    {text(
+                      "Calculando distância e taxa de entrega...",
+                      "Calculating distance and delivery fee..."
+                    )}
                   </p>
 
                 ) : deliveryQuote ? (
@@ -2327,8 +2318,8 @@ export default function CheckoutPage() {
                         <p className="text-sm font-bold text-foreground">
                           {deliveryQuote.pricingMode ===
                           "FIXED"
-                            ? "Taxa de entrega do bairro"
-                            : "Entrega calculada pela rota"}
+                            ? text("Taxa de entrega do bairro", "Neighborhood delivery fee")
+                            : text("Entrega calculada pela rota", "Route-based delivery")}
                         </p>
 
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -2353,7 +2344,7 @@ export default function CheckoutPage() {
 
                       <strong className="text-sm text-foreground">
                         {deliveryQuote.freeDelivery
-                          ? "Frete grátis"
+                          ? text("Frete grátis", "Free delivery")
                           : formatMoney(
                               Number(
                                 deliveryQuote.fee
@@ -2367,7 +2358,10 @@ export default function CheckoutPage() {
                       deliveryQuote.freeDeliveryAbove !=
                         null && (
                         <p className="mt-2 text-xs font-semibold text-emerald-700">
-                          Frete grátis liberado para pedidos a partir de{" "}
+                          {text(
+                            "Frete grátis liberado para pedidos a partir de",
+                            "Free delivery for orders from"
+                          )}{" "}
                           {formatMoney(
                             Number(
                               deliveryQuote.freeDeliveryAbove
@@ -2379,7 +2373,10 @@ export default function CheckoutPage() {
                     {deliveryQuote.pricingMode === "PER_KM" && (
                       <>
                         <p className="mt-2 text-xs text-muted-foreground">
-                          Rota calculada pelo Mapbox. Confira o ponto do endereço antes de confirmar.
+                          {text(
+                      "Rota calculada pelo Mapbox. Confira o ponto do endereço antes de confirmar.",
+                      "Route calculated by Mapbox. Check the address pin before confirming."
+                    )}
                         </p>
 
                         <MapboxLocationPicker
@@ -2396,17 +2393,21 @@ export default function CheckoutPage() {
                   <div className="text-sm text-primary">
                     <p className="font-medium">{deliveryQuoteError}</p>
                     <button type="button" onClick={() => setDeliveryQuoteAttempt((attempt) => attempt + 1)}
-                      className="mt-2 mr-4 inline-block font-bold underline underline-offset-2">
-                      Recalcular entrega
-                    </button>
+                      className="mt-2 mr-4 inline-block font-bold underline underline-offset-2">{text("Recalcular entrega", "Recalculate delivery")}</button>
                     <span className="mt-2 inline-block text-xs text-muted-foreground">
-                      Confira CEP, número e os campos preenchidos automaticamente.
+                      {text(
+                        "Confira CEP, número e os campos preenchidos automaticamente.",
+                        "Check the postal code, number and the automatically filled address fields."
+                      )}
                     </span>
                   </div>
 
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Informe o CEP e o número. Rua, bairro, cidade e UF são preenchidos automaticamente e você pode corrigi-los se necessário.
+                    {text(
+                      "Informe o CEP e o número. Rua, bairro, cidade e UF são preenchidos automaticamente e você pode corrigi-los se necessário.",
+                      "Enter the postal code and number. Street, neighborhood, city and state are filled automatically and can be edited if needed."
+                    )}
                   </p>
                 )}
 
@@ -2418,9 +2419,7 @@ export default function CheckoutPage() {
 
             <section className="rounded-2xl bg-card p-4 ring-1 ring-black/5">
 
-              <h2 className="font-display text-xl tracking-tight">
-                Pagamento
-              </h2>
+              <h2 className="font-display text-xl tracking-tight">{text("Pagamento", "Payment")}</h2>
 
               <div className="mt-3 flex flex-wrap gap-2">
 
@@ -2454,13 +2453,9 @@ export default function CheckoutPage() {
                       ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
                       : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
                   }
-                >
-                  Cartão de crédito
-                </button>
+                >{text("Cartão de crédito", "Credit card")}</button>
 
-                <span className="cursor-not-allowed rounded-full border border-border bg-secondary px-4 py-2 text-sm font-medium text-muted-foreground opacity-60">
-                  Débito indisponível
-                </span>
+                <span className="cursor-not-allowed rounded-full border border-border bg-secondary px-4 py-2 text-sm font-medium text-muted-foreground opacity-60">{text("Débito indisponível", "Debit unavailable")}</span>
 
               </div>
 
@@ -2476,15 +2471,11 @@ export default function CheckoutPage() {
 
             <div className="sticky top-24 rounded-2xl border-2 border-foreground bg-foreground p-5 text-cream shadow-[0_6px_0_0] shadow-primary/40">
 
-              <p className="font-mono-brand text-[11px] uppercase tracking-wider text-cream/60">
-                Resumo
-              </p>
+              <p className="font-mono-brand text-[11px] uppercase tracking-wider text-cream/60">{text("Resumo", "Summary")}</p>
 
               <div className="mt-4 border-b border-cream/15 pb-4">
 
-                <label className="font-mono-brand text-[10px] uppercase tracking-wider text-cream/60">
-                  Cupom de desconto
-                </label>
+                <label className="font-mono-brand text-[10px] uppercase tracking-wider text-cream/60">{text("Cupom de desconto", "Discount coupon")}</label>
 
                 <div className="mt-2 flex gap-2">
 
@@ -2545,9 +2536,7 @@ export default function CheckoutPage() {
                         handleRemoveCoupon
                       }
                       className="rounded-xl border border-cream/20 px-3 py-2 text-xs font-bold"
-                    >
-                      Remover
-                    </button>
+                    >{text("Remover", "Remove")}</button>
                   )}
 
                 </div>
@@ -2570,9 +2559,7 @@ export default function CheckoutPage() {
 
                 <div className="flex justify-between">
 
-                  <dt className="text-cream/70">
-                    Subtotal
-                  </dt>
+                  <dt className="text-cream/70">{text("Subtotal", "Subtotal")}</dt>
 
                   <dd className="font-mono-brand">
                     {formatMoney(
@@ -2584,9 +2571,7 @@ export default function CheckoutPage() {
 
                 <div className="flex justify-between">
 
-                  <dt className="text-cream/70">
-                    Entrega
-                  </dt>
+                  <dt className="text-cream/70">{text("Entrega", "Delivery")}</dt>
 
                   <dd className="text-right font-mono-brand">
                     {!street ||
@@ -2595,10 +2580,10 @@ export default function CheckoutPage() {
                     !neighborhood
                       ? "—"
                       : deliveryQuoteLoading
-                        ? "Calculando..."
+                        ? text("Calculando...", "Calculating...")
                         : deliveryQuote
                           ? deliveryQuote.freeDelivery
-                            ? "Grátis"
+                            ? text("Grátis", "Free")
                             : formatMoney(
                                 deliveryFee
                               )
@@ -2646,9 +2631,7 @@ export default function CheckoutPage() {
 
               <div className="mt-4 flex items-end justify-between border-t border-cream/20 pt-4">
 
-                <span className="font-mono-brand text-[11px] uppercase tracking-wider text-cream/60">
-                  Total
-                </span>
+                <span className="font-mono-brand text-[11px] uppercase tracking-wider text-cream/60">{text("Total", "Total")}</span>
 
                 <span className="font-display text-3xl tracking-tight text-butter">
                   {formatMoney(
@@ -2676,12 +2659,12 @@ export default function CheckoutPage() {
                 {submitting
                   ? paymentMethod ===
                     "PIX"
-                    ? "Gerando Pix..."
-                    : "Processando..."
+                    ? text("Gerando Pix...", "Generating Pix...")
+                    : text("Processando...", "Processing...")
                   : paymentMethod ===
                     "PIX"
-                    ? "Gerar Pix e continuar"
-                    : "Confirmar pedido"}
+                    ? text("Gerar Pix e continuar", "Generate Pix and continue")
+                    : text("Confirmar pedido", "Place order")}
               </button>
 
               <button
@@ -2694,9 +2677,7 @@ export default function CheckoutPage() {
                   )
                 }
                 className="mt-3 block w-full text-center font-mono-brand text-xs text-cream/60 transition-colors hover:text-cream"
-              >
-                Continuar comprando
-              </button>
+              >{text("Continuar comprando", "Continue shopping")}</button>
 
             </div>
 

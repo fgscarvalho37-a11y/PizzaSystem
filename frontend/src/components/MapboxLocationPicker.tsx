@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/i18n/LanguageProvider";
+
 import {
   useEffect,
   useRef,
@@ -176,6 +178,11 @@ export default function MapboxLocationPicker({
   className =
     "",
 }: Props) {
+  const {
+    text,
+  } =
+    useLanguage();
+
   const containerRef =
     useRef<HTMLDivElement | null>(
       null
@@ -365,7 +372,7 @@ export default function MapboxLocationPicker({
               caught instanceof
                 Error
                 ? caught.message
-                : "Não foi possível carregar o mapa."
+                : text("Não foi possível carregar o mapa.", "We could not load the map.")
             );
           }
         }
@@ -390,7 +397,10 @@ export default function MapboxLocationPicker({
         <strong>
           NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
         </strong>{" "}
-        na Vercel para exibir o mapa.
+        {text(
+          " na Vercel para exibir o mapa.",
+          " in Vercel to display the map."
+        )}
       </div>
     );
   }
@@ -403,7 +413,10 @@ export default function MapboxLocationPicker({
       <div
         className={`rounded-2xl border border-dashed border-border bg-background p-5 text-sm text-muted-foreground ${className}`}
       >
-        Informe o endereço para posicionar o mapa.
+        {text(
+          "Informe o endereço para posicionar o mapa.",
+          "Enter the address to position the map."
+        )}
       </div>
     );
   }
@@ -427,7 +440,10 @@ export default function MapboxLocationPicker({
 
       {draggable && (
         <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
-          Arraste o marcador para ajustar exatamente a saída da pizzaria.
+          {text(
+            "Arraste o marcador para ajustar exatamente a saída da pizzaria.",
+            "Drag the marker to set the exact store location."
+          )}
         </p>
       )}
     </div>

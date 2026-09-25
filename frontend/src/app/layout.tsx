@@ -7,6 +7,7 @@ import {
 } from "next/font/google";
 
 import "./globals.css";
+import { LanguageProvider } from "@/i18n/LanguageProvider";
 
 // =========================
 // FONTES
@@ -65,7 +66,7 @@ export default function RootLayout({
       `}
     >
       <body className="min-h-screen">
-        {children}
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );
