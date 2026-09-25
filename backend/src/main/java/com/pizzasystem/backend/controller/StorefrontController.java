@@ -39,7 +39,7 @@ public class StorefrontController {
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
 
-    @Value("${PIZZASYSTEM_STOREFRONT_BASE_DOMAIN:}")
+    @Value("${PIZZASYSTEM_STOREFRONT_BASE_DOMAIN:orbitta.space}")
     private String storefrontBaseDomain;
 
     public StorefrontController(
