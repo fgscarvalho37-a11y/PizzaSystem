@@ -91,6 +91,12 @@ type StoreProfile = {
   loyaltyMinimumOrderValue: number | null;
 };
 
+type StorageStatus = {
+  persistent: boolean;
+  provider: string;
+  bucket: string;
+};
+
 type PersonalizationForm = {
   name: string;
   primaryColor: string;
@@ -231,6 +237,14 @@ export default function PersonalizacaoPage() {
   const [successMessage, setSuccessMessage] =
     useState("");
 
+  const [
+    storageStatus,
+    setStorageStatus,
+  ] =
+    useState<StorageStatus | null>(
+      null
+    );
+
   const previewPrimary =
     form.primaryColor || DEFAULT_PRIMARY;
 
@@ -308,13 +322,24 @@ export default function PersonalizacaoPage() {
     try {
       setErrorMessage("");
 
-      const response =
-        await adminFetch(
-          `${API_URL}/api/store/profile`,
-          {
-            cache: "no-store",
-          }
-        );
+      const [
+        response,
+        storageResponse,
+      ] =
+        await Promise.all([
+          adminFetch(
+            `${API_URL}/api/store/profile`,
+            {
+              cache: "no-store",
+            }
+          ),
+          adminFetch(
+            `${API_URL}/api/store/images/status`,
+            {
+              cache: "no-store",
+            }
+          ),
+        ]);
 
       if (!response.ok) {
         throw new Error(
@@ -327,6 +352,18 @@ export default function PersonalizacaoPage() {
 
       setProfile(data);
       fillForm(data);
+
+      if (
+        storageResponse.ok
+      ) {
+        const storage:
+          StorageStatus =
+          await storageResponse.json();
+
+        setStorageStatus(
+          storage
+        );
+      }
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -814,6 +851,49 @@ export default function PersonalizacaoPage() {
 
             <p className="mt-1 text-sm text-emerald-700">
               {successMessage}
+            </p>
+          </div>
+        )}
+
+        {storageStatus && (
+          <div
+            className={[
+              "mb-6 rounded-xl border p-4",
+              storageStatus.persistent
+                ? "border-emerald-200 bg-emerald-50"
+                : "border-amber-200 bg-amber-50",
+            ].join(
+              " "
+            )}
+          >
+            <p
+              className={[
+                "font-semibold",
+                storageStatus.persistent
+                  ? "text-emerald-700"
+                  : "text-amber-800",
+              ].join(
+                " "
+              )}
+            >
+              {storageStatus.persistent
+                ? "Imagens com armazenamento persistente"
+                : "Atenção ao armazenamento das imagens"}
+            </p>
+
+            <p
+              className={[
+                "mt-1 text-sm leading-6",
+                storageStatus.persistent
+                  ? "text-emerald-700"
+                  : "text-amber-700",
+              ].join(
+                " "
+              )}
+            >
+              {storageStatus.persistent
+                ? `Uploads salvos no ${storageStatus.provider}. Logo, capa e fotos continuam disponíveis após reinícios.`
+                : "O backend está usando armazenamento local temporário. Configure o Supabase Storage no ambiente de produção antes de depender de uploads permanentes."}
             </p>
           </div>
         )}
