@@ -963,6 +963,18 @@ public class OrderController {
                 deliveryFee
         );
 
+        order.setDeliveryDistanceKm(
+                deliveryQuote.distanceKm()
+        );
+
+        order.setDeliveryRouteProvider(
+                deliveryQuote.routeProvider()
+        );
+
+        order.setDeliveryRouteUrl(
+                deliveryQuote.googleMapsUrl()
+        );
+
         // =========================
         // CUPOM
         // =========================
