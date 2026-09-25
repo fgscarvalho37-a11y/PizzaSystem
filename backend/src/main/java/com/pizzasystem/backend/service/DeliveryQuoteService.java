@@ -107,57 +107,16 @@ public class DeliveryQuoteService {
         }
 
 
-        /*
-         * Se houver uma taxa fixa ativa cadastrada para
-         * cidade + bairro, ela tem prioridade sobre o cálculo
-         * por rota. Isso evita geocodificação imprecisa em
-         * endereços locais e mantém o checkout previsível.
-         */
-        String requestCity =
-                clean(
-                        request.city()
-                );
-
-        String requestNeighborhood =
-                clean(
-                        request.neighborhood()
-                );
-
-        if (
-                !requestCity.isBlank() &&
-                !requestNeighborhood.isBlank()
-        ) {
-
-            DeliveryArea fixedArea =
-                    deliveryAreaRepository
-                            .findByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCaseAndActiveTrue(
-                                    store.getId(),
-                                    requestCity,
-                                    requestNeighborhood
-                            )
-                            .orElse(
-                                    null
-                            );
-
-            if (
-                    fixedArea != null &&
-                    "FIXED".equalsIgnoreCase(
-                            fixedArea.getPricingMode()
-                    )
-            ) {
-                return quoteFromFixedArea(
-                        store,
-                        request,
-                        fixedArea
-                );
-            }
+        // A escolha da loja é a única fonte de verdade para a cobrança.
+        // Áreas antigas não podem substituir uma cotação por distância.
+        if ("FIXED".equals(store.getDeliveryPricingMode())) {
+            return quoteByFixedArea(store, request);
         }
 
         if (openRouteServiceApiKey.isBlank()) {
-
-            return quoteByFixedArea(
-                    store,
-                    request
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "O cálculo por km está indisponível. Configure a chave do OpenRouteService ou selecione taxa fixa no painel."
             );
         }
 
@@ -393,7 +352,7 @@ public class DeliveryQuoteService {
                                 () ->
                                         new ResponseStatusException(
                                                 HttpStatus.SERVICE_UNAVAILABLE,
-                                                "O cálculo por rota está indisponível e não existe uma taxa fixa cadastrada para este bairro."
+                                                "Não há taxa fixa ativa cadastrada para este bairro e cidade."
                                         )
                         );
 

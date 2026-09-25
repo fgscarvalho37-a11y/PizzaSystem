@@ -159,6 +159,9 @@ public class Store {
     private Integer dailyOrderLimit =
             30;
 
+    @Column(name = "delivery_pricing_mode", length = 20)
+    private String deliveryPricingMode = "PER_KM";
+
     @Column(
             name = "delivery_origin_address",
             length = 350
@@ -453,6 +456,14 @@ public class Store {
     ) {
         this.dailyOrderLimit =
                 dailyOrderLimit;
+    }
+
+    public String getDeliveryPricingMode() {
+        return deliveryPricingMode == null ? "PER_KM" : deliveryPricingMode;
+    }
+
+    public void setDeliveryPricingMode(String deliveryPricingMode) {
+        this.deliveryPricingMode = deliveryPricingMode;
     }
 
     public String getDeliveryOriginAddress() {

@@ -12,7 +12,10 @@ import { adminFetch } from "@/lib/adminFetch";
 
 const API_URL = "";
 
+type DeliveryArea = { id: number; city: string; neighborhood: string; fee: number; pricingMode: string; active: boolean };
+
 type DeliveryConfig = {
+  pricingMode: "FIXED" | "PER_KM";
   originAddress: string | null;
   maxDistanceKm: number | null;
   feePerKm: number | null;
@@ -71,6 +74,13 @@ export default function AdminEntregasPage() {
     useState<DeliveryConfig | null>(
       null
     );
+
+  const [pricingMode, setPricingMode] = useState<"FIXED" | "PER_KM">("PER_KM");
+  const [areas, setAreas] = useState<DeliveryArea[]>([]);
+  const [areaCity, setAreaCity] = useState("");
+  const [areaNeighborhood, setAreaNeighborhood] = useState("");
+  const [areaFee, setAreaFee] = useState("");
+  const [areaSaving, setAreaSaving] = useState(false);
 
   const [
     originAddress,
@@ -160,9 +170,10 @@ export default function AdminEntregasPage() {
         DeliveryConfig =
         await response.json();
 
-      setConfig(
-        data
-      );
+      setConfig(data);
+      setPricingMode(data.pricingMode ?? "PER_KM");
+      const areaResponse = await adminFetch(`${API_URL}/api/delivery-areas`, { cache: "no-store" });
+      if (areaResponse.ok) setAreas(await areaResponse.json());
 
       setOriginAddress(
         data.originAddress ??
@@ -238,7 +249,7 @@ export default function AdminEntregasPage() {
     useMemo(
       () =>
         originAddress.trim()
-          ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          ? `https://www.openstreetmap.org/search?query=${encodeURIComponent(
               originAddress.trim()
             )}`
           : "",
@@ -290,7 +301,7 @@ export default function AdminEntregasPage() {
           )
         : null;
 
-    if (!normalizedOrigin) {
+    if (pricingMode === "PER_KM" && (!normalizedOrigin || normalizedOrigin.split(",").length < 3)) {
       setErrorMessage(
         "Informe o endereço completo de saída da pizzaria."
       );
@@ -299,13 +310,8 @@ export default function AdminEntregasPage() {
     }
 
     if (
-      feePerKm.trim() ===
-        "" ||
-      Number.isNaN(
-        normalizedFeePerKm
-      ) ||
-      normalizedFeePerKm <
-        0
+      pricingMode === "PER_KM" && (feePerKm.trim() === "" ||
+      Number.isNaN(normalizedFeePerKm) || normalizedFeePerKm < 0)
     ) {
       setErrorMessage(
         "Informe um valor por km válido."
@@ -400,12 +406,13 @@ export default function AdminEntregasPage() {
             },
             body:
               JSON.stringify({
+                pricingMode,
                 originAddress:
-                  normalizedOrigin,
+                  normalizedOrigin || null,
                 maxDistanceKm:
                   normalizedMaxDistance,
                 feePerKm:
-                  normalizedFeePerKm,
+                  feePerKm.trim() ? normalizedFeePerKm : null,
                 freeDeliveryAbove:
                   normalizedFreeAbove,
                 freeDeliveryDistanceKm:
@@ -429,9 +436,7 @@ export default function AdminEntregasPage() {
         DeliveryConfig =
         await response.json();
 
-      setConfig(
-        data
-      );
+      setConfig(data);
 
       setSuccessMessage(
         "Configuração de entrega salva."
@@ -454,6 +459,37 @@ export default function AdminEntregasPage() {
     }
   }
 
+  async function saveArea(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!areaCity.trim() || !areaNeighborhood.trim() || areaFee.trim() === "" || !Number.isFinite(Number(areaFee)) || Number(areaFee) < 0) {
+      setErrorMessage("Informe cidade, bairro e uma taxa válida.");
+      return;
+    }
+    try {
+      setAreaSaving(true);
+      setErrorMessage("");
+      const existing = areas.find(area => area.city.toLocaleLowerCase() === areaCity.trim().toLocaleLowerCase() && area.neighborhood.toLocaleLowerCase() === areaNeighborhood.trim().toLocaleLowerCase());
+      const response = await adminFetch(`${API_URL}/api/delivery-areas${existing ? `/${existing.id}` : ""}`, {
+        method: existing ? "PUT" : "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ city: areaCity.trim(), neighborhood: areaNeighborhood.trim(), fee: Number(areaFee), pricingMode: "FIXED", active: true }),
+      });
+      if (!response.ok) throw new Error((await readMessage(response)) || "Não foi possível cadastrar a taxa.");
+      const saved: DeliveryArea = await response.json();
+      setAreas(existing ? areas.map(area => area.id === saved.id ? saved : area) : [...areas, saved]);
+      setAreaNeighborhood(""); setAreaFee("");
+      setSuccessMessage("Taxa fixa cadastrada.");
+    } catch (error) { setErrorMessage(error instanceof Error ? error.message : "Erro ao cadastrar taxa."); }
+    finally { setAreaSaving(false); }
+  }
+
+  async function removeArea(id: number) {
+    try {
+      const response = await adminFetch(`${API_URL}/api/delivery-areas/${id}/active?active=false`, { method: "PATCH" });
+      if (!response.ok) throw new Error((await readMessage(response)) || "Não foi possível desativar a taxa.");
+      setAreas(areas.map(area => area.id === id ? { ...area, active: false } : area));
+    } catch (error) { setErrorMessage(error instanceof Error ? error.message : "Erro ao desativar taxa."); }
+  }
+
   const fieldClass =
     "h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10";
 
@@ -471,11 +507,11 @@ export default function AdminEntregasPage() {
           </p>
 
           <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-            Taxa por distância
+            Taxas de entrega
           </h1>
 
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-            O PizzaSystem calcula a rota entre a pizzaria e o cliente e cobra a entrega pelo número de quilômetros. Você não precisa mais cadastrar taxa por bairro.
+            Escolha como a pizzaria cobra a entrega. O modo por km usa a rota; o modo fixo usa a taxa cadastrada para cada bairro.
           </p>
 
         </section>
@@ -501,7 +537,7 @@ export default function AdminEntregasPage() {
         ) : (
           <>
 
-            <section className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            {pricingMode === "PER_KM" && <section className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
 
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 
@@ -511,11 +547,11 @@ export default function AdminEntregasPage() {
                   </p>
 
                   <h2 className="mt-1 text-xl font-bold text-foreground">
-                    OpenRouteService + Google Maps
+                    OpenRouteService + OpenStreetMap
                   </h2>
 
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    A distância e a taxa são calculadas pelo OpenRouteService. O Google Maps fica somente como atalho visual para abrir o endereço e a rota, então o cálculo não depende da API do Google.
+                    A distância e a taxa são calculadas pelo OpenRouteService. O OpenStreetMap é um atalho para conferir o endereço informado.
                   </p>
                 </div>
 
@@ -542,7 +578,7 @@ export default function AdminEntregasPage() {
                 </div>
               )}
 
-            </section>
+            </section>}
 
             <form
               onSubmit={
@@ -565,7 +601,12 @@ export default function AdminEntregasPage() {
                 </p>
               </div>
 
-              <div className="mt-6">
+              <fieldset className="mt-6 flex flex-wrap gap-4" aria-label="Modo de cobrança da entrega">
+                <label><input type="radio" name="pricingMode" checked={pricingMode === "PER_KM"} onChange={() => setPricingMode("PER_KM")} /> Por distância (km)</label>
+                <label><input type="radio" name="pricingMode" checked={pricingMode === "FIXED"} onChange={() => setPricingMode("FIXED")} /> Taxa fixa por bairro</label>
+              </fieldset>
+
+              {pricingMode === "PER_KM" && <><div className="mt-6">
 
                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                   Endereço de saída da pizzaria
@@ -603,7 +644,7 @@ export default function AdminEntregasPage() {
                       rel="noreferrer"
                       className="text-xs font-bold text-primary underline underline-offset-2"
                     >
-                      Conferir no Google Maps
+                      Conferir no OpenStreetMap
                     </a>
                   )}
 
@@ -816,6 +857,8 @@ export default function AdminEntregasPage() {
 
               </div>
 
+              </>}
+
               <button
                 type="submit"
                 disabled={
@@ -829,6 +872,27 @@ export default function AdminEntregasPage() {
               </button>
 
             </form>
+
+            {pricingMode === "FIXED" && (
+              <section className="mt-6 rounded-3xl border border-border bg-card p-5 sm:p-6">
+                <h2 className="text-xl font-bold">Taxas por bairro</h2>
+                <p className="mt-2 text-sm text-muted-foreground">Cadastre cidade, bairro e valor. Salve também o modo de cobrança acima.</p>
+                <form onSubmit={saveArea} className="mt-4 grid gap-3 sm:grid-cols-4">
+                  <input className={fieldClass} placeholder="Cidade" value={areaCity} onChange={e => setAreaCity(e.target.value)} required />
+                  <input className={fieldClass} placeholder="Bairro" value={areaNeighborhood} onChange={e => setAreaNeighborhood(e.target.value)} required />
+                  <input className={fieldClass} type="number" min="0" step="0.01" placeholder="Taxa em R$" value={areaFee} onChange={e => setAreaFee(e.target.value)} required />
+                  <button disabled={areaSaving} className="rounded-xl bg-foreground px-4 text-sm font-bold text-background disabled:opacity-50">Adicionar taxa</button>
+                </form>
+                <ul className="mt-5 divide-y divide-border">
+                  {areas.filter(area => area.active && area.pricingMode === "FIXED").map(area => (
+                    <li key={area.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                      <span>{area.neighborhood}, {area.city} — {money(area.fee)}</span>
+                      <button type="button" onClick={() => void removeArea(area.id)} className="font-bold text-primary">Desativar</button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
           </>
         )}

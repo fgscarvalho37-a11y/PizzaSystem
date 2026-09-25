@@ -110,6 +110,7 @@ public class DeliveryAreaController {
                         .getCurrentStore();
 
         return new DeliveryConfigResponse(
+                store.getDeliveryPricingMode(),
                 store.getDeliveryOriginAddress(),
                 store.getDeliveryMaxDistanceKm(),
                 store.getDeliveryFeePerKm(),
@@ -129,6 +130,13 @@ public class DeliveryAreaController {
         Store store =
                 currentStoreService
                         .getCurrentStore();
+
+        String pricingMode = request != null && request.pricingMode() != null
+                ? request.pricingMode().trim().toUpperCase(java.util.Locale.ROOT)
+                : store.getDeliveryPricingMode();
+        if (!"FIXED".equals(pricingMode) && !"PER_KM".equals(pricingMode)) {
+            throw new IllegalArgumentException("Tipo de taxa inválido.");
+        }
 
         String originAddress =
                 request != null
@@ -170,10 +178,10 @@ public class DeliveryAreaController {
         }
 
         if (
-                feePerKm == null ||
+                "PER_KM".equals(pricingMode) && (feePerKm == null ||
                 feePerKm.compareTo(
                         BigDecimal.ZERO
-                ) < 0
+                ) < 0)
         ) {
 
             throw new IllegalArgumentException(
@@ -218,6 +226,13 @@ public class DeliveryAreaController {
             );
         }
 
+        if ("PER_KM".equals(pricingMode) &&
+                (originAddress == null || originAddress.split(",").length < 3)) {
+            throw new IllegalArgumentException("Informe rua, número, bairro e cidade no endereço de saída da pizzaria.");
+        }
+
+        store.setDeliveryPricingMode(pricingMode);
+
         store.setDeliveryOriginAddress(
                 originAddress
         );
@@ -233,10 +248,10 @@ public class DeliveryAreaController {
         );
 
         store.setDeliveryFeePerKm(
-                feePerKm.setScale(
+                feePerKm != null ? feePerKm.setScale(
                         2,
                         RoundingMode.HALF_UP
-                )
+                ) : null
         );
 
         store.setDeliveryFreeAbove(
@@ -266,6 +281,7 @@ public class DeliveryAreaController {
                         );
 
         return new DeliveryConfigResponse(
+                saved.getDeliveryPricingMode(),
                 saved.getDeliveryOriginAddress(),
                 saved.getDeliveryMaxDistanceKm(),
                 saved.getDeliveryFeePerKm(),
@@ -631,6 +647,7 @@ public class DeliveryAreaController {
     }
 
     public record DeliveryConfigRequest(
+            String pricingMode,
             String originAddress,
             BigDecimal maxDistanceKm,
             BigDecimal feePerKm,
@@ -640,6 +657,7 @@ public class DeliveryAreaController {
     }
 
     public record DeliveryConfigResponse(
+            String pricingMode,
             String originAddress,
             BigDecimal maxDistanceKm,
             BigDecimal feePerKm,

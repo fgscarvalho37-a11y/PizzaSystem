@@ -693,6 +693,7 @@ export default function CheckoutPage() {
     setDeliveryQuoteError(
       ""
     );
+    setDeliveryQuote(null);
 
     if (
       !street.trim() ||
@@ -2161,25 +2162,20 @@ export default function CheckoutPage() {
                         </p>
                       )}
 
-                    {deliveryQuote.googleMapsUrl && (
-                      <a
-                        href={
-                          deliveryQuote.googleMapsUrl
-                        }
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 inline-flex text-xs font-bold text-primary underline underline-offset-2"
-                      >
-                        Ver rota no Google Maps
-                      </a>
+                    {deliveryQuote.pricingMode === "PER_KM" && (
+                      <p className="mt-2 text-xs text-muted-foreground">Confira rua, número, bairro e cidade antes de confirmar.</p>
                     )}
 
                   </div>
 
                 ) : deliveryQuoteError ? (
-                  <p className="text-sm font-medium text-primary">
-                    {deliveryQuoteError}
-                  </p>
+                  <div className="text-sm text-primary">
+                    <p className="font-medium">{deliveryQuoteError} Confira se a rua, número, bairro e cidade estão completos.</p>
+                    <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent([street, number, neighborhood, city].filter(Boolean).join(", "))}`}
+                      target="_blank" rel="noreferrer" className="mt-2 inline-block font-bold underline underline-offset-2">
+                      Conferir endereço no OpenStreetMap
+                    </a>
+                  </div>
 
                 ) : (
                   <p className="text-sm text-muted-foreground">
