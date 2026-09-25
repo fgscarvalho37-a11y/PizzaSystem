@@ -1,18 +1,26 @@
 package com.pizzasystem.backend.controller;
 
+import com.pizzasystem.backend.dto.DeliveryQuoteRequest;
+import com.pizzasystem.backend.dto.DeliveryQuoteResponse;
+
 import com.pizzasystem.backend.entity.DeliveryArea;
 import com.pizzasystem.backend.entity.Store;
 
 import com.pizzasystem.backend.repository.DeliveryAreaRepository;
 
 import com.pizzasystem.backend.service.CurrentStoreService;
+import com.pizzasystem.backend.service.DeliveryQuoteService;
 import com.pizzasystem.backend.service.PublicStoreService;
 
 import org.springframework.http.HttpStatus;
+
+import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+
 import java.util.List;
 
 @RestController
@@ -28,10 +36,14 @@ public class DeliveryAreaController {
     private final PublicStoreService
             publicStoreService;
 
+    private final DeliveryQuoteService
+            deliveryQuoteService;
+
     public DeliveryAreaController(
             DeliveryAreaRepository deliveryAreaRepository,
             CurrentStoreService currentStoreService,
-            PublicStoreService publicStoreService
+            PublicStoreService publicStoreService,
+            DeliveryQuoteService deliveryQuoteService
     ) {
 
         this.deliveryAreaRepository =
@@ -42,6 +54,9 @@ public class DeliveryAreaController {
 
         this.publicStoreService =
                 publicStoreService;
+
+        this.deliveryQuoteService =
+                deliveryQuoteService;
     }
 
     @GetMapping
@@ -71,6 +86,135 @@ public class DeliveryAreaController {
         return deliveryAreaRepository
                 .findByStoreIdAndActiveTrueOrderByCityAscNeighborhoodAsc(
                         storeId
+                );
+    }
+
+    // =========================
+    // CONFIGURAÇÃO DO CÁLCULO POR KM - ADMIN
+    // =========================
+
+    @GetMapping("/config")
+    @Transactional(readOnly = true)
+    public DeliveryConfigResponse getConfig() {
+
+        Store store =
+                currentStoreService
+                        .getCurrentStore();
+
+        return new DeliveryConfigResponse(
+                store.getDeliveryOriginAddress(),
+                store.getDeliveryMaxDistanceKm(),
+                deliveryQuoteService.isConfigured()
+        );
+    }
+
+    @PutMapping("/config")
+    @Transactional
+    public DeliveryConfigResponse updateConfig(
+            @RequestBody DeliveryConfigRequest request
+    ) {
+
+        Store store =
+                currentStoreService
+                        .getCurrentStore();
+
+        String originAddress =
+                request != null
+                        ? cleanNullable(
+                                request.originAddress()
+                        )
+                        : null;
+
+        BigDecimal maxDistanceKm =
+                request != null
+                        ? request.maxDistanceKm()
+                        : null;
+
+        if (
+                maxDistanceKm != null &&
+                maxDistanceKm.compareTo(
+                        BigDecimal.ZERO
+                ) <= 0
+        ) {
+
+            throw new IllegalArgumentException(
+                    "A distância máxima deve ser maior que zero."
+            );
+        }
+
+        store.setDeliveryOriginAddress(
+                originAddress
+        );
+
+        store.setDeliveryMaxDistanceKm(
+                maxDistanceKm != null
+                        ? maxDistanceKm
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                )
+                        : null
+        );
+
+        return new DeliveryConfigResponse(
+                store.getDeliveryOriginAddress(),
+                store.getDeliveryMaxDistanceKm(),
+                deliveryQuoteService.isConfigured()
+        );
+    }
+
+    // =========================
+    // COTAÇÃO PÚBLICA DA ENTREGA
+    // =========================
+
+    @PostMapping("/quote")
+    @Transactional(readOnly = true)
+    public DeliveryQuoteResponse quote(
+            @RequestParam String store,
+            @RequestBody DeliveryQuoteRequest request
+    ) {
+
+        Store publicStore =
+                publicStoreService
+                        .getBySlug(
+                                store
+                        );
+
+        String city =
+                normalizeRequired(
+                        request != null
+                                ? request.city()
+                                : null,
+                        "Cidade"
+                );
+
+        String neighborhood =
+                normalizeRequired(
+                        request != null
+                                ? request.neighborhood()
+                                : null,
+                        "Bairro"
+                );
+
+        DeliveryArea area =
+                deliveryAreaRepository
+                        .findByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCaseAndActiveTrue(
+                                publicStore.getId(),
+                                city,
+                                neighborhood
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new IllegalArgumentException(
+                                                "Não realizamos entrega para este bairro."
+                                        )
+                        );
+
+        return deliveryQuoteService
+                .quote(
+                        publicStore,
+                        area,
+                        request
                 );
     }
 
@@ -309,33 +453,18 @@ public class DeliveryAreaController {
             return;
         }
 
-        BigDecimal distanceKm =
-                requirePositive(
-                        data.getDistanceKm(),
-                        "Distância em km"
-                );
-
         BigDecimal feePerKm =
                 requireNonNegative(
                         data.getFeePerKm(),
                         "Valor por km"
                 );
 
-        BigDecimal calculatedFee =
-                distanceKm
-                        .multiply(
-                                feePerKm
-                        )
-                        .setScale(
-                                2,
-                                RoundingMode.HALF_UP
-                        );
-
+        /*
+         * A distância não é mais cadastrada manualmente.
+         * Ela é obtida da rota real no checkout.
+         */
         target.setDistanceKm(
-                distanceKm.setScale(
-                        2,
-                        RoundingMode.HALF_UP
-                )
+                null
         );
 
         target.setFeePerKm(
@@ -345,8 +474,17 @@ public class DeliveryAreaController {
                 )
         );
 
+        /*
+         * O campo fee continua preenchido por compatibilidade
+         * com o schema existente. Para PER_KM o valor real
+         * sempre é recalculado no servidor.
+         */
         target.setFee(
-                calculatedFee
+                BigDecimal.ZERO
+                        .setScale(
+                                2,
+                                RoundingMode.HALF_UP
+                        )
         );
     }
 
@@ -362,6 +500,25 @@ public class DeliveryAreaController {
             throw new IllegalArgumentException(
                     field + " é obrigatório."
             );
+        }
+
+        return value
+                .trim()
+                .replaceAll(
+                        "\\s+",
+                        " "
+                );
+    }
+
+    private String cleanNullable(
+            String value
+    ) {
+
+        if (
+                value == null ||
+                value.isBlank()
+        ) {
+            return null;
         }
 
         return value
@@ -391,22 +548,16 @@ public class DeliveryAreaController {
         return value;
     }
 
-    private BigDecimal requirePositive(
-            BigDecimal value,
-            String field
+    public record DeliveryConfigRequest(
+            String originAddress,
+            BigDecimal maxDistanceKm
     ) {
+    }
 
-        if (
-                value == null ||
-                value.compareTo(
-                        BigDecimal.ZERO
-                ) <= 0
-        ) {
-            throw new IllegalArgumentException(
-                    field + " deve ser maior que zero."
-            );
-        }
-
-        return value;
+    public record DeliveryConfigResponse(
+            String originAddress,
+            BigDecimal maxDistanceKm,
+            boolean mapsConfigured
+    ) {
     }
 }
