@@ -59,8 +59,14 @@ public class Store {
     // IDENTIDADE VISUAL
     // =========================
 
+    @Column(
+            columnDefinition = "TEXT"
+    )
     private String logoUrl;
 
+    @Column(
+            columnDefinition = "TEXT"
+    )
     private String coverImageUrl;
 
     @Column(length = 20)
