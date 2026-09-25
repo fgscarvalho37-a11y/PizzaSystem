@@ -1,5 +1,7 @@
 package com.pizzasystem.backend.controller;
 
+import com.pizzasystem.backend.dto.DeliveryQuoteRequest;
+import com.pizzasystem.backend.dto.DeliveryQuoteResponse;
 import com.pizzasystem.backend.dto.OrderItemRequest;
 import com.pizzasystem.backend.dto.OrderRequest;
 
@@ -27,6 +29,7 @@ import com.pizzasystem.backend.repository.ProductRepository;
 
 import com.pizzasystem.backend.service.CouponService;
 import com.pizzasystem.backend.service.CurrentStoreService;
+import com.pizzasystem.backend.service.DeliveryQuoteService;
 import com.pizzasystem.backend.service.PublicStoreService;
 import com.pizzasystem.backend.service.StoreStatusService;
 
@@ -70,6 +73,9 @@ public class OrderController {
     private final DeliveryAreaRepository
             deliveryAreaRepository;
 
+    private final DeliveryQuoteService
+            deliveryQuoteService;
+
     private final StoreStatusService
             storeStatusService;
 
@@ -99,6 +105,7 @@ public class OrderController {
             OrderItemRepository orderItemRepository,
             ProductRepository productRepository,
             DeliveryAreaRepository deliveryAreaRepository,
+            DeliveryQuoteService deliveryQuoteService,
             StoreStatusService storeStatusService,
             CouponService couponService,
             CrustRepository crustRepository,
@@ -119,6 +126,9 @@ public class OrderController {
 
         this.deliveryAreaRepository =
                 deliveryAreaRepository;
+
+        this.deliveryQuoteService =
+                deliveryQuoteService;
 
         this.storeStatusService =
                 storeStatusService;
@@ -292,6 +302,26 @@ public class OrderController {
             );
         }
 
+        if (
+                request.getStreet() == null ||
+                request.getStreet().isBlank()
+        ) {
+
+            throw new RuntimeException(
+                    "Rua não informada"
+            );
+        }
+
+        if (
+                request.getNumber() == null ||
+                request.getNumber().isBlank()
+        ) {
+
+            throw new RuntimeException(
+                    "Número não informado"
+            );
+        }
+
         DeliveryArea deliveryArea =
                 deliveryAreaRepository
                         .findByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCaseAndActiveTrue(
@@ -309,15 +339,22 @@ public class OrderController {
                                 )
                         );
 
+        DeliveryQuoteResponse deliveryQuote =
+                deliveryQuoteService
+                        .quote(
+                                store,
+                                deliveryArea,
+                                new DeliveryQuoteRequest(
+                                        request.getStreet(),
+                                        request.getNumber(),
+                                        request.getCity(),
+                                        request.getNeighborhood(),
+                                        request.getComplement()
+                                )
+                        );
+
         BigDecimal deliveryFee =
-                deliveryArea
-                        .getFee();
-
-        if (deliveryFee == null) {
-
-            deliveryFee =
-                    BigDecimal.ZERO;
-        }
+                deliveryQuote.fee();
 
         Order order =
                 new Order();
