@@ -44,9 +44,17 @@ type CartItem = {
   addons: Addon[];
 };
 
+type PricingMode =
+  | "FIXED"
+  | "PER_KM";
+
 type DeliveryArea = {
   id: number;
+  city: string | null;
   neighborhood: string;
+  pricingMode: PricingMode;
+  distanceKm: number | null;
+  feePerKm: number | null;
   fee: number;
   active: boolean;
 };
@@ -192,6 +200,11 @@ export default function CheckoutPage() {
   const [
     number,
     setNumber,
+  ] = useState("");
+
+  const [
+    city,
+    setCity,
   ] = useState("");
 
   const [
@@ -609,8 +622,63 @@ export default function CheckoutPage() {
       [cart]
     );
 
+  const cities =
+    useMemo(
+      () =>
+        Array.from(
+          new Set(
+            deliveryAreas
+              .map(
+                (area) =>
+                  area.city
+                    ?.trim()
+              )
+              .filter(
+                (
+                  value
+                ): value is string =>
+                  Boolean(
+                    value
+                  )
+              )
+          )
+        ).sort(
+          (
+            a,
+            b
+          ) =>
+            a.localeCompare(
+              b,
+              "pt-BR"
+            )
+        ),
+      [
+        deliveryAreas,
+      ]
+    );
+
+  const cityAreas =
+    useMemo(
+      () =>
+        deliveryAreas.filter(
+          (
+            area
+          ) =>
+            area.city
+              ?.trim()
+              .toLowerCase() ===
+            city
+              .trim()
+              .toLowerCase()
+        ),
+      [
+        deliveryAreas,
+        city,
+      ]
+    );
+
   const selectedArea =
-    deliveryAreas.find(
+    cityAreas.find(
       (area) =>
         area.neighborhood ===
         neighborhood
@@ -897,6 +965,16 @@ export default function CheckoutPage() {
     }
 
     if (
+      !city
+    ) {
+      setCheckoutError(
+        "Selecione a cidade para continuar."
+      );
+
+      return;
+    }
+
+    if (
       !neighborhood
     ) {
       setCheckoutError(
@@ -942,6 +1020,8 @@ export default function CheckoutPage() {
         street,
 
         number,
+
+        city,
 
         neighborhood,
 
@@ -1796,7 +1876,52 @@ export default function CheckoutPage() {
                 <select
                   required
                   value={
+                    city
+                  }
+                  onChange={(
+                    event
+                  ) => {
+                    setCity(
+                      event.target.value
+                    );
+
+                    setNeighborhood(
+                      ""
+                    );
+                  }}
+                  className={
+                    inputClass
+                  }
+                >
+                  <option value="">
+                    Selecione a cidade
+                  </option>
+
+                  {cities.map(
+                    (
+                      item
+                    ) => (
+                      <option
+                        key={
+                          item
+                        }
+                        value={
+                          item
+                        }
+                      >
+                        {item}
+                      </option>
+                    )
+                  )}
+                </select>
+
+                <select
+                  required
+                  value={
                     neighborhood
+                  }
+                  disabled={
+                    !city
                   }
                   onChange={(
                     event
@@ -1811,10 +1936,12 @@ export default function CheckoutPage() {
                 >
 
                   <option value="">
-                    Selecione o bairro
+                    {city
+                      ? "Selecione o bairro"
+                      : "Escolha a cidade primeiro"}
                   </option>
 
-                  {deliveryAreas.map(
+                  {cityAreas.map(
                     (
                       area
                     ) => (
@@ -1833,6 +1960,10 @@ export default function CheckoutPage() {
                             area.fee
                           )
                         )}
+                        {area.pricingMode ===
+                        "PER_KM"
+                          ? " (por km)"
+                          : ""}
                       </option>
                     )
                   )}
@@ -2082,6 +2213,7 @@ export default function CheckoutPage() {
                 type="submit"
                 disabled={
                   submitting ||
+                  !city ||
                   !neighborhood ||
                   !paymentMethod ||
                   !storeStatus?.open
