@@ -106,6 +106,14 @@ public class DeliveryQuoteService {
             );
         }
 
+        if (openRouteServiceApiKey.isBlank()) {
+
+            return quoteByFixedArea(
+                    store,
+                    request
+            );
+        }
+
         String originAddress =
                 clean(
                         store.getDeliveryOriginAddress()
@@ -132,14 +140,6 @@ public class DeliveryQuoteService {
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
                     "O valor por km ainda não foi configurado."
-            );
-        }
-
-        if (openRouteServiceApiKey.isBlank()) {
-
-            return quoteByFixedArea(
-                    store,
-                    request
             );
         }
 
