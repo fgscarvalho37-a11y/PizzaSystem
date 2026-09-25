@@ -1380,13 +1380,13 @@ export default function CardapioPage() {
       <main className="min-h-screen bg-background pb-28">
 
         <header className="border-b border-border bg-background">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
             <div className="skeleton h-10 w-40" />
             <div className="skeleton h-10 w-24 rounded-full" />
           </div>
         </header>
 
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
 
           <div className="grid items-center gap-8 md:grid-cols-2">
 
@@ -1491,7 +1491,7 @@ export default function CardapioPage() {
 
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
 
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
 
           <button
             type="button"
@@ -1622,7 +1622,7 @@ export default function CardapioPage() {
 
         <div className="border-t border-border">
 
-          <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-2.5 sm:px-6 [scrollbar-width:none]">
+          <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-2.5 sm:px-6 [scrollbar-width:none]">
 
             <button
               type="button"
@@ -1687,9 +1687,9 @@ export default function CardapioPage() {
           CONTEÚDO
       ========================= */}
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
 
-        <section className="grid items-center gap-7 py-7 md:grid-cols-12 md:py-10">
+        <section className="grid items-center gap-5 py-5 md:grid-cols-12 md:py-8">
 
           <div className="animate-fade-up md:col-span-6">
 
@@ -1715,7 +1715,7 @@ export default function CardapioPage() {
                   "Pedidos encerrados"}
             </div>
 
-            <h1 className="mt-4 font-display text-[clamp(3.2rem,7.5vw,6.25rem)] leading-[0.86] tracking-[-0.035em]">
+            <h1 className="mt-3 font-display text-[clamp(2.6rem,6vw,5rem)] leading-[0.9] tracking-[-0.035em]">
               {storeProfile?.heroTitleLine1 ||
                 "ESCOLHA."}
               <br />
@@ -1728,7 +1728,7 @@ export default function CardapioPage() {
               </span>
             </h1>
 
-            <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
+            <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
               {storeProfile?.heroDescription ||
                 "Escolha seus favoritos, monte seu pedido e acompanhe tudo pelo site."}
             </p>
@@ -1788,7 +1788,7 @@ export default function CardapioPage() {
                   coverImageUrl
                 }
                 alt="Destaque do cardápio"
-                className="aspect-[16/10] w-full object-cover"
+                className="aspect-[16/9] w-full object-cover"
               />
 
             </div>
@@ -1928,7 +1928,7 @@ export default function CardapioPage() {
                 activeCategoryId
               )
             }
-            className="mt-6 grid animate-fade-up gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            className="mt-5 grid animate-fade-up gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           >
 
             {filteredProducts.map(
@@ -1959,7 +1959,7 @@ export default function CardapioPage() {
                     key={
                       product.id
                     }
-                    className="group flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-[0_12px_35px_-28px] shadow-foreground/50 transition-transform duration-200 hover:-translate-y-1"
+                    className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_28px_-24px] shadow-foreground/40 transition-transform duration-200 hover:-translate-y-0.5"
                     style={{
                       animationDelay:
                         `${Math.min(
@@ -1980,10 +1980,10 @@ export default function CardapioPage() {
                             product.name
                           }
                           loading="lazy"
-                          className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          className="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="grid aspect-[4/3] place-items-center bg-[radial-gradient(circle_at_top_left,var(--butter),transparent_55%),linear-gradient(135deg,var(--secondary),var(--background))]">
+                        <div className="grid aspect-[16/10] place-items-center bg-[radial-gradient(circle_at_top_left,var(--butter),transparent_55%),linear-gradient(135deg,var(--secondary),var(--background))]">
 
                           <div className="rounded-full border border-foreground/10 bg-white/65 px-4 py-2 font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
                             Sem foto
@@ -2004,15 +2004,15 @@ export default function CardapioPage() {
 
                     </div>
 
-                    <div className="flex flex-1 flex-col p-5">
+                    <div className="flex flex-1 flex-col p-4">
 
                       <div className="flex items-start justify-between gap-4">
 
-                        <h3 className="font-display text-2xl leading-none tracking-tight">
+                        <h3 className="font-display text-xl leading-none tracking-tight">
                           {product.name}
                         </h3>
 
-                        <p className="shrink-0 font-display text-[1.65rem] leading-none text-primary">
+                        <p className="shrink-0 font-display text-[1.35rem] leading-none text-primary">
                           {formatMoney(
                             Number(
                               product.price
@@ -2022,7 +2022,7 @@ export default function CardapioPage() {
 
                       </div>
 
-                      <p className="mt-3 line-clamp-2 flex-1 text-sm leading-6 text-muted-foreground">
+                      <p className="mt-2 line-clamp-2 flex-1 text-[13px] leading-5 text-muted-foreground">
                         {product.description ||
                           "Confira este item do nosso cardápio."}
                       </p>
@@ -2050,7 +2050,7 @@ export default function CardapioPage() {
                         disabled={
                           !storeStatus?.open
                         }
-                        className="mt-4 flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-foreground bg-foreground px-5 text-sm font-bold text-cream transition-all hover:bg-transparent hover:text-foreground active:scale-[0.98] disabled:cursor-not-allowed disabled:border-border disabled:bg-secondary disabled:text-muted-foreground"
+                        className="mt-3 flex min-h-10 items-center justify-center gap-2 rounded-full border-2 border-foreground bg-foreground px-4 text-xs font-bold text-cream transition-all hover:bg-transparent hover:text-foreground active:scale-[0.98] disabled:cursor-not-allowed disabled:border-border disabled:bg-secondary disabled:text-muted-foreground"
                       >
                         <PlusIcon className="h-4 w-4" />
 
@@ -2078,7 +2078,7 @@ export default function CardapioPage() {
 
       <footer className="mt-16 border-t border-border pb-28 pt-10">
 
-        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 sm:flex-row sm:items-center sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-4 sm:flex-row sm:items-center sm:px-6">
 
           <div>
 
