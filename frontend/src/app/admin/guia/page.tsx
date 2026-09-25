@@ -6,21 +6,7 @@ import {
 
 import Link from "next/link";
 
-import {
-  BarChart3,
-  Bike,
-  BookOpen,
-  ChefHat,
-  CreditCard,
-  FileText,
-  Globe2,
-  Palette,
-  PlayCircle,
-  Settings,
-  ShoppingBag,
-  Sparkles,
-  TicketPercent,
-} from "lucide-react";
+import GuideFeatureIcon from "@/components/GuideFeatureIcon";
 
 import AdminHeader from "@/components/AdminHeader";
 import AdminOnboarding from "@/components/AdminOnboarding";
@@ -31,77 +17,77 @@ const areas = [
     description:
       "Visão geral da operação e atalhos rápidos para as áreas mais usadas.",
     href: "/admin",
-    icon: Sparkles,
+    icon: "dashboard",
   },
   {
     title: "Cardápio",
     description:
       "Cadastre produtos, categorias, adicionais e bordas. Revise preços, disponibilidade e imagens antes de divulgar.",
     href: "/admin/cardapio",
-    icon: ShoppingBag,
+    icon: "menu",
   },
   {
     title: "Loja online",
     description:
       "Escolha o endereço público da loja, copie o link e abra o cardápio exatamente como o cliente verá.",
     href: "/admin/loja",
-    icon: Globe2,
+    icon: "store",
   },
   {
     title: "Pedidos",
     description:
       "Acompanhe cliente, endereço, pagamento e itens. Também é possível imprimir o comprovante ou baixar PDF.",
     href: "/admin/pedidos",
-    icon: FileText,
+    icon: "menu",
   },
   {
     title: "Cozinha",
     description:
       "Organize os pedidos por etapa: recebido, preparando, pronto e demais status da produção.",
     href: "/admin/cozinha",
-    icon: ChefHat,
+    icon: "kitchen",
   },
   {
     title: "Entregas",
     description:
       "Acompanhe os pedidos que estão prontos para sair, em rota ou já foram entregues.",
     href: "/admin/entregas",
-    icon: Bike,
+    icon: "delivery",
   },
   {
     title: "Cupons e fidelidade",
     description:
       "Crie promoções e acompanhe o programa de fidelidade dos clientes da loja.",
     href: "/admin/cupons",
-    icon: TicketPercent,
+    icon: "coupon",
   },
   {
     title: "Pagamentos",
     description:
       "Conecte a conta Mercado Pago do estabelecimento e acompanhe o status financeiro dos pedidos.",
     href: "/admin/configuracoes",
-    icon: CreditCard,
+    icon: "payment",
   },
   {
     title: "Caixa e relatórios",
     description:
       "Consulte faturamento, ticket médio, formas de pagamento e fechamento por data. O caixa também pode ser exportado em PDF.",
     href: "/admin/caixa",
-    icon: BarChart3,
+    icon: "reports",
   },
   {
     title: "Personalização",
     description:
       "Ajuste nome, logo, capa, textos e aparência do cardápio público.",
     href: "/admin/personalizacao",
-    icon: Palette,
+    icon: "palette",
   },
   {
     title: "Horários e operação",
     description:
       "Defina quando a loja pode receber pedidos e revise as configurações operacionais.",
     href: "/admin/horarios",
-    icon: Settings,
+    icon: "settings",
   },
 ];
 
@@ -124,7 +110,10 @@ export default function GuiaPage() {
 
             <div>
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                <BookOpen className="h-4 w-4" />
+                <GuideFeatureIcon
+                  kind="guide"
+                  className="h-4 w-4"
+                />
                 Guia
               </div>
 
@@ -146,7 +135,7 @@ export default function GuiaPage() {
               }
               className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:opacity-90"
             >
-              <PlayCircle className="h-4 w-4" />
+              <span aria-hidden="true">▶</span>
               Rever apresentação
             </button>
 
@@ -161,8 +150,18 @@ export default function GuiaPage() {
               area,
               index
             ) => {
-              const Icon =
-                area.icon;
+              const iconKind =
+                area.icon as
+                  | "dashboard"
+                  | "menu"
+                  | "store"
+                  | "kitchen"
+                  | "delivery"
+                  | "payment"
+                  | "reports"
+                  | "palette"
+                  | "settings"
+                  | "coupon";
 
               return (
                 <Link
@@ -178,7 +177,10 @@ export default function GuiaPage() {
                   <div className="flex items-start gap-4">
 
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <Icon className="h-5 w-5" />
+                      <GuideFeatureIcon
+                        kind={iconKind}
+                        className="h-5 w-5"
+                      />
                     </div>
 
                     <div>
