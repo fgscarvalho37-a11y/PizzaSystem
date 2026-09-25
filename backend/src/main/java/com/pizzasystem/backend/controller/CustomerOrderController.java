@@ -5,9 +5,12 @@ import com.pizzasystem.backend.entity.Order;
 import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentMethod;
 import com.pizzasystem.backend.entity.PaymentStatus;
+import com.pizzasystem.backend.entity.Store;
 
 import com.pizzasystem.backend.repository.CustomerRepository;
 import com.pizzasystem.backend.repository.OrderRepository;
+
+import com.pizzasystem.backend.service.PublicStoreService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
@@ -41,9 +45,12 @@ public class CustomerOrderController {
 
     private final CustomerRepository customerRepository;
 
+    private final PublicStoreService publicStoreService;
+
     public CustomerOrderController(
             OrderRepository orderRepository,
-            CustomerRepository customerRepository
+            CustomerRepository customerRepository,
+            PublicStoreService publicStoreService
     ) {
 
         this.orderRepository =
@@ -51,6 +58,9 @@ public class CustomerOrderController {
 
         this.customerRepository =
                 customerRepository;
+
+        this.publicStoreService =
+                publicStoreService;
     }
 
     // =========================
@@ -60,6 +70,7 @@ public class CustomerOrderController {
     @GetMapping
     @Transactional(readOnly = true)
     public ResponseEntity<?> listMyOrders(
+            @RequestParam(required = false) String store,
             HttpServletRequest request
     ) {
 
@@ -109,11 +120,37 @@ public class CustomerOrderController {
             return unauthorized();
         }
 
+        List<Order> customerOrders;
+
+        if (
+                store != null &&
+                !store.isBlank()
+        ) {
+
+            Store currentStore =
+                    publicStoreService
+                            .getBySlug(
+                                    store.trim()
+                            );
+
+            customerOrders =
+                    orderRepository
+                            .findByCustomerIdAndStoreIdOrderByCreatedAtDesc(
+                                    customerId,
+                                    currentStore.getId()
+                            );
+
+        } else {
+
+            customerOrders =
+                    orderRepository
+                            .findByCustomerIdOrderByCreatedAtDesc(
+                                    customerId
+                            );
+        }
+
         List<CustomerOrderResponse> orders =
-                orderRepository
-                        .findByCustomerIdOrderByCreatedAtDesc(
-                                customerId
-                        )
+                customerOrders
                         .stream()
                         .map(
                                 this::toResponse
