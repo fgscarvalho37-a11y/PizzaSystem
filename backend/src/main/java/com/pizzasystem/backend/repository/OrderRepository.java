@@ -51,6 +51,11 @@ public interface OrderRepository
             Long customerId
     );
 
+    List<Order> findByCustomerIdAndStoreIdOrderByCreatedAtDesc(
+            Long customerId,
+            Long storeId
+    );
+
     // =========================
     // CONTAGENS / RELATÓRIOS STORE
     // =========================
