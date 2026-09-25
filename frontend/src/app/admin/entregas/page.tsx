@@ -17,6 +17,7 @@ type DeliveryConfig = {
   maxDistanceKm: number | null;
   feePerKm: number | null;
   freeDeliveryAbove: number | null;
+  freeDeliveryDistanceKm: number | null;
   mapsConfigured: boolean;
   routeProvider: string;
 };
@@ -86,6 +87,12 @@ export default function AdminEntregasPage() {
   const [
     freeDeliveryAbove,
     setFreeDeliveryAbove,
+  ] =
+    useState("");
+
+  const [
+    freeDeliveryDistanceKm,
+    setFreeDeliveryDistanceKm,
   ] =
     useState("");
 
@@ -184,6 +191,17 @@ export default function AdminEntregasPage() {
           : ""
       );
 
+      setFreeDeliveryDistanceKm(
+        data.freeDeliveryDistanceKm !=
+          null
+          ? String(
+              Number(
+                data.freeDeliveryDistanceKm
+              )
+            )
+          : ""
+      );
+
       setMaxDistanceKm(
         data.maxDistanceKm !=
           null
@@ -265,6 +283,13 @@ export default function AdminEntregasPage() {
           )
         : null;
 
+    const normalizedFreeDistance =
+      freeDeliveryDistanceKm.trim()
+        ? Number(
+            freeDeliveryDistanceKm
+          )
+        : null;
+
     if (!normalizedOrigin) {
       setErrorMessage(
         "Informe o endereço completo de saída da pizzaria."
@@ -325,6 +350,39 @@ export default function AdminEntregasPage() {
       return;
     }
 
+    if (
+      normalizedFreeDistance !=
+        null &&
+      (
+        Number.isNaN(
+          normalizedFreeDistance
+        ) ||
+        normalizedFreeDistance <=
+          0
+      )
+    ) {
+      setErrorMessage(
+        "A distância de frete grátis precisa ser maior que zero."
+      );
+
+      return;
+    }
+
+    if (
+      normalizedFreeDistance !=
+        null &&
+      normalizedMaxDistance !=
+        null &&
+      normalizedFreeDistance >
+        normalizedMaxDistance
+    ) {
+      setErrorMessage(
+        "A distância de frete grátis não pode ser maior que a distância máxima."
+      );
+
+      return;
+    }
+
     try {
       setSaving(
         true
@@ -350,6 +408,8 @@ export default function AdminEntregasPage() {
                   normalizedFeePerKm,
                 freeDeliveryAbove:
                   normalizedFreeAbove,
+                freeDeliveryDistanceKm:
+                  normalizedFreeDistance,
               }),
           }
         );
@@ -551,7 +611,7 @@ export default function AdminEntregasPage() {
 
               </div>
 
-              <div className="mt-5 grid gap-4 md:grid-cols-3">
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 
                 <div>
 
@@ -636,6 +696,46 @@ export default function AdminEntregasPage() {
                 <div>
 
                   <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                    Frete grátis até
+                  </label>
+
+                  <div className="relative">
+
+                    <input
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={
+                        freeDeliveryDistanceKm
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setFreeDeliveryDistanceKm(
+                          event.target.value
+                        )
+                      }
+                      placeholder="Ex: 4"
+                      className={
+                        `${fieldClass} pr-12`
+                      }
+                    />
+
+                    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                      km
+                    </span>
+
+                  </div>
+
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    Em branco = cobra normalmente desde o primeiro km.
+                  </p>
+
+                </div>
+
+                <div>
+
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                     Frete grátis acima de
                   </label>
 
@@ -690,12 +790,18 @@ export default function AdminEntregasPage() {
                       )}.`
                     : "Defina o valor por km para visualizar um exemplo."}
 
+                  {freeDeliveryDistanceKm.trim()
+                    ? ` Entregas de até ${Number(
+                        freeDeliveryDistanceKm || 0
+                      )} km ficam grátis.`
+                    : ""}
+
                   {freeDeliveryAbove.trim()
                     ? ` Pedidos a partir de ${money(
                         Number(
                           freeDeliveryAbove || 0
                         )
-                      )} recebem frete grátis.`
+                      )} também recebem frete grátis.`
                     : ""}
                 </p>
 
