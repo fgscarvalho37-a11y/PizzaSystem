@@ -43,6 +43,12 @@ public class AdminUser {
     )
     private boolean active = true;
 
+    @Column(
+            name = "onboarding_completed",
+            nullable = false
+    )
+    private boolean onboardingCompleted = false;
+
     // =========================
     // LOJA / TENANT
     // =========================
@@ -142,6 +148,17 @@ public class AdminUser {
     ) {
         this.active =
                 active;
+    }
+
+    public boolean isOnboardingCompleted() {
+        return onboardingCompleted;
+    }
+
+    public void setOnboardingCompleted(
+            boolean onboardingCompleted
+    ) {
+        this.onboardingCompleted =
+                onboardingCompleted;
     }
 
     public Store getStore() {
