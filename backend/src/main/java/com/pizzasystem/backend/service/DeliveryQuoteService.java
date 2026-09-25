@@ -8,7 +8,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.pizzasystem.backend.dto.DeliveryQuoteRequest;
 import com.pizzasystem.backend.dto.DeliveryQuoteResponse;
 
+import com.pizzasystem.backend.entity.DeliveryArea;
 import com.pizzasystem.backend.entity.Store;
+
+import com.pizzasystem.backend.repository.DeliveryAreaRepository;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -47,15 +50,22 @@ public class DeliveryQuoteService {
 
     private final String openRouteServiceApiKey;
 
+    private final DeliveryAreaRepository
+            deliveryAreaRepository;
+
     public DeliveryQuoteService(
             @Value("${OPENROUTESERVICE_API_KEY:}")
-            String openRouteServiceApiKey
+            String openRouteServiceApiKey,
+            DeliveryAreaRepository deliveryAreaRepository
     ) {
 
         this.openRouteServiceApiKey =
                 openRouteServiceApiKey != null
                         ? openRouteServiceApiKey.trim()
                         : "";
+
+        this.deliveryAreaRepository =
+                deliveryAreaRepository;
 
         this.httpClient =
                 HttpClient
@@ -127,9 +137,9 @@ public class DeliveryQuoteService {
 
         if (openRouteServiceApiKey.isBlank()) {
 
-            throw new ResponseStatusException(
-                    HttpStatus.SERVICE_UNAVAILABLE,
-                    "O provedor de rotas ainda não está configurado."
+            return quoteByFixedArea(
+                    store,
+                    request
             );
         }
 
@@ -293,6 +303,121 @@ public class DeliveryQuoteService {
                         originAddress,
                         destinationAddress
                 )
+        );
+    }
+
+    private DeliveryQuoteResponse quoteByFixedArea(
+            Store store,
+            DeliveryQuoteRequest request
+    ) {
+
+        String city =
+                clean(
+                        request.city()
+                );
+
+        String neighborhood =
+                clean(
+                        request.neighborhood()
+                );
+
+        if (city.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Informe a cidade para calcular a entrega."
+            );
+        }
+
+        if (neighborhood.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Informe o bairro para calcular a entrega."
+            );
+        }
+
+        DeliveryArea area =
+                deliveryAreaRepository
+                        .findByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCaseAndActiveTrue(
+                                store.getId(),
+                                city,
+                                neighborhood
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new ResponseStatusException(
+                                                HttpStatus.SERVICE_UNAVAILABLE,
+                                                "O cálculo por rota está indisponível e não existe uma taxa fixa cadastrada para este bairro."
+                                        )
+                        );
+
+        if (!"FIXED".equalsIgnoreCase(
+                area.getPricingMode()
+        )) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "O cálculo por rota está indisponível no momento."
+            );
+        }
+
+        BigDecimal subtotal =
+                request.orderSubtotal() != null
+                        ? request.orderSubtotal()
+                                .max(
+                                        BigDecimal.ZERO
+                                )
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                )
+                        : BigDecimal.ZERO
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                );
+
+        BigDecimal freeDeliveryAbove =
+                store.getDeliveryFreeAbove();
+
+        boolean freeDelivery =
+                freeDeliveryAbove != null &&
+                freeDeliveryAbove.compareTo(
+                        BigDecimal.ZERO
+                ) > 0 &&
+                subtotal.compareTo(
+                        freeDeliveryAbove
+                ) >= 0;
+
+        BigDecimal fee =
+                freeDelivery
+                        ? BigDecimal.ZERO
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                )
+                        : area.getFee()
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                );
+
+        return new DeliveryQuoteResponse(
+                "FIXED",
+                null,
+                null,
+                fee,
+                city,
+                neighborhood,
+                freeDelivery,
+                freeDeliveryAbove != null
+                        ? freeDeliveryAbove
+                                .setScale(
+                                        2,
+                                        RoundingMode.HALF_UP
+                                )
+                        : null,
+                null,
+                "FIXED_AREA",
+                null
         );
     }
 
