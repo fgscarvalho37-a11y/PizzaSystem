@@ -12,9 +12,22 @@ import org.springframework.transaction.annotation.Transactional;
 import java.text.Normalizer;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class OrbittaProvisionService {
+
+    private static final Set<String> RESERVED_STOREFRONT_SLUGS =
+            Set.of(
+                    "admin",
+                    "api",
+                    "app",
+                    "www",
+                    "mail",
+                    "cdn",
+                    "suporte",
+                    "support"
+            );
 
     private final StoreRepository storeRepository;
     private final AdminUserRepository adminUserRepository;
@@ -378,6 +391,137 @@ public class OrbittaProvisionService {
         );
     }
 
+    @Transactional
+    public StorefrontResult updateStorefront(
+            Long orbittaProductId,
+            String requestedSlug
+    ) {
+
+        Store store =
+                getStoreByOrbittaProductId(
+                        orbittaProductId
+                );
+
+        String slug =
+                normalizeStorefrontSlug(
+                        requestedSlug
+                );
+
+        Store existing =
+                storeRepository
+                        .findBySlug(
+                                slug
+                        )
+                        .orElse(
+                                null
+                        );
+
+        if (
+                existing != null &&
+                !Objects.equals(
+                        existing.getId(),
+                        store.getId()
+                )
+        ) {
+            throw new IllegalArgumentException(
+                    "Este endereço já está sendo usado por outra loja."
+            );
+        }
+
+        store.setSlug(
+                slug
+        );
+
+        store =
+                storeRepository.save(
+                        store
+                );
+
+        String baseUrl =
+                frontendUrl == null
+                        ? ""
+                        : frontendUrl.trim();
+
+        while (
+                baseUrl.endsWith("/")
+        ) {
+            baseUrl =
+                    baseUrl.substring(
+                            0,
+                            baseUrl.length() - 1
+                    );
+        }
+
+        return new StorefrontResult(
+                store.getId(),
+                store.getOrbittaProductId(),
+                store.getSlug(),
+                buildStorefrontUrl(
+                        store,
+                        baseUrl
+                )
+        );
+    }
+
+    private String normalizeStorefrontSlug(
+            String value
+    ) {
+
+        if (
+                value == null ||
+                value.isBlank()
+        ) {
+            throw new IllegalArgumentException(
+                    "Escolha um endereço para a loja."
+            );
+        }
+
+        String normalized =
+                Normalizer.normalize(
+                        value,
+                        Normalizer.Form.NFD
+                )
+                        .replaceAll(
+                                "\\p{M}",
+                                ""
+                        )
+                        .toLowerCase(
+                                Locale.ROOT
+                        )
+                        .replaceAll(
+                                "[^a-z0-9]+",
+                                "-"
+                        )
+                        .replaceAll(
+                                "^-+|-+$",
+                                ""
+                        );
+
+        if (normalized.length() < 3) {
+            throw new IllegalArgumentException(
+                    "O endereço deve ter pelo menos 3 caracteres."
+            );
+        }
+
+        if (
+                RESERVED_STOREFRONT_SLUGS.contains(
+                        normalized
+                )
+        ) {
+            throw new IllegalArgumentException(
+                    "Este endereço é reservado. Escolha outro."
+            );
+        }
+
+        if (normalized.length() > 60) {
+            throw new IllegalArgumentException(
+                    "O endereço deve ter no máximo 60 caracteres."
+            );
+        }
+
+        return normalized;
+    }
+
     private Store getStoreByOrbittaProductId(
             Long orbittaProductId
     ) {
@@ -738,6 +882,14 @@ public class OrbittaProvisionService {
             Long orbittaProductId,
             boolean active,
             String subscriptionStatus
+    ) {
+    }
+
+    public record StorefrontResult(
+            Long tenantId,
+            Long orbittaProductId,
+            String slug,
+            String storefrontUrl
     ) {
     }
 }
