@@ -11,6 +11,8 @@ import com.pizzasystem.backend.service.PublicStoreService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 @RestController
@@ -42,10 +44,6 @@ public class DeliveryAreaController {
                 publicStoreService;
     }
 
-    // =========================
-    // ADMIN - LISTAR TODAS
-    // =========================
-
     @GetMapping
     public List<DeliveryArea> listAll() {
 
@@ -54,14 +52,10 @@ public class DeliveryAreaController {
                         .getCurrentStoreId();
 
         return deliveryAreaRepository
-                .findByStoreIdOrderByNeighborhoodAsc(
+                .findByStoreIdOrderByCityAscNeighborhoodAsc(
                         storeId
                 );
     }
-
-    // =========================
-    // PÚBLICO - LISTAR ATIVAS
-    // =========================
 
     @GetMapping("/active")
     public List<DeliveryArea> listActive(
@@ -75,14 +69,10 @@ public class DeliveryAreaController {
                         );
 
         return deliveryAreaRepository
-                .findByStoreIdAndActiveTrueOrderByNeighborhoodAsc(
+                .findByStoreIdAndActiveTrueOrderByCityAscNeighborhoodAsc(
                         storeId
                 );
     }
-
-    // =========================
-    // ADMIN - CADASTRAR
-    // =========================
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -94,41 +84,54 @@ public class DeliveryAreaController {
                 currentStoreService
                         .getCurrentStore();
 
+        String city =
+                normalizeRequired(
+                        data.getCity(),
+                        "Cidade"
+                );
+
         String neighborhood =
-                normalizeNeighborhood(
-                        data.getNeighborhood()
+                normalizeRequired(
+                        data.getNeighborhood(),
+                        "Bairro"
                 );
 
         if (
                 deliveryAreaRepository
-                        .existsByStoreIdAndNeighborhoodIgnoreCase(
+                        .existsByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCase(
                                 store.getId(),
+                                city,
                                 neighborhood
                         )
         ) {
 
             throw new IllegalArgumentException(
-                    "Já existe uma área de entrega com este bairro."
+                    "Já existe uma área de entrega para este bairro nesta cidade."
             );
         }
 
         DeliveryArea deliveryArea =
                 new DeliveryArea();
 
+        deliveryArea.setStore(
+                store
+        );
+
+        deliveryArea.setCity(
+                city
+        );
+
         deliveryArea.setNeighborhood(
                 neighborhood
         );
 
-        deliveryArea.setFee(
-                data.getFee()
+        applyPricing(
+                deliveryArea,
+                data
         );
 
         deliveryArea.setActive(
                 data.isActive()
-        );
-
-        deliveryArea.setStore(
-                store
         );
 
         return deliveryAreaRepository
@@ -136,10 +139,6 @@ public class DeliveryAreaController {
                         deliveryArea
                 );
     }
-
-    // =========================
-    // ADMIN - EDITAR
-    // =========================
 
     @PutMapping("/{id}")
     public DeliveryArea update(
@@ -163,14 +162,22 @@ public class DeliveryAreaController {
                                 )
                         );
 
+        String city =
+                normalizeRequired(
+                        data.getCity(),
+                        "Cidade"
+                );
+
         String neighborhood =
-                normalizeNeighborhood(
-                        data.getNeighborhood()
+                normalizeRequired(
+                        data.getNeighborhood(),
+                        "Bairro"
                 );
 
         deliveryAreaRepository
-                .findByStoreIdAndNeighborhoodIgnoreCase(
+                .findByStoreIdAndCityIgnoreCaseAndNeighborhoodIgnoreCase(
                         store.getId(),
+                        city,
                         neighborhood
                 )
                 .ifPresent(
@@ -182,26 +189,27 @@ public class DeliveryAreaController {
                                     )) {
 
                                 throw new IllegalArgumentException(
-                                        "Já existe uma área de entrega com este bairro."
+                                        "Já existe uma área de entrega para este bairro nesta cidade."
                                 );
                             }
                         }
                 );
 
+        deliveryArea.setCity(
+                city
+        );
+
         deliveryArea.setNeighborhood(
                 neighborhood
         );
 
-        deliveryArea.setFee(
-                data.getFee()
+        applyPricing(
+                deliveryArea,
+                data
         );
 
         deliveryArea.setActive(
                 data.isActive()
-        );
-
-        deliveryArea.setStore(
-                store
         );
 
         return deliveryAreaRepository
@@ -209,10 +217,6 @@ public class DeliveryAreaController {
                         deliveryArea
                 );
     }
-
-    // =========================
-    // ADMIN - ATIVAR / DESATIVAR
-    // =========================
 
     @PatchMapping("/{id}/active")
     public DeliveryArea changeActive(
@@ -246,27 +250,163 @@ public class DeliveryAreaController {
                 );
     }
 
-    // =========================
-    // NORMALIZAR BAIRRO
-    // =========================
-
-    private String normalizeNeighborhood(
-            String neighborhood
+    private void applyPricing(
+            DeliveryArea target,
+            DeliveryArea data
     ) {
 
-        if (neighborhood == null
-                || neighborhood.isBlank()) {
+        String mode =
+                data.getPricingMode() == null
+                        ? "FIXED"
+                        : data.getPricingMode()
+                                .trim()
+                                .toUpperCase();
 
+        if (
+                !"FIXED".equals(
+                        mode
+                ) &&
+                !"PER_KM".equals(
+                        mode
+                )
+        ) {
             throw new IllegalArgumentException(
-                    "Bairro é obrigatório."
+                    "Tipo de taxa inválido."
             );
         }
 
-        return neighborhood
+        target.setPricingMode(
+                mode
+        );
+
+        if (
+                "FIXED".equals(
+                        mode
+                )
+        ) {
+
+            BigDecimal fee =
+                    requireNonNegative(
+                            data.getFee(),
+                            "Taxa fixa"
+                    );
+
+            target.setFee(
+                    fee.setScale(
+                            2,
+                            RoundingMode.HALF_UP
+                    )
+            );
+
+            target.setDistanceKm(
+                    null
+            );
+
+            target.setFeePerKm(
+                    null
+            );
+
+            return;
+        }
+
+        BigDecimal distanceKm =
+                requirePositive(
+                        data.getDistanceKm(),
+                        "Distância em km"
+                );
+
+        BigDecimal feePerKm =
+                requireNonNegative(
+                        data.getFeePerKm(),
+                        "Valor por km"
+                );
+
+        BigDecimal calculatedFee =
+                distanceKm
+                        .multiply(
+                                feePerKm
+                        )
+                        .setScale(
+                                2,
+                                RoundingMode.HALF_UP
+                        );
+
+        target.setDistanceKm(
+                distanceKm.setScale(
+                        2,
+                        RoundingMode.HALF_UP
+                )
+        );
+
+        target.setFeePerKm(
+                feePerKm.setScale(
+                        2,
+                        RoundingMode.HALF_UP
+                )
+        );
+
+        target.setFee(
+                calculatedFee
+        );
+    }
+
+    private String normalizeRequired(
+            String value,
+            String field
+    ) {
+
+        if (
+                value == null ||
+                value.isBlank()
+        ) {
+            throw new IllegalArgumentException(
+                    field + " é obrigatório."
+            );
+        }
+
+        return value
                 .trim()
                 .replaceAll(
                         "\\s+",
                         " "
                 );
+    }
+
+    private BigDecimal requireNonNegative(
+            BigDecimal value,
+            String field
+    ) {
+
+        if (
+                value == null ||
+                value.compareTo(
+                        BigDecimal.ZERO
+                ) < 0
+        ) {
+            throw new IllegalArgumentException(
+                    field + " inválido."
+            );
+        }
+
+        return value;
+    }
+
+    private BigDecimal requirePositive(
+            BigDecimal value,
+            String field
+    ) {
+
+        if (
+                value == null ||
+                value.compareTo(
+                        BigDecimal.ZERO
+                ) <= 0
+        ) {
+            throw new IllegalArgumentException(
+                    field + " deve ser maior que zero."
+            );
+        }
+
+        return value;
     }
 }
