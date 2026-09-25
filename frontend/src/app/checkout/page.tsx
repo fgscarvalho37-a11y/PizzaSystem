@@ -44,28 +44,17 @@ type CartItem = {
   addons: Addon[];
 };
 
-type PricingMode =
-  | "FIXED"
-  | "PER_KM";
-
-type DeliveryArea = {
-  id: number;
-  city: string | null;
-  neighborhood: string;
-  pricingMode: PricingMode;
-  distanceKm: number | null;
-  feePerKm: number | null;
-  fee: number;
-  active: boolean;
-};
-
 type DeliveryQuote = {
-  pricingMode: PricingMode;
-  distanceKm: number | null;
-  feePerKm: number | null;
+  pricingMode: "PER_KM";
+  distanceKm: number;
+  feePerKm: number;
   fee: number;
   city: string;
   neighborhood: string;
+  freeDelivery: boolean;
+  freeDeliveryAbove: number | null;
+  routeProvider: string;
+  googleMapsUrl: string | null;
 };
 
 type StoreStatus = {
@@ -161,13 +150,6 @@ export default function CheckoutPage() {
   ] = useState<CartItem[]>(
     []
   );
-
-  const [
-    deliveryAreas,
-    setDeliveryAreas,
-  ] = useState<
-    DeliveryArea[]
-  >([]);
 
   const [
     deliveryQuote,
@@ -444,39 +426,16 @@ export default function CheckoutPage() {
 
     async function loadData() {
       try {
-        const [
-          areasResponse,
-          statusResponse,
-        ] =
-          await Promise.all([
-            fetch(
-              `${API_URL}/api/delivery-areas/active?store=${encodeURIComponent(
-                storeSlug
-              )}`,
-              {
-                cache:
-                  "no-store",
-              }
-            ),
-
-            fetch(
-              `${API_URL}/api/store/status?store=${encodeURIComponent(
-                storeSlug
-              )}`,
-              {
-                cache:
-                  "no-store",
-              }
-            ),
-          ]);
-
-        if (
-          !areasResponse.ok
-        ) {
-          throw new Error(
-            "Erro ao carregar bairros"
+        const statusResponse =
+          await fetch(
+            `${API_URL}/api/store/status?store=${encodeURIComponent(
+              storeSlug
+            )}`,
+            {
+              cache:
+                "no-store",
+            }
           );
-        }
 
         if (
           !statusResponse.ok
@@ -486,10 +445,6 @@ export default function CheckoutPage() {
           );
         }
 
-        const areasData:
-          DeliveryArea[] =
-          await areasResponse.json();
-
         const statusData:
           StoreStatus =
           await statusResponse.json();
@@ -497,10 +452,6 @@ export default function CheckoutPage() {
         if (!mounted) {
           return;
         }
-
-        setDeliveryAreas(
-          areasData
-        );
 
         setStoreStatus(
           statusData
@@ -692,79 +643,12 @@ export default function CheckoutPage() {
       [cart]
     );
 
-  const cities =
-    useMemo(
-      () =>
-        Array.from(
-          new Set(
-            deliveryAreas
-              .map(
-                (area) =>
-                  area.city
-                    ?.trim()
-              )
-              .filter(
-                (
-                  value
-                ): value is string =>
-                  Boolean(
-                    value
-                  )
-              )
-          )
-        ).sort(
-          (
-            a,
-            b
-          ) =>
-            a.localeCompare(
-              b,
-              "pt-BR"
-            )
-        ),
-      [
-        deliveryAreas,
-      ]
-    );
-
-  const cityAreas =
-    useMemo(
-      () =>
-        deliveryAreas.filter(
-          (
-            area
-          ) =>
-            area.city
-              ?.trim()
-              .toLowerCase() ===
-            city
-              .trim()
-              .toLowerCase()
-        ),
-      [
-        deliveryAreas,
-        city,
-      ]
-    );
-
-  const selectedArea =
-    cityAreas.find(
-      (area) =>
-        area.neighborhood ===
-        neighborhood
-    );
-
   const deliveryFee =
     deliveryQuote
       ? Number(
           deliveryQuote.fee
         )
-      : selectedArea?.pricingMode ===
-          "FIXED"
-        ? Number(
-            selectedArea.fee
-          )
-        : 0;
+      : 0;
 
   const totalBeforeDiscount =
     subtotal +
@@ -808,51 +692,13 @@ export default function CheckoutPage() {
       ""
     );
 
-    if (!selectedArea) {
-      setDeliveryQuote(
-        null
-      );
-      setDeliveryQuoteLoading(
-        false
-      );
-      return;
-    }
-
-    if (
-      selectedArea.pricingMode ===
-      "FIXED"
-    ) {
-      setDeliveryQuote({
-        pricingMode:
-          "FIXED",
-        distanceKm:
-          null,
-        feePerKm:
-          null,
-        fee:
-          Number(
-            selectedArea.fee
-          ),
-        city:
-          selectedArea.city ??
-          city,
-        neighborhood:
-          selectedArea.neighborhood,
-      });
-
-      setDeliveryQuoteLoading(
-        false
-      );
-
-      return;
-    }
-
     if (
       !street.trim() ||
       !number.trim() ||
       !city.trim() ||
       !neighborhood.trim() ||
-      !storeSlug
+      !storeSlug ||
+      subtotal <= 0
     ) {
       setDeliveryQuote(
         null
@@ -907,6 +753,12 @@ export default function CheckoutPage() {
                       complement:
                         complement.trim() ||
                         null,
+                      orderSubtotal:
+                        Number(
+                          subtotal.toFixed(
+                            2
+                          )
+                        ),
                     }),
                   signal:
                     controller.signal,
@@ -998,13 +850,13 @@ export default function CheckoutPage() {
       controller.abort();
     };
   }, [
-    selectedArea,
     street,
     number,
     city,
     neighborhood,
     complement,
     storeSlug,
+    subtotal,
   ]);
 
   // =========================
@@ -1251,7 +1103,7 @@ export default function CheckoutPage() {
       !city
     ) {
       setCheckoutError(
-        "Selecione a cidade para continuar."
+        "Informe a cidade para continuar."
       );
 
       return;
@@ -1261,7 +1113,18 @@ export default function CheckoutPage() {
       !neighborhood
     ) {
       setCheckoutError(
-        "Selecione o bairro para continuar."
+        "Informe o bairro para continuar."
+      );
+
+      return;
+    }
+
+    if (
+      !deliveryQuote
+    ) {
+      setCheckoutError(
+        deliveryQuoteError ||
+          "Aguarde o cálculo da taxa de entrega."
       );
 
       return;
@@ -2156,55 +2019,32 @@ export default function CheckoutPage() {
                   }
                 />
 
-                <select
+                <input
+                  className={
+                    inputClass
+                  }
+                  placeholder="Cidade"
                   required
                   value={
                     city
                   }
                   onChange={(
                     event
-                  ) => {
+                  ) =>
                     setCity(
                       event.target.value
-                    );
+                    )
+                  }
+                />
 
-                    setNeighborhood(
-                      ""
-                    );
-                  }}
+                <input
                   className={
                     inputClass
                   }
-                >
-                  <option value="">
-                    Selecione a cidade
-                  </option>
-
-                  {cities.map(
-                    (
-                      item
-                    ) => (
-                      <option
-                        key={
-                          item
-                        }
-                        value={
-                          item
-                        }
-                      >
-                        {item}
-                      </option>
-                    )
-                  )}
-                </select>
-
-                <select
+                  placeholder="Bairro"
                   required
                   value={
                     neighborhood
-                  }
-                  disabled={
-                    !city
                   }
                   onChange={(
                     event
@@ -2213,49 +2053,7 @@ export default function CheckoutPage() {
                       event.target.value
                     )
                   }
-                  className={
-                    inputClass
-                  }
-                >
-
-                  <option value="">
-                    {city
-                      ? "Selecione o bairro"
-                      : "Escolha a cidade primeiro"}
-                  </option>
-
-                  {cityAreas.map(
-                    (
-                      area
-                    ) => (
-                      <option
-                        key={
-                          area.id
-                        }
-                        value={
-                          area.neighborhood
-                        }
-                      >
-                        {area.neighborhood}
-                        {" — "}
-                        {area.pricingMode ===
-                        "PER_KM"
-                          ? `${formatMoney(
-                              Number(
-                                area.feePerKm ??
-                                  0
-                              )
-                            )}/km`
-                          : formatMoney(
-                              Number(
-                                area.fee
-                              )
-                            )}
-                      </option>
-                    )
-                  )}
-
-                </select>
+                />
 
                 <input
                   className={
@@ -2276,63 +2074,95 @@ export default function CheckoutPage() {
 
               </div>
 
-              {selectedArea?.pricingMode ===
-                "PER_KM" && (
-                <div className="mt-4 rounded-xl border border-border bg-background p-4">
+              <div className="mt-4 rounded-xl border border-border bg-background p-4">
 
-                  {deliveryQuoteLoading ? (
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Calculando distância e taxa de entrega...
-                    </p>
+                {deliveryQuoteLoading ? (
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Calculando distância e taxa de entrega...
+                  </p>
 
-                  ) : deliveryQuote ? (
-                    <div>
-                      <p className="text-sm font-bold text-foreground">
-                        Entrega calculada automaticamente
-                      </p>
+                ) : deliveryQuote ? (
+                  <div>
 
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {Number(
-                          deliveryQuote.distanceKm ??
-                            0
-                        ).toLocaleString(
-                          "pt-BR",
-                          {
-                            maximumFractionDigits:
-                              2,
-                          }
-                        )}{" "}
-                        km ×{" "}
-                        {formatMoney(
-                          Number(
-                            deliveryQuote.feePerKm ??
-                              0
-                          )
-                        )}
-                        /km ={" "}
-                        <strong className="text-foreground">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+
+                      <div>
+                        <p className="text-sm font-bold text-foreground">
+                          Entrega calculada pela rota
+                        </p>
+
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {Number(
+                            deliveryQuote.distanceKm
+                          ).toLocaleString(
+                            "pt-BR",
+                            {
+                              maximumFractionDigits:
+                                2,
+                            }
+                          )}{" "}
+                          km ×{" "}
                           {formatMoney(
                             Number(
-                              deliveryQuote.fee
+                              deliveryQuote.feePerKm
                             )
                           )}
-                        </strong>
-                      </p>
+                          /km
+                        </p>
+                      </div>
+
+                      <strong className="text-sm text-foreground">
+                        {deliveryQuote.freeDelivery
+                          ? "Frete grátis"
+                          : formatMoney(
+                              Number(
+                                deliveryQuote.fee
+                              )
+                            )}
+                      </strong>
+
                     </div>
 
-                  ) : deliveryQuoteError ? (
-                    <p className="text-sm font-medium text-primary">
-                      {deliveryQuoteError}
-                    </p>
+                    {deliveryQuote.freeDelivery &&
+                      deliveryQuote.freeDeliveryAbove !=
+                        null && (
+                        <p className="mt-2 text-xs font-semibold text-emerald-700">
+                          Frete grátis liberado para pedidos a partir de{" "}
+                          {formatMoney(
+                            Number(
+                              deliveryQuote.freeDeliveryAbove
+                            )
+                          )}.
+                        </p>
+                      )}
 
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Informe rua, número, cidade e bairro para calcular a rota automaticamente.
-                    </p>
-                  )}
+                    {deliveryQuote.googleMapsUrl && (
+                      <a
+                        href={
+                          deliveryQuote.googleMapsUrl
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex text-xs font-bold text-primary underline underline-offset-2"
+                      >
+                        Ver rota no Google Maps
+                      </a>
+                    )}
 
-                </div>
-              )}
+                  </div>
+
+                ) : deliveryQuoteError ? (
+                  <p className="text-sm font-medium text-primary">
+                    {deliveryQuoteError}
+                  </p>
+
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Informe rua, número, cidade e bairro para calcular a rota automaticamente.
+                  </p>
+                )}
+
+              </div>
 
             </section>
 
@@ -2511,35 +2341,35 @@ export default function CheckoutPage() {
                   </dt>
 
                   <dd className="text-right font-mono-brand">
-                    {!neighborhood
+                    {!street ||
+                    !number ||
+                    !city ||
+                    !neighborhood
                       ? "—"
                       : deliveryQuoteLoading
                         ? "Calculando..."
-                        : selectedArea?.pricingMode ===
-                            "PER_KM" &&
-                          !deliveryQuote
-                          ? "—"
-                          : formatMoney(
-                              deliveryFee
-                            )}
+                        : deliveryQuote
+                          ? deliveryQuote.freeDelivery
+                            ? "Grátis"
+                            : formatMoney(
+                                deliveryFee
+                              )
+                          : "—"}
 
-                    {deliveryQuote?.pricingMode ===
-                      "PER_KM" &&
-                      deliveryQuote.distanceKm !=
-                        null && (
-                        <span className="mt-0.5 block text-[10px] text-cream/45">
-                          {Number(
-                            deliveryQuote.distanceKm
-                          ).toLocaleString(
-                            "pt-BR",
-                            {
-                              maximumFractionDigits:
-                                2,
-                            }
-                          )}{" "}
-                          km
-                        </span>
-                      )}
+                    {deliveryQuote && (
+                      <span className="mt-0.5 block text-[10px] text-cream/45">
+                        {Number(
+                          deliveryQuote.distanceKm
+                        ).toLocaleString(
+                          "pt-BR",
+                          {
+                            maximumFractionDigits:
+                              2,
+                          }
+                        )}{" "}
+                        km
+                      </span>
+                    )}
                   </dd>
 
                 </div>
@@ -2583,15 +2413,13 @@ export default function CheckoutPage() {
                 disabled={
                   submitting ||
                   deliveryQuoteLoading ||
+                  !street ||
+                  !number ||
                   !city ||
                   !neighborhood ||
+                  !deliveryQuote ||
                   !paymentMethod ||
-                  !storeStatus?.open ||
-                  (
-                    selectedArea?.pricingMode ===
-                      "PER_KM" &&
-                    !deliveryQuote
-                  )
+                  !storeStatus?.open
                 }
                 className="mt-5 w-full rounded-xl bg-primary px-5 py-3.5 text-sm font-bold text-primary-foreground transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
