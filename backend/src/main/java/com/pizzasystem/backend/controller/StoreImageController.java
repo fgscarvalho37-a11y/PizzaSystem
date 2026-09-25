@@ -119,6 +119,35 @@ public class StoreImageController {
         );
     }
 
+    @PostMapping(
+            value = "/product",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @Transactional(readOnly = true)
+    public Map<String, Object> uploadProductImage(
+            @RequestParam("file")
+            MultipartFile file
+    ) throws IOException {
+
+        Store store =
+                currentStoreService
+                        .getCurrentStore();
+
+        String imageUrl =
+                imageStorageService
+                        .saveImage(
+                                store.getId(),
+                                file,
+                                "product"
+                        );
+
+        return Map.of(
+                "success", true,
+                "url", imageUrl,
+                "message", "Imagem do produto enviada com sucesso."
+        );
+    }
+
     @DeleteMapping("/logo")
     @Transactional
     public Map<String, Object> deleteLogo()
