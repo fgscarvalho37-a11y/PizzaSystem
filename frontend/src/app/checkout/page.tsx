@@ -59,6 +59,15 @@ type DeliveryArea = {
   active: boolean;
 };
 
+type DeliveryQuote = {
+  pricingMode: PricingMode;
+  distanceKm: number | null;
+  feePerKm: number | null;
+  fee: number;
+  city: string;
+  neighborhood: string;
+};
+
 type StoreStatus = {
   storeName: string;
   manualOpen: boolean;
@@ -159,6 +168,23 @@ export default function CheckoutPage() {
   ] = useState<
     DeliveryArea[]
   >([]);
+
+  const [
+    deliveryQuote,
+    setDeliveryQuote,
+  ] = useState<
+    DeliveryQuote | null
+  >(null);
+
+  const [
+    deliveryQuoteLoading,
+    setDeliveryQuoteLoading,
+  ] = useState(false);
+
+  const [
+    deliveryQuoteError,
+    setDeliveryQuoteError,
+  ] = useState("");
 
   const [
     storeStatus,
@@ -729,11 +755,16 @@ export default function CheckoutPage() {
     );
 
   const deliveryFee =
-    selectedArea
+    deliveryQuote
       ? Number(
-          selectedArea.fee
+          deliveryQuote.fee
         )
-      : 0;
+      : selectedArea?.pricingMode ===
+          "FIXED"
+        ? Number(
+            selectedArea.fee
+          )
+        : 0;
 
   const totalBeforeDiscount =
     subtotal +
@@ -767,6 +798,214 @@ export default function CheckoutPage() {
         ),
       [cart]
     );
+
+  // =========================
+  // ENTREGA - CÁLCULO AUTOMÁTICO
+  // =========================
+
+  useEffect(() => {
+    setDeliveryQuoteError(
+      ""
+    );
+
+    if (!selectedArea) {
+      setDeliveryQuote(
+        null
+      );
+      setDeliveryQuoteLoading(
+        false
+      );
+      return;
+    }
+
+    if (
+      selectedArea.pricingMode ===
+      "FIXED"
+    ) {
+      setDeliveryQuote({
+        pricingMode:
+          "FIXED",
+        distanceKm:
+          null,
+        feePerKm:
+          null,
+        fee:
+          Number(
+            selectedArea.fee
+          ),
+        city:
+          selectedArea.city ??
+          city,
+        neighborhood:
+          selectedArea.neighborhood,
+      });
+
+      setDeliveryQuoteLoading(
+        false
+      );
+
+      return;
+    }
+
+    if (
+      !street.trim() ||
+      !number.trim() ||
+      !city.trim() ||
+      !neighborhood.trim() ||
+      !storeSlug
+    ) {
+      setDeliveryQuote(
+        null
+      );
+
+      setDeliveryQuoteLoading(
+        false
+      );
+
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    const timer =
+      window.setTimeout(
+        async () => {
+          try {
+            setDeliveryQuoteLoading(
+              true
+            );
+
+            setDeliveryQuoteError(
+              ""
+            );
+
+            const response =
+              await fetch(
+                `${API_URL}/api/delivery-areas/quote?store=${encodeURIComponent(
+                  storeSlug
+                )}`,
+                {
+                  method:
+                    "POST",
+                  headers: {
+                    "Content-Type":
+                      "application/json",
+                    Accept:
+                      "application/json",
+                  },
+                  body:
+                    JSON.stringify({
+                      street:
+                        street.trim(),
+                      number:
+                        number.trim(),
+                      city:
+                        city.trim(),
+                      neighborhood:
+                        neighborhood.trim(),
+                      complement:
+                        complement.trim() ||
+                        null,
+                    }),
+                  signal:
+                    controller.signal,
+                }
+              );
+
+            if (!response.ok) {
+              let message =
+                "Não foi possível calcular a entrega para este endereço.";
+
+              try {
+                const data =
+                  await response.json();
+
+                if (
+                  typeof data?.message ===
+                    "string" &&
+                  data.message
+                ) {
+                  message =
+                    data.message;
+                } else if (
+                  typeof data?.detail ===
+                    "string" &&
+                  data.detail
+                ) {
+                  message =
+                    data.detail;
+                }
+              } catch {
+                // mantém mensagem padrão
+              }
+
+              throw new Error(
+                message
+              );
+            }
+
+            const data:
+              DeliveryQuote =
+              await response.json();
+
+            setDeliveryQuote(
+              data
+            );
+
+          } catch (
+            error
+          ) {
+            if (
+              error instanceof
+                DOMException &&
+              error.name ===
+                "AbortError"
+            ) {
+              return;
+            }
+
+            setDeliveryQuote(
+              null
+            );
+
+            setDeliveryQuoteError(
+              error instanceof
+                Error
+                ? error.message
+                : "Não foi possível calcular a entrega."
+            );
+
+          } finally {
+            if (
+              !controller.signal
+                .aborted
+            ) {
+              setDeliveryQuoteLoading(
+                false
+              );
+            }
+          }
+        },
+        700
+      );
+
+    return () => {
+      window.clearTimeout(
+        timer
+      );
+
+      controller.abort();
+    };
+  }, [
+    selectedArea,
+    street,
+    number,
+    city,
+    neighborhood,
+    complement,
+    storeSlug,
+  ]);
 
   // =========================
   // CUPOM - INVALIDAR
@@ -1999,15 +2238,19 @@ export default function CheckoutPage() {
                       >
                         {area.neighborhood}
                         {" — "}
-                        {formatMoney(
-                          Number(
-                            area.fee
-                          )
-                        )}
                         {area.pricingMode ===
                         "PER_KM"
-                          ? " (por km)"
-                          : ""}
+                          ? `${formatMoney(
+                              Number(
+                                area.feePerKm ??
+                                  0
+                              )
+                            )}/km`
+                          : formatMoney(
+                              Number(
+                                area.fee
+                              )
+                            )}
                       </option>
                     )
                   )}
@@ -2032,6 +2275,64 @@ export default function CheckoutPage() {
                 />
 
               </div>
+
+              {selectedArea?.pricingMode ===
+                "PER_KM" && (
+                <div className="mt-4 rounded-xl border border-border bg-background p-4">
+
+                  {deliveryQuoteLoading ? (
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Calculando distância e taxa de entrega...
+                    </p>
+
+                  ) : deliveryQuote ? (
+                    <div>
+                      <p className="text-sm font-bold text-foreground">
+                        Entrega calculada automaticamente
+                      </p>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {Number(
+                          deliveryQuote.distanceKm ??
+                            0
+                        ).toLocaleString(
+                          "pt-BR",
+                          {
+                            maximumFractionDigits:
+                              2,
+                          }
+                        )}{" "}
+                        km ×{" "}
+                        {formatMoney(
+                          Number(
+                            deliveryQuote.feePerKm ??
+                              0
+                          )
+                        )}
+                        /km ={" "}
+                        <strong className="text-foreground">
+                          {formatMoney(
+                            Number(
+                              deliveryQuote.fee
+                            )
+                          )}
+                        </strong>
+                      </p>
+                    </div>
+
+                  ) : deliveryQuoteError ? (
+                    <p className="text-sm font-medium text-primary">
+                      {deliveryQuoteError}
+                    </p>
+
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Informe rua, número, cidade e bairro para calcular a rota automaticamente.
+                    </p>
+                  )}
+
+                </div>
+              )}
 
             </section>
 
@@ -2209,12 +2510,36 @@ export default function CheckoutPage() {
                     Entrega
                   </dt>
 
-                  <dd className="font-mono-brand">
-                    {neighborhood
-                      ? formatMoney(
-                          deliveryFee
-                        )
-                      : "—"}
+                  <dd className="text-right font-mono-brand">
+                    {!neighborhood
+                      ? "—"
+                      : deliveryQuoteLoading
+                        ? "Calculando..."
+                        : selectedArea?.pricingMode ===
+                            "PER_KM" &&
+                          !deliveryQuote
+                          ? "—"
+                          : formatMoney(
+                              deliveryFee
+                            )}
+
+                    {deliveryQuote?.pricingMode ===
+                      "PER_KM" &&
+                      deliveryQuote.distanceKm !=
+                        null && (
+                        <span className="mt-0.5 block text-[10px] text-cream/45">
+                          {Number(
+                            deliveryQuote.distanceKm
+                          ).toLocaleString(
+                            "pt-BR",
+                            {
+                              maximumFractionDigits:
+                                2,
+                            }
+                          )}{" "}
+                          km
+                        </span>
+                      )}
                   </dd>
 
                 </div>
@@ -2257,10 +2582,16 @@ export default function CheckoutPage() {
                 type="submit"
                 disabled={
                   submitting ||
+                  deliveryQuoteLoading ||
                   !city ||
                   !neighborhood ||
                   !paymentMethod ||
-                  !storeStatus?.open
+                  !storeStatus?.open ||
+                  (
+                    selectedArea?.pricingMode ===
+                      "PER_KM" &&
+                    !deliveryQuote
+                  )
                 }
                 className="mt-5 w-full rounded-xl bg-primary px-5 py-3.5 text-sm font-bold text-primary-foreground transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
