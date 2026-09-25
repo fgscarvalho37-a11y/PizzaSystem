@@ -12,6 +12,8 @@ import {
   useRouter,
 } from "next/navigation";
 
+import AdminOnboarding from "@/components/AdminOnboarding";
+
 type AdminLayoutProps = {
   children: ReactNode;
 };
@@ -153,6 +155,11 @@ export default function AdminLayout({
     setShowLoader,
   ] = useState(false);
 
+  const [
+    showOnboarding,
+    setShowOnboarding,
+  ] = useState(false);
+
   useEffect(() => {
     if (
       pathname ===
@@ -231,6 +238,7 @@ export default function AdminLayout({
         let data:
           | {
               authenticated?: boolean;
+              onboardingCompleted?: boolean;
             }
           | null = null;
 
@@ -256,6 +264,11 @@ export default function AdminLayout({
 
         sessionVerifiedRef.current =
           true;
+
+        setShowOnboarding(
+          data.onboardingCompleted ===
+            false
+        );
 
         setCheckingAuth(false);
         setShowLoader(false);
@@ -337,8 +350,21 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background lg:pl-20">
-      {children}
-    </div>
+    <>
+      <div className="min-h-screen bg-background lg:pl-20">
+        {children}
+      </div>
+
+      <AdminOnboarding
+        open={
+          showOnboarding
+        }
+        onClose={() =>
+          setShowOnboarding(
+            false
+          )
+        }
+      />
+    </>
   );
 }
