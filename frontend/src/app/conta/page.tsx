@@ -505,7 +505,7 @@ function ContaContent() {
     try {
       const response =
         await fetch(
-          `${API_URL}/api/customer/orders`,
+          `${API_URL}/api/customer/orders${storeSlug ? `?store=${encodeURIComponent(storeSlug)}` : ""}`,
           {
             method: "GET",
             credentials: "include",
@@ -553,7 +553,7 @@ function ContaContent() {
     try {
       const response =
         await fetch(
-          `${API_URL}/api/customer/loyalty`,
+          `${API_URL}/api/customer/loyalty${storeSlug ? `?store=${encodeURIComponent(storeSlug)}` : ""}`,
           {
             method: "GET",
             credentials: "include",
