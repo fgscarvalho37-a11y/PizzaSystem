@@ -274,9 +274,6 @@ export default function AdminOnboarding({
                     stepIndex
                   ) => {
 
-                    const StepIcon =
-                      item.icon;
-
                     const active =
                       stepIndex ===
                       index;
