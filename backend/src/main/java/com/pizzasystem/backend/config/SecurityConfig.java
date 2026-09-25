@@ -117,6 +117,10 @@ public class SecurityConfig {
                                 )
 
                                 .ignoringRequestMatchers(
+                                        "/api/delivery-areas/quote"
+                                )
+
+                                .ignoringRequestMatchers(
                                         "/api/payments/**"
                                 )
 
@@ -240,6 +244,12 @@ public class SecurityConfig {
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/delivery-areas/active"
+                                )
+                                .permitAll()
+
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/delivery-areas/quote"
                                 )
                                 .permitAll()
 
