@@ -96,6 +96,11 @@ public class AdminAuthController {
                     user.getEmail()
             );
 
+            response.put(
+                    "onboardingCompleted",
+                    user.isOnboardingCompleted()
+            );
+
             return ResponseEntity.ok(
                     response
             );
@@ -242,6 +247,11 @@ public class AdminAuthController {
                     user.getEmail()
             );
 
+            response.put(
+                    "onboardingCompleted",
+                    user.isOnboardingCompleted()
+            );
+
             return ResponseEntity.ok(
                     response
             );
@@ -251,6 +261,71 @@ public class AdminAuthController {
             session.invalidate();
 
             return unauthorized();
+        }
+    }
+
+    // =========================
+    // ONBOARDING
+    // =========================
+
+    @PostMapping("/onboarding/complete")
+    public ResponseEntity<?> completeOnboarding(
+            HttpServletRequest request
+    ) {
+
+        HttpSession session =
+                request.getSession(
+                        false
+                );
+
+        if (session == null) {
+            return unauthorized();
+        }
+
+        Object adminEmailObject =
+                session.getAttribute(
+                        SESSION_ADMIN_EMAIL
+                );
+
+        if (!(adminEmailObject instanceof String adminEmail)
+                || adminEmail.isBlank()) {
+
+            session.invalidate();
+
+            return unauthorized();
+        }
+
+        try {
+
+            AdminUser user =
+                    adminAuthService
+                            .completeOnboarding(
+                                    adminEmail
+                            );
+
+            Map<String, Object> response =
+                    new HashMap<>();
+
+            response.put(
+                    "completed",
+                    user.isOnboardingCompleted()
+            );
+
+            return ResponseEntity.ok(
+                    response
+            );
+
+        } catch (RuntimeException exception) {
+            return ResponseEntity
+                    .status(
+                            HttpStatus.BAD_REQUEST
+                    )
+                    .body(
+                            Map.of(
+                                    "message",
+                                    exception.getMessage()
+                            )
+                    );
         }
     }
 
