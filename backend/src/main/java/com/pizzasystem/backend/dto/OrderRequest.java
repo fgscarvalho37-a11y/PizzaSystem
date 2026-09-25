@@ -35,6 +35,8 @@ public class OrderRequest {
 
     private String number;
 
+    private String city;
+
     private String neighborhood;
 
     private String complement;
@@ -114,6 +116,17 @@ public class OrderRequest {
     ) {
         this.number =
                 number;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(
+            String city
+    ) {
+        this.city =
+                city;
     }
 
     public String getNeighborhood() {
