@@ -38,6 +38,8 @@ type Order = {
   neighborhood: string;
   complement: string | null;
   deliveryFee: number;
+  deliveryDistanceKm?: number | null;
+  deliveryRouteUrl?: string | null;
   total: number;
   status: string;
   paymentStatus: string;
@@ -264,6 +266,17 @@ export default function PrintOrderPage() {
       `Taxa de entrega: ${money(
         order.deliveryFee
       )}`,
+      order.deliveryDistanceKm != null
+        ? `Distancia da rota: ${Number(
+            order.deliveryDistanceKm
+          ).toLocaleString(
+            "pt-BR",
+            {
+              maximumFractionDigits:
+                2,
+            }
+          )} km`
+        : "",
       `TOTAL: ${money(
         order.total
       )}`,
@@ -506,6 +519,28 @@ export default function PrintOrderPage() {
               )}
             </span>
           </div>
+
+          {order.deliveryDistanceKm !=
+            null && (
+            <div className="flex justify-between gap-4 text-[11px]">
+              <span>
+                Distância
+              </span>
+
+              <span>
+                {Number(
+                  order.deliveryDistanceKm
+                ).toLocaleString(
+                  "pt-BR",
+                  {
+                    maximumFractionDigits:
+                      2,
+                  }
+                )}{" "}
+                km
+              </span>
+            </div>
+          )}
 
           <div className="flex justify-between gap-4 text-sm font-bold">
             <span>
