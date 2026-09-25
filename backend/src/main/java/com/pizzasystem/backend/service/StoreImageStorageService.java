@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Set;
 import java.util.UUID;
 
@@ -81,13 +82,13 @@ public class StoreImageStorageService {
     }
 
     public boolean isPersistentStorageConfigured() {
-        return supabaseConfigured();
+        return true;
     }
 
     public String storageProvider() {
         return supabaseConfigured()
                 ? "SUPABASE"
-                : "LOCAL";
+                : "DATABASE";
     }
 
     public String saveImage(
@@ -119,17 +120,29 @@ public class StoreImageStorageService {
                         + extension;
 
         if (supabaseConfigured()) {
-            return saveToSupabase(
-                    storeId,
-                    file,
-                    fileName
-            );
+            try {
+                return saveToSupabase(
+                        storeId,
+                        file,
+                        fileName
+                );
+
+            } catch (IOException exception) {
+
+                /*
+                 * O upload de identidade visual não pode depender
+                 * do disco efêmero do Render. Se o Storage estiver
+                 * indisponível ou mal configurado, persistimos a
+                 * imagem como data URL no próprio banco.
+                 */
+                return saveInlineDataUrl(
+                        file
+                );
+            }
         }
 
-        return saveLocally(
-                storeId,
-                file,
-                fileName
+        return saveInlineDataUrl(
+                file
         );
     }
 
@@ -145,6 +158,15 @@ public class StoreImageStorageService {
                 oldUrl.isBlank() ||
                 oldUrl.equals(
                         newUrl
+                )
+        ) {
+            return;
+        }
+
+
+        if (
+                oldUrl.startsWith(
+                        "data:"
                 )
         ) {
             return;
@@ -255,6 +277,25 @@ public class StoreImageStorageService {
                     exception
             );
         }
+    }
+
+    private String saveInlineDataUrl(
+            MultipartFile file
+    ) throws IOException {
+
+        String contentType =
+                file.getContentType();
+
+        String encoded =
+                Base64.getEncoder()
+                        .encodeToString(
+                                file.getBytes()
+                        );
+
+        return "data:"
+                + contentType
+                + ";base64,"
+                + encoded;
     }
 
     private String saveLocally(
