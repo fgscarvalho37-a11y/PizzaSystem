@@ -98,6 +98,49 @@ public class OrbittaProvisionController {
         }
     }
 
+    @PutMapping("/{orbittaProductId}/storefront")
+    public ResponseEntity<?> updateStorefront(
+            @PathVariable Long orbittaProductId,
+            @RequestHeader(
+                    value = "Authorization",
+                    required = false
+            )
+            String authorization,
+            @RequestBody StorefrontRequest request
+    ) {
+
+        ResponseEntity<?> authorizationError =
+                validateAuthorization(
+                        authorization
+                );
+
+        if (authorizationError != null) {
+            return authorizationError;
+        }
+
+        try {
+            return ResponseEntity.ok(
+                    orbittaProvisionService
+                            .updateStorefront(
+                                    orbittaProductId,
+                                    request != null
+                                            ? request.slug()
+                                            : null
+                            )
+            );
+
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    exception.getMessage()
+                            )
+                    );
+        }
+    }
+
     @PostMapping("/{orbittaProductId}/suspend")
     public ResponseEntity<?> suspend(
             @PathVariable Long orbittaProductId,
@@ -246,6 +289,11 @@ public class OrbittaProvisionController {
             String name,
             String planName,
             String passwordHash
+    ) {
+    }
+
+    public record StorefrontRequest(
+            String slug
     ) {
     }
 }
