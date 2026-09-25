@@ -45,9 +45,11 @@ type CartItem = {
 };
 
 type DeliveryQuote = {
-  pricingMode: "PER_KM";
-  distanceKm: number;
-  feePerKm: number;
+  pricingMode:
+    | "PER_KM"
+    | "FIXED";
+  distanceKm: number | null;
+  feePerKm: number | null;
   fee: number;
   city: string;
   neighborhood: string;
@@ -2088,26 +2090,29 @@ export default function CheckoutPage() {
 
                       <div>
                         <p className="text-sm font-bold text-foreground">
-                          Entrega calculada pela rota
+                          {deliveryQuote.pricingMode ===
+                          "FIXED"
+                            ? "Taxa de entrega do bairro"
+                            : "Entrega calculada pela rota"}
                         </p>
 
                         <p className="mt-1 text-sm text-muted-foreground">
-                          {Number(
-                            deliveryQuote.distanceKm
-                          ).toLocaleString(
-                            "pt-BR",
-                            {
-                              maximumFractionDigits:
-                                2,
-                            }
-                          )}{" "}
-                          km ×{" "}
-                          {formatMoney(
-                            Number(
-                              deliveryQuote.feePerKm
-                            )
-                          )}
-                          /km
+                          {deliveryQuote.pricingMode ===
+                          "FIXED"
+                            ? `${deliveryQuote.neighborhood}, ${deliveryQuote.city}`
+                            : `${Number(
+                                deliveryQuote.distanceKm
+                              ).toLocaleString(
+                                "pt-BR",
+                                {
+                                  maximumFractionDigits:
+                                    2,
+                                }
+                              )} km × ${formatMoney(
+                                Number(
+                                  deliveryQuote.feePerKm
+                                )
+                              )}/km`}
                         </p>
                       </div>
 
@@ -2356,20 +2361,22 @@ export default function CheckoutPage() {
                               )
                           : "—"}
 
-                    {deliveryQuote && (
-                      <span className="mt-0.5 block text-[10px] text-cream/45">
-                        {Number(
-                          deliveryQuote.distanceKm
-                        ).toLocaleString(
-                          "pt-BR",
-                          {
-                            maximumFractionDigits:
-                              2,
-                          }
-                        )}{" "}
-                        km
-                      </span>
-                    )}
+                    {deliveryQuote &&
+                      deliveryQuote.distanceKm !=
+                        null && (
+                        <span className="mt-0.5 block text-[10px] text-cream/45">
+                          {Number(
+                            deliveryQuote.distanceKm
+                          ).toLocaleString(
+                            "pt-BR",
+                            {
+                              maximumFractionDigits:
+                                2,
+                            }
+                          )}{" "}
+                          km
+                        </span>
+                      )}
                   </dd>
 
                 </div>
