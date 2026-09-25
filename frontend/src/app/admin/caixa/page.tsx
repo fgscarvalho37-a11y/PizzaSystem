@@ -8,6 +8,7 @@ import {
 
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
+import { downloadSimplePdf } from "@/lib/simplePdf";
 
 type CashData = {
   date: string;
@@ -652,6 +653,64 @@ export default function AdminCaixaPage() {
     }
   }
 
+  function downloadCashReport() {
+    if (!cash) {
+      return;
+    }
+
+    const lines = [
+      `Data: ${formatDate(
+        cash.date
+      )}`,
+      `Situacao: ${isClosed ? "Fechado" : "Aberto"}`,
+      closing?.closedAt
+        ? `Fechado em: ${formatDateTime(
+            closing.closedAt
+          )}`
+        : "",
+      "",
+      `Faturamento: ${formatMoney(
+        cash.totalRevenue
+      )}`,
+      `Receita de produtos: ${formatMoney(
+        cash.productRevenue
+      )}`,
+      `Taxas de entrega: ${formatMoney(
+        cash.deliveryFees
+      )}`,
+      `Pedidos pagos: ${cash.orderCount}`,
+      `Ticket medio: ${formatMoney(
+        cash.averageTicket
+      )}`,
+      "",
+      "FORMAS DE PAGAMENTO",
+      `PIX: ${pixCount} pedido(s) - ${formatMoney(
+        pixRevenue
+      )}`,
+      `Credito: ${creditCount} pedido(s) - ${formatMoney(
+        creditRevenue
+      )}`,
+      `Debito: ${debitCount} pedido(s) - ${formatMoney(
+        debitRevenue
+      )}`,
+      "",
+      "STATUS DOS PEDIDOS",
+      `Entregues: ${cash.deliveredOrders}`,
+      `Em andamento: ${cash.activeOrders}`,
+      `Cancelados: ${cash.cancelledOrders}`,
+      "",
+      "Relatorio gerado pelo PizzaSystem.",
+    ].filter(
+      Boolean
+    ) as string[];
+
+    downloadSimplePdf(
+      `caixa-${cash.date}.pdf`,
+      "PizzaSystem - Relatorio de Caixa",
+      lines
+    );
+  }
+
   const pixCount =
     cash
       ?.ordersByPaymentMethod
@@ -938,6 +997,18 @@ export default function AdminCaixaPage() {
               </span>
 
             </section>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={
+                  downloadCashReport
+                }
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-card px-4 text-sm font-bold text-foreground transition hover:bg-muted"
+              >
+                Baixar PDF do caixa
+              </button>
+            </div>
 
             <section className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 
