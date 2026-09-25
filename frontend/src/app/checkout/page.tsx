@@ -971,6 +971,26 @@ export default function CheckoutPage() {
           ) {
             message =
               data.message;
+
+          } else if (
+            typeof data
+              ?.detail ===
+              "string" &&
+            data.detail
+          ) {
+            message =
+              data.detail;
+
+          } else if (
+            typeof data
+              ?.error ===
+              "string" &&
+            data.error &&
+            data.error !==
+              "Internal Server Error"
+          ) {
+            message =
+              data.error;
           }
         } catch {
           // mantém padrão
