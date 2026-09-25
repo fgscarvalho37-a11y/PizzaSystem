@@ -2,6 +2,7 @@ package com.pizzasystem.backend.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import com.pizzasystem.backend.dto.DeliveryQuoteRequest;
 import com.pizzasystem.backend.dto.DeliveryQuoteResponse;
@@ -276,33 +277,31 @@ public class DeliveryQuoteService {
 
         try {
 
-            JsonNode body =
+            ObjectNode body =
+                    objectMapper
+                            .createObjectNode();
+
+            body.put(
+                    "travelMode",
+                    "DRIVE"
+            );
+
+            body.put(
+                    "routingPreference",
+                    "TRAFFIC_UNAWARE"
+            );
+
+            body.set(
+                    "origin",
                     objectMapper
                             .createObjectNode()
                             .put(
-                                    "travelMode",
-                                    "DRIVE"
+                                    "address",
+                                    originAddress
                             )
-                            .put(
-                                    "routingPreference",
-                                    "TRAFFIC_UNAWARE"
-                            )
-                            .set(
-                                    "origin",
-                                    objectMapper
-                                            .createObjectNode()
-                                            .put(
-                                                    "address",
-                                                    originAddress
-                                            )
-                            );
+            );
 
-            (
-                    (
-                            com.fasterxml.jackson.databind.node.ObjectNode
-                            body
-                    )
-            ).set(
+            body.set(
                     "destination",
                     objectMapper
                             .createObjectNode()
