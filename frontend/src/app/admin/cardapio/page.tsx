@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ChangeEvent,
   FormEvent,
   useEffect,
   useState,
@@ -58,6 +59,12 @@ export default function AdminCardapioPage() {
 
   const [imageUrl, setImageUrl] =
     useState("");
+
+  const [
+    uploadingImage,
+    setUploadingImage,
+  ] =
+    useState(false);
 
   const [categoryId, setCategoryId] =
     useState("");
@@ -143,6 +150,118 @@ export default function AdminCardapioPage() {
     setPrice("");
     setImageUrl("");
     setCategoryId("");
+  }
+
+  // =========================
+  // IMAGEM DO PRODUTO
+  // =========================
+
+  async function uploadProductImage(
+    event:
+      ChangeEvent<HTMLInputElement>
+  ) {
+    const file =
+      event.target.files?.[0];
+
+    event.target.value =
+      "";
+
+    if (!file) {
+      return;
+    }
+
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    if (
+      file.size >
+      5 * 1024 * 1024
+    ) {
+      setErrorMessage(
+        "A imagem deve ter no máximo 5 MB."
+      );
+
+      return;
+    }
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
+
+    if (
+      !allowedTypes.includes(
+        file.type
+      )
+    ) {
+      setErrorMessage(
+        "Use uma imagem JPG, PNG ou WebP."
+      );
+
+      return;
+    }
+
+    try {
+      setUploadingImage(
+        true
+      );
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "file",
+        file
+      );
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/store/images/product`,
+          {
+            method:
+              "POST",
+            body:
+              formData,
+          }
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          "Erro ao enviar imagem"
+        );
+      }
+
+      const data:
+        {
+          url?: string;
+        } =
+        await response.json();
+
+      if (!data.url) {
+        throw new Error(
+          "Upload sem URL"
+        );
+      }
+
+      setImageUrl(
+        data.url
+      );
+
+      setSuccessMessage(
+        "Imagem enviada. Salve o produto para concluir."
+      );
+
+    } catch {
+      setErrorMessage(
+        "Não foi possível enviar a imagem do produto."
+      );
+
+    } finally {
+      setUploadingImage(
+        false
+      );
+    }
   }
 
   // =========================
@@ -567,23 +686,66 @@ export default function AdminCardapioPage() {
             <div>
 
               <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                URL da imagem
+                Imagem do produto
               </label>
 
-              <input
-                value={
-                  imageUrl
-                }
-                onChange={(
-                  event
-                ) =>
-                  setImageUrl(
-                    event.target.value
-                  )
-                }
-                className="h-12 w-full rounded-xl border border-input px-4 outline-none transition focus:border-border"
-                placeholder="https://..."
-              />
+              <div className="flex gap-2">
+
+                <label
+                  className={[
+                    "inline-flex h-12 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-bold text-foreground transition hover:bg-muted",
+                    uploadingImage
+                      ? "pointer-events-none opacity-60"
+                      : "",
+                  ].join(
+                    " "
+                  )}
+                >
+                  {uploadingImage
+                    ? "Enviando..."
+                    : "Enviar foto"}
+
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={
+                      uploadProductImage
+                    }
+                    className="hidden"
+                    disabled={
+                      uploadingImage
+                    }
+                  />
+                </label>
+
+                <input
+                  value={
+                    imageUrl
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setImageUrl(
+                      event.target.value
+                    )
+                  }
+                  className="h-12 min-w-0 flex-1 rounded-xl border border-input px-4 outline-none transition focus:border-border"
+                  placeholder="ou cole uma URL"
+                />
+
+              </div>
+
+              {imageUrl && (
+                <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-muted/20">
+                  <img
+                    src={
+                      imageUrl
+                    }
+                    alt="Prévia do produto"
+                    className="aspect-[16/9] w-full object-cover"
+                  />
+                </div>
+              )}
 
             </div>
 
