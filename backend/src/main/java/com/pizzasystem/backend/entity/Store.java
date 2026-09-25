@@ -180,6 +180,13 @@ public class Store {
     )
     private BigDecimal deliveryFreeAbove;
 
+    @Column(
+            name = "delivery_free_distance_km",
+            precision = 8,
+            scale = 2
+    )
+    private BigDecimal deliveryFreeDistanceKm;
+
     // =========================
     // FIDELIDADE
     // =========================
@@ -484,6 +491,17 @@ public class Store {
     ) {
         this.deliveryFreeAbove =
                 deliveryFreeAbove;
+    }
+
+    public BigDecimal getDeliveryFreeDistanceKm() {
+        return deliveryFreeDistanceKm;
+    }
+
+    public void setDeliveryFreeDistanceKm(
+            BigDecimal deliveryFreeDistanceKm
+    ) {
+        this.deliveryFreeDistanceKm =
+                deliveryFreeDistanceKm;
     }
 
     public boolean isLoyaltyEnabled() {
