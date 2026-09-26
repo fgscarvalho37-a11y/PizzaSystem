@@ -225,8 +225,42 @@ export default function AdminCardapioPage() {
         );
 
       if (!response.ok) {
+        let message =
+          "Não foi possível enviar a imagem do produto.";
+
+        try {
+          const data =
+            await response.json();
+
+          if (
+            typeof data?.message ===
+              "string" &&
+            data.message
+          ) {
+            message =
+              data.message;
+          } else if (
+            typeof data?.detail ===
+              "string" &&
+            data.detail
+          ) {
+            message =
+              data.detail;
+          } else if (
+            typeof data?.error ===
+              "string" &&
+            data.error !==
+              "Internal Server Error"
+          ) {
+            message =
+              data.error;
+          }
+        } catch {
+          // mantém a mensagem padrão
+        }
+
         throw new Error(
-          "Erro ao enviar imagem"
+          message
         );
       }
 

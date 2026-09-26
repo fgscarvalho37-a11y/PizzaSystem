@@ -24,3 +24,15 @@ mercadopago.webhook-secret=${MERCADOPAGO_WEBHOOK_SECRET:}
 mercadopago.oauth.client-id=${MERCADOPAGO_CLIENT_ID:}
 mercadopago.oauth.client-secret=${MERCADOPAGO_CLIENT_SECRET:}
 mercadopago.oauth.redirect-uri=${MERCADOPAGO_REDIRECT_URI:}
+
+# =========================
+# SUPABASE STORAGE
+# =========================
+
+# Imagens de logo, capa e produtos.
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+PIZZASYSTEM_STORAGE_BUCKET=pizzasystem-assets
+
+# Deixe false em produção para impedir imagens Base64 no PostgreSQL.
+PIZZASYSTEM_ALLOW_DATABASE_IMAGE_FALLBACK=false

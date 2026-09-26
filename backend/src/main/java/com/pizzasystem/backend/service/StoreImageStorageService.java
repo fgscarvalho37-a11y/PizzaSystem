@@ -36,6 +36,7 @@ public class StoreImageStorageService {
     private final String serviceRoleKey;
     private final String bucket;
     private final Path localUploadRoot;
+    private final boolean allowDatabaseFallback;
 
     private final HttpClient httpClient =
             HttpClient.newBuilder()
@@ -54,7 +55,9 @@ public class StoreImageStorageService {
             @Value("${PIZZASYSTEM_STORAGE_BUCKET:pizzasystem-assets}")
             String bucket,
             @Value("${pizzasystem.upload-dir:uploads}")
-            String localUploadDirectory
+            String localUploadDirectory,
+            @Value("${PIZZASYSTEM_ALLOW_DATABASE_IMAGE_FALLBACK:false}")
+            boolean allowDatabaseFallback
     ) {
 
         this.supabaseUrl =
@@ -79,16 +82,33 @@ public class StoreImageStorageService {
                 )
                         .toAbsolutePath()
                         .normalize();
+
+        this.allowDatabaseFallback =
+                allowDatabaseFallback;
     }
 
     public boolean isPersistentStorageConfigured() {
-        return true;
+        return supabaseConfigured();
     }
 
     public String storageProvider() {
-        return supabaseConfigured()
-                ? "SUPABASE"
-                : "DATABASE";
+        if (supabaseConfigured()) {
+            return "SUPABASE";
+        }
+
+        if (allowDatabaseFallback) {
+            return "DATABASE";
+        }
+
+        return "NOT_CONFIGURED";
+    }
+
+    public String storageBucket() {
+        return bucket;
+    }
+
+    public boolean databaseFallbackEnabled() {
+        return allowDatabaseFallback;
     }
 
     public String saveImage(
@@ -129,20 +149,33 @@ public class StoreImageStorageService {
 
             } catch (IOException exception) {
 
-                /*
-                 * O upload de identidade visual não pode depender
-                 * do disco efêmero do Render. Se o Storage estiver
-                 * indisponível ou mal configurado, persistimos a
-                 * imagem como data URL no próprio banco.
-                 */
-                return saveInlineDataUrl(
-                        file
+                if (allowDatabaseFallback) {
+                    return saveInlineDataUrl(
+                            file
+                    );
+                }
+
+                throw new IOException(
+                        "Não foi possível salvar a imagem no Supabase Storage. "
+                                + "Verifique SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY "
+                                + "e o bucket "
+                                + bucket
+                                + ".",
+                        exception
                 );
             }
         }
 
-        return saveInlineDataUrl(
-                file
+        if (allowDatabaseFallback) {
+            return saveInlineDataUrl(
+                    file
+            );
+        }
+
+        throw new IOException(
+                "Supabase Storage não configurado. "
+                        + "Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY "
+                        + "no ambiente do backend."
         );
     }
 

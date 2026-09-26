@@ -55,7 +55,11 @@ public class StoreImageController {
                 imageStorageService
                         .storageProvider(),
                 "bucket",
-                "pizzasystem-assets"
+                imageStorageService
+                        .storageBucket(),
+                "databaseFallbackEnabled",
+                imageStorageService
+                        .databaseFallbackEnabled()
         );
     }
 

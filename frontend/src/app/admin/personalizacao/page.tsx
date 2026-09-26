@@ -93,6 +93,7 @@ type StorageStatus = {
   persistent: boolean;
   provider: string;
   bucket: string;
+  databaseFallbackEnabled?: boolean;
 };
 
 type PersonalizationForm = {
@@ -1076,8 +1077,10 @@ export default function PersonalizacaoPage() {
               )}
             >
               {storageStatus.persistent
-                ? `Uploads salvos no ${storageStatus.provider}. Logo, capa e fotos continuam disponíveis após reinícios.`
-                : "O backend está usando armazenamento local temporário. Configure o Supabase Storage no ambiente de produção antes de depender de uploads permanentes."}
+                ? `Uploads salvos no ${storageStatus.provider}, bucket ${storageStatus.bucket}. Logo, capa e fotos ficam fora do banco e continuam disponíveis após reinícios.`
+                : storageStatus.databaseFallbackEnabled
+                  ? "O Supabase Storage não está configurado e o fallback para banco está habilitado. Isso pode aumentar rapidamente o tamanho do PostgreSQL."
+                  : "O Supabase Storage ainda não está configurado no backend. Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no Render antes de enviar novas imagens."}
             </p>
           </div>
         )}
