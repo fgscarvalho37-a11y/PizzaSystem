@@ -995,6 +995,10 @@ export default function AdminEntregasPage() {
   const fieldClass =
     "h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10";
 
+  const usesMapbox =
+    pricingMode === "PER_KM" ||
+    pricingMode === "DISTANCE_TIERED";
+
   return (
     <main className="min-h-screen bg-background">
 
@@ -1039,7 +1043,7 @@ export default function AdminEntregasPage() {
         ) : (
           <>
 
-            {pricingMode !== "FIXED" && <section className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            {usesMapbox && <section className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
 
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 
@@ -1109,7 +1113,7 @@ export default function AdminEntregasPage() {
                 <label><input type="radio" name="pricingMode" checked={pricingMode === "FIXED"} onChange={() => setPricingMode("FIXED")} /> Taxa fixa por bairro</label>
               </fieldset>
 
-              {pricingMode !== "FIXED" && <><div className="mt-6">
+              {usesMapbox && <><div className="mt-6">
 
                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                   Endereço de saída da pizzaria
@@ -1206,6 +1210,7 @@ export default function AdminEntregasPage() {
                   )}
 
                   <MapboxLocationPicker
+                    key={pricingMode}
                     latitude={originLatitude}
                     longitude={originLongitude}
                     draggable

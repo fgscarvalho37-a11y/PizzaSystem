@@ -296,6 +296,19 @@ export default function MapboxLocationPicker({
               "top-right"
             );
 
+            map.on(
+              "load",
+              () => {
+                map.resize();
+              }
+            );
+
+            window.requestAnimationFrame(
+              () => {
+                map.resize();
+              }
+            );
+
             const marker =
               new mapboxgl.Marker(
                 {
@@ -347,6 +360,12 @@ export default function MapboxLocationPicker({
               longitude,
               latitude,
             ]
+          );
+
+          window.requestAnimationFrame(
+            () => {
+              mapRef.current?.resize();
+            }
           );
 
           mapRef.current.easeTo(
