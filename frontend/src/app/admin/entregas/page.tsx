@@ -17,6 +17,14 @@ const MAPBOX_PUBLIC_TOKEN =
 
 type DeliveryArea = { id: number; city: string; neighborhood: string; fee: number; pricingMode: string; active: boolean };
 
+type DeliveryDistanceTier = {
+  id: number;
+  minDistanceKm: number;
+  maxDistanceKm: number;
+  fee: number;
+  active: boolean;
+};
+
 type ViaCepResponse = {
   cep?: string;
   logradouro?: string;
@@ -27,7 +35,7 @@ type ViaCepResponse = {
 };
 
 type DeliveryConfig = {
-  pricingMode: "FIXED" | "PER_KM";
+  pricingMode: "FIXED" | "PER_KM" | "DISTANCE_TIERED";
   originAddress: string | null;
   originLatitude: number | null;
   originLongitude: number | null;
@@ -96,8 +104,13 @@ export default function AdminEntregasPage() {
       null
     );
 
-  const [pricingMode, setPricingMode] = useState<"FIXED" | "PER_KM">("PER_KM");
+  const [pricingMode, setPricingMode] = useState<"FIXED" | "PER_KM" | "DISTANCE_TIERED">("PER_KM");
   const [areas, setAreas] = useState<DeliveryArea[]>([]);
+  const [tiers, setTiers] = useState<DeliveryDistanceTier[]>([]);
+  const [tierMinDistance, setTierMinDistance] = useState("");
+  const [tierMaxDistance, setTierMaxDistance] = useState("");
+  const [tierFee, setTierFee] = useState("");
+  const [tierSaving, setTierSaving] = useState(false);
   const [areaCity, setAreaCity] = useState("");
   const [areaNeighborhood, setAreaNeighborhood] = useState("");
   const [areaFee, setAreaFee] = useState("");
@@ -240,6 +253,39 @@ export default function AdminEntregasPage() {
       setPricingMode(data.pricingMode ?? "PER_KM");
       const areaResponse = await adminFetch(`${API_URL}/api/delivery-areas`, { cache: "no-store" });
       if (areaResponse.ok) setAreas(await areaResponse.json());
+
+      const tierResponse =
+        await adminFetch(
+          `${API_URL}/api/delivery-distance-tiers`,
+          {
+            cache: "no-store",
+          }
+        );
+
+      if (tierResponse.ok) {
+        const tierData: DeliveryDistanceTier[] =
+          await tierResponse.json();
+
+        setTiers(tierData);
+
+        const activeTiers =
+          tierData.filter((tier) => tier.active);
+
+        if (activeTiers.length > 0) {
+          const lastTier =
+            [...activeTiers].sort(
+              (a, b) =>
+                a.maxDistanceKm -
+                b.maxDistanceKm
+            ).at(-1);
+
+          if (lastTier) {
+            setTierMinDistance(
+              String(Number(lastTier.maxDistanceKm))
+            );
+          }
+        }
+      }
 
       setOriginAddress(
         data.originAddress ??
@@ -610,7 +656,7 @@ export default function AdminEntregasPage() {
           )
         : null;
 
-    if (pricingMode === "PER_KM" && originCep.replace(/\D/g, "").length === 8 && !originNumber.trim()) {
+    if (pricingMode !== "FIXED" && originCep.replace(/\D/g, "").length === 8 && !originNumber.trim()) {
       setErrorMessage(
         "Informe o número da pizzaria para completar o endereço pelo CEP."
       );
@@ -618,7 +664,7 @@ export default function AdminEntregasPage() {
       return;
     }
 
-    if (pricingMode === "PER_KM" && (!normalizedOrigin || normalizedOrigin.split(",").length < 3)) {
+    if (pricingMode !== "FIXED" && (!normalizedOrigin || normalizedOrigin.split(",").length < 3)) {
       setErrorMessage(
         "Informe o endereço completo de saída da pizzaria."
       );
@@ -801,6 +847,143 @@ export default function AdminEntregasPage() {
     finally { setAreaSaving(false); }
   }
 
+  async function saveTier(
+    event: FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    const minDistance =
+      Number(tierMinDistance);
+
+    const maxDistance =
+      Number(tierMaxDistance);
+
+    const fee =
+      Number(tierFee);
+
+    if (
+      tierMinDistance.trim() === "" ||
+      tierMaxDistance.trim() === "" ||
+      tierFee.trim() === "" ||
+      !Number.isFinite(minDistance) ||
+      !Number.isFinite(maxDistance) ||
+      !Number.isFinite(fee) ||
+      minDistance < 0 ||
+      maxDistance <= minDistance ||
+      fee < 0
+    ) {
+      setErrorMessage(
+        "Informe uma faixa válida: distância inicial, distância final e valor."
+      );
+
+      return;
+    }
+
+    try {
+      setTierSaving(true);
+      setErrorMessage("");
+      setSuccessMessage("");
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/delivery-distance-tiers`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              minDistanceKm: minDistance,
+              maxDistanceKm: maxDistance,
+              fee,
+              active: true,
+            }),
+          }
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          (await readMessage(response)) ||
+            "Não foi possível cadastrar a faixa."
+        );
+      }
+
+      const saved: DeliveryDistanceTier =
+        await response.json();
+
+      setTiers((current) =>
+        [...current, saved].sort(
+          (a, b) =>
+            a.minDistanceKm -
+            b.minDistanceKm
+        )
+      );
+
+      setTierMinDistance(
+        String(Number(saved.maxDistanceKm))
+      );
+      setTierMaxDistance("");
+      setTierFee("");
+
+      setSuccessMessage(
+        "Faixa de distância cadastrada."
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Erro ao cadastrar faixa."
+      );
+    } finally {
+      setTierSaving(false);
+    }
+  }
+
+  async function removeTier(
+    id: number
+  ) {
+    try {
+      setErrorMessage("");
+      setSuccessMessage("");
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/delivery-distance-tiers/${id}/active?active=false`,
+          {
+            method: "PATCH",
+          }
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          (await readMessage(response)) ||
+            "Não foi possível desativar a faixa."
+        );
+      }
+
+      setTiers((current) =>
+        current.map((tier) =>
+          tier.id === id
+            ? {
+                ...tier,
+                active: false,
+              }
+            : tier
+        )
+      );
+
+      setSuccessMessage(
+        "Faixa desativada."
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Erro ao desativar faixa."
+      );
+    }
+  }
+
   async function removeArea(id: number) {
     try {
       const response = await adminFetch(`${API_URL}/api/delivery-areas/${id}/active?active=false`, { method: "PATCH" });
@@ -830,7 +1013,7 @@ export default function AdminEntregasPage() {
           </h1>
 
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Escolha como a pizzaria cobra a entrega. O modo por km usa a rota; o modo fixo usa a taxa cadastrada para cada bairro.
+            Escolha como a pizzaria cobra a entrega: por km, por faixas de distância ou com uma taxa fixa para cada bairro.
           </p>
 
         </section>
@@ -856,7 +1039,7 @@ export default function AdminEntregasPage() {
         ) : (
           <>
 
-            {pricingMode === "PER_KM" && <section className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            {pricingMode !== "FIXED" && <section className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
 
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 
@@ -921,11 +1104,12 @@ export default function AdminEntregasPage() {
               </div>
 
               <fieldset className="mt-6 flex flex-wrap gap-4" aria-label="Modo de cobrança da entrega">
-                <label><input type="radio" name="pricingMode" checked={pricingMode === "PER_KM"} onChange={() => setPricingMode("PER_KM")} /> Por distância (km)</label>
+                <label><input type="radio" name="pricingMode" checked={pricingMode === "PER_KM"} onChange={() => setPricingMode("PER_KM")} /> Por km</label>
+                <label><input type="radio" name="pricingMode" checked={pricingMode === "DISTANCE_TIERED"} onChange={() => setPricingMode("DISTANCE_TIERED")} /> Faixas por distância</label>
                 <label><input type="radio" name="pricingMode" checked={pricingMode === "FIXED"} onChange={() => setPricingMode("FIXED")} /> Taxa fixa por bairro</label>
               </fieldset>
 
-              {pricingMode === "PER_KM" && <><div className="mt-6">
+              {pricingMode !== "FIXED" && <><div className="mt-6">
 
                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
                   Endereço de saída da pizzaria
@@ -1037,45 +1221,47 @@ export default function AdminEntregasPage() {
 
               <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 
-                <div>
+                {pricingMode === "PER_KM" && (
+                  <div>
 
-                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                    Valor por km
-                  </label>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                      Valor por km
+                    </label>
 
-                  <div className="relative">
+                    <div className="relative">
 
-                    <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
-                      R$
-                    </span>
+                      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                        R$
+                      </span>
 
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={
-                        feePerKm
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setFeePerKm(
-                          event.target.value
-                        )
-                      }
-                      placeholder="Ex: 2,50"
-                      className={
-                        `${fieldClass} pl-10 pr-14`
-                      }
-                    />
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={
+                          feePerKm
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setFeePerKm(
+                            event.target.value
+                          )
+                        }
+                        placeholder="Ex: 2,50"
+                        className={
+                          `${fieldClass} pl-10 pr-14`
+                        }
+                      />
 
-                    <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                      / km
-                    </span>
+                      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        / km
+                      </span>
+
+                    </div>
 
                   </div>
-
-                </div>
+                )}
 
                 <div>
 
@@ -1206,22 +1392,24 @@ export default function AdminEntregasPage() {
                 </p>
 
                 <p className="mt-2 text-sm leading-6 text-foreground">
-                  {feePerKm.trim()
-                    ? `Uma entrega de 5 km custaria ${money(
-                        Math.max(
-                          0,
-                          5 -
+                  {pricingMode === "PER_KM"
+                    ? feePerKm.trim()
+                      ? `Uma entrega de 5 km custaria ${money(
+                          Math.max(
+                            0,
+                            5 -
+                              Number(
+                                freeDeliveryDistanceKm ||
+                                  0
+                              )
+                          ) *
                             Number(
-                              freeDeliveryDistanceKm ||
+                              feePerKm ||
                                 0
                             )
-                        ) *
-                          Number(
-                            feePerKm ||
-                              0
-                          )
-                      )}.`
-                    : "Defina o valor por km para visualizar um exemplo."}
+                        )}.`
+                      : "Defina o valor por km para visualizar um exemplo."
+                    : "Nas faixas, a distância real da rota escolhe automaticamente o valor fixo cadastrado abaixo."}
 
                   {freeDeliveryDistanceKm.trim()
                     ? ` Entregas de até ${Number(
@@ -1255,6 +1443,150 @@ export default function AdminEntregasPage() {
               </button>
 
             </form>
+
+            {pricingMode === "DISTANCE_TIERED" && (
+              <section className="mt-6 rounded-3xl border border-border bg-card p-5 sm:p-6">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                    Faixas de distância
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-foreground">
+                    Valor fixo por faixa de km
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Exemplo: até 4 km grátis; de 4 a 5 km R$ 5; de 5 a 7 km R$ 8. O Mapbox calcula a distância e o sistema escolhe a faixa automaticamente.
+                  </p>
+                </div>
+
+                <form
+                  onSubmit={saveTier}
+                  className="mt-5 grid gap-3 sm:grid-cols-4"
+                >
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                      De
+                    </label>
+                    <div className="relative">
+                      <input
+                        className={`${fieldClass} pr-11`}
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        placeholder="4"
+                        value={tierMinDistance}
+                        onChange={(event) =>
+                          setTierMinDistance(event.target.value)
+                        }
+                        required
+                      />
+                      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        km
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                      Até
+                    </label>
+                    <div className="relative">
+                      <input
+                        className={`${fieldClass} pr-11`}
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        placeholder="5"
+                        value={tierMaxDistance}
+                        onChange={(event) =>
+                          setTierMaxDistance(event.target.value)
+                        }
+                        required
+                      />
+                      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        km
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+                      Valor
+                    </label>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                        R$
+                      </span>
+                      <input
+                        className={`${fieldClass} pl-10`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="5,00"
+                        value={tierFee}
+                        onChange={(event) =>
+                          setTierFee(event.target.value)
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      disabled={tierSaving}
+                      className="h-11 w-full rounded-xl bg-foreground px-4 text-sm font-bold text-background disabled:opacity-50"
+                    >
+                      {tierSaving
+                        ? "Salvando..."
+                        : "Adicionar faixa"}
+                    </button>
+                  </div>
+                </form>
+
+                <div className="mt-5 overflow-hidden rounded-2xl border border-border">
+                  {tiers.filter((tier) => tier.active).length === 0 ? (
+                    <div className="p-5 text-sm text-muted-foreground">
+                      Nenhuma faixa cadastrada ainda.
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-border">
+                      {tiers
+                        .filter((tier) => tier.active)
+                        .sort(
+                          (a, b) =>
+                            a.minDistanceKm -
+                            b.minDistanceKm
+                        )
+                        .map((tier) => (
+                          <li
+                            key={tier.id}
+                            className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div>
+                              <p className="text-sm font-bold text-foreground">
+                                Mais de {Number(tier.minDistanceKm)} km até {Number(tier.maxDistanceKm)} km
+                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Taxa fixa: {money(tier.fee)}
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void removeTier(tier.id)
+                              }
+                              className="w-fit text-sm font-bold text-primary"
+                            >
+                              Desativar
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
+                  )}
+                </div>
+              </section>
+            )}
 
             {pricingMode === "FIXED" && (
               <section className="mt-6 rounded-3xl border border-border bg-card p-5 sm:p-6">

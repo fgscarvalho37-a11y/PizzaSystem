@@ -136,7 +136,11 @@ public class DeliveryAreaController {
         String pricingMode = request != null && request.pricingMode() != null
                 ? request.pricingMode().trim().toUpperCase(java.util.Locale.ROOT)
                 : store.getDeliveryPricingMode();
-        if (!"FIXED".equals(pricingMode) && !"PER_KM".equals(pricingMode)) {
+        if (
+                !"FIXED".equals(pricingMode) &&
+                !"PER_KM".equals(pricingMode) &&
+                !"DISTANCE_TIERED".equals(pricingMode)
+        ) {
             throw new IllegalArgumentException("Tipo de taxa inválido.");
         }
 
@@ -238,9 +242,13 @@ public class DeliveryAreaController {
             );
         }
 
-        if ("PER_KM".equals(pricingMode) &&
-                (originAddress == null || originAddress.split(",").length < 3)) {
-            throw new IllegalArgumentException("Informe rua, número, bairro e cidade no endereço de saída da pizzaria.");
+        if (
+                !"FIXED".equals(pricingMode) &&
+                (originAddress == null || originAddress.split(",").length < 3)
+        ) {
+            throw new IllegalArgumentException(
+                    "Informe rua, número, bairro e cidade no endereço de saída da pizzaria."
+            );
         }
 
         store.setDeliveryPricingMode(pricingMode);

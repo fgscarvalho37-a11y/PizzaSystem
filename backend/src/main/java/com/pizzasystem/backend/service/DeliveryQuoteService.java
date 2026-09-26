@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pizzasystem.backend.dto.DeliveryQuoteRequest;
 import com.pizzasystem.backend.dto.DeliveryQuoteResponse;
 import com.pizzasystem.backend.entity.DeliveryArea;
+import com.pizzasystem.backend.entity.DeliveryDistanceTier;
 import com.pizzasystem.backend.entity.Store;
 import com.pizzasystem.backend.repository.DeliveryAreaRepository;
+import com.pizzasystem.backend.repository.DeliveryDistanceTierRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -44,10 +46,14 @@ public class DeliveryQuoteService {
     private final DeliveryAreaRepository
             deliveryAreaRepository;
 
+    private final DeliveryDistanceTierRepository
+            deliveryDistanceTierRepository;
+
     public DeliveryQuoteService(
             @Value("${MAPBOX_ACCESS_TOKEN:}")
             String mapboxAccessToken,
-            DeliveryAreaRepository deliveryAreaRepository
+            DeliveryAreaRepository deliveryAreaRepository,
+            DeliveryDistanceTierRepository deliveryDistanceTierRepository
     ) {
         this.mapboxAccessToken =
                 mapboxAccessToken != null
@@ -56,6 +62,9 @@ public class DeliveryQuoteService {
 
         this.deliveryAreaRepository =
                 deliveryAreaRepository;
+
+        this.deliveryDistanceTierRepository =
+                deliveryDistanceTierRepository;
 
         this.httpClient =
                 HttpClient
@@ -120,14 +129,29 @@ public class DeliveryQuoteService {
             );
         }
 
+        String pricingMode =
+                clean(
+                        store.getDeliveryPricingMode()
+                ).toUpperCase(
+                        java.util.Locale.ROOT
+                );
+
+        boolean tieredPricing =
+                "DISTANCE_TIERED".equals(
+                        pricingMode
+                );
+
         BigDecimal feePerKm =
                 store.getDeliveryFeePerKm();
 
         if (
-                feePerKm == null ||
-                feePerKm.compareTo(
-                        BigDecimal.ZERO
-                ) < 0
+                !tieredPricing &&
+                (
+                        feePerKm == null ||
+                        feePerKm.compareTo(
+                                BigDecimal.ZERO
+                        ) < 0
+                )
         ) {
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
@@ -200,10 +224,12 @@ public class DeliveryQuoteService {
         }
 
         BigDecimal normalizedFeePerKm =
-                feePerKm.setScale(
-                        2,
-                        RoundingMode.HALF_UP
-                );
+                tieredPricing
+                        ? null
+                        : feePerKm.setScale(
+                                2,
+                                RoundingMode.HALF_UP
+                        );
 
         BigDecimal subtotal =
                 request.orderSubtotal() != null
@@ -271,24 +297,39 @@ public class DeliveryQuoteService {
                             );
         }
 
-        BigDecimal fee =
-                freeDelivery
-                        ? BigDecimal.ZERO
-                                .setScale(
-                                        2,
-                                        RoundingMode.HALF_UP
-                                )
-                        : billableDistanceKm
-                                .multiply(
-                                        normalizedFeePerKm
-                                )
-                                .setScale(
-                                        2,
-                                        RoundingMode.HALF_UP
-                                );
+        BigDecimal fee;
+
+        if (freeDelivery) {
+            fee =
+                    BigDecimal.ZERO
+                            .setScale(
+                                    2,
+                                    RoundingMode.HALF_UP
+                            );
+
+        } else if (tieredPricing) {
+            fee =
+                    resolveDistanceTierFee(
+                            store.getId(),
+                            distanceKm
+                    );
+
+        } else {
+            fee =
+                    billableDistanceKm
+                            .multiply(
+                                    normalizedFeePerKm
+                            )
+                            .setScale(
+                                    2,
+                                    RoundingMode.HALF_UP
+                            );
+        }
 
         return new DeliveryQuoteResponse(
-                "PER_KM",
+                tieredPricing
+                        ? "DISTANCE_TIERED"
+                        : "PER_KM",
                 distanceKm,
                 normalizedFeePerKm,
                 fee,
@@ -319,6 +360,48 @@ public class DeliveryQuoteService {
                 origin.longitude(),
                 destination.latitude(),
                 destination.longitude()
+        );
+    }
+
+    private BigDecimal resolveDistanceTierFee(
+            Long storeId,
+            BigDecimal distanceKm
+    ) {
+        for (
+                DeliveryDistanceTier tier :
+                deliveryDistanceTierRepository
+                        .findByStoreIdAndActiveTrueOrderByMinDistanceKmAsc(
+                                storeId
+                        )
+        ) {
+            boolean aboveMinimum =
+                    distanceKm.compareTo(
+                            tier.getMinDistanceKm()
+                    ) > 0;
+
+            boolean withinMaximum =
+                    distanceKm.compareTo(
+                            tier.getMaxDistanceKm()
+                    ) <= 0;
+
+            if (
+                    aboveMinimum &&
+                    withinMaximum
+            ) {
+                return tier
+                        .getFee()
+                        .setScale(
+                                2,
+                                RoundingMode.HALF_UP
+                        );
+            }
+        }
+
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Não há uma faixa de entrega configurada para "
+                        + distanceKm.toPlainString()
+                        + " km."
         );
     }
 

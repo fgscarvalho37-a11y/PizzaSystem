@@ -1798,7 +1798,7 @@ export default function CardapioPage() {
                 src={
                   coverImageUrl
                 }
-                alt=text("Destaque do cardápio", "Menu highlight")
+                alt={text("Destaque do cardápio", "Menu highlight")}
                 className="aspect-[16/7] max-h-44 w-full object-cover sm:aspect-[16/9] sm:max-h-none"
               />
 
@@ -2176,7 +2176,7 @@ export default function CardapioPage() {
 
           <button
             type="button"
-            aria-label=text("Fechar produto", "Close product")
+            aria-label={text("Fechar produto", "Close product")}
             onClick={
               closeProduct
             }
@@ -2430,7 +2430,7 @@ export default function CardapioPage() {
 
                     <button
                       type="button"
-                      aria-label=text("Diminuir quantidade", "Decrease quantity")
+                      aria-label={text("Diminuir quantidade", "Decrease quantity")}
                       onClick={() =>
                         setSelectedQuantity(
                           (
@@ -2454,7 +2454,7 @@ export default function CardapioPage() {
 
                     <button
                       type="button"
-                      aria-label=text("Aumentar quantidade", "Increase quantity")
+                      aria-label={text("Aumentar quantidade", "Increase quantity")}
                       onClick={() =>
                         setSelectedQuantity(
                           (
@@ -2550,7 +2550,7 @@ export default function CardapioPage() {
 
           <button
             type="button"
-            aria-label=text("Fechar pedido", "Close order")
+            aria-label={text("Fechar pedido", "Close order")}
             onClick={() =>
               setCartOpen(
                 false

@@ -51,6 +51,7 @@ type CartItem = {
 type DeliveryQuote = {
   pricingMode:
     | "PER_KM"
+    | "DISTANCE_TIERED"
     | "FIXED";
   distanceKm: number | null;
   feePerKm: number | null;
@@ -2326,19 +2327,30 @@ export default function CheckoutPage() {
                           {deliveryQuote.pricingMode ===
                           "FIXED"
                             ? `${deliveryQuote.neighborhood}, ${deliveryQuote.city}`
-                            : `${Number(
-                                deliveryQuote.distanceKm
-                              ).toLocaleString(
-                                "pt-BR",
-                                {
-                                  maximumFractionDigits:
-                                    2,
-                                }
-                              )} km × ${formatMoney(
-                                Number(
-                                  deliveryQuote.feePerKm
-                                )
-                              )}/km`}
+                            : deliveryQuote.pricingMode ===
+                                "DISTANCE_TIERED"
+                              ? `${Number(
+                                  deliveryQuote.distanceKm
+                                ).toLocaleString(
+                                  "pt-BR",
+                                  {
+                                    maximumFractionDigits:
+                                      2,
+                                  }
+                                )} km · ${text("faixa fixa", "fixed tier")}`
+                              : `${Number(
+                                  deliveryQuote.distanceKm
+                                ).toLocaleString(
+                                  "pt-BR",
+                                  {
+                                    maximumFractionDigits:
+                                      2,
+                                  }
+                                )} km × ${formatMoney(
+                                  Number(
+                                    deliveryQuote.feePerKm
+                                  )
+                                )}/km`}
                         </p>
                       </div>
 
@@ -2370,7 +2382,7 @@ export default function CheckoutPage() {
                         </p>
                       )}
 
-                    {deliveryQuote.pricingMode === "PER_KM" && (
+                    {deliveryQuote.pricingMode !== "FIXED" && (
                       <>
                         <p className="mt-2 text-xs text-muted-foreground">
                           {text(
