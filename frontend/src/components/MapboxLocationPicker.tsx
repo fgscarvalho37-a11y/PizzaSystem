@@ -193,6 +193,11 @@ export default function MapboxLocationPicker({
       null
     );
 
+  const mapContainerRef =
+    useRef<HTMLDivElement | null>(
+      null
+    );
+
   const markerRef =
     useRef<any>(
       null
@@ -224,24 +229,56 @@ export default function MapboxLocationPicker({
           null;
         markerRef.current =
           null;
+        mapContainerRef.current =
+          null;
       }
     };
   }, []);
 
   useEffect(() => {
+    const hasValidCoordinates =
+      latitude != null &&
+      longitude != null &&
+      Number.isFinite(
+        latitude
+      ) &&
+      Number.isFinite(
+        longitude
+      );
+
     if (
       !MAPBOX_TOKEN ||
-      latitude == null ||
-      longitude == null ||
-      !Number.isFinite(
-        latitude
-      ) ||
-      !Number.isFinite(
-        longitude
-      ) ||
-      !containerRef.current
+      !hasValidCoordinates
     ) {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current =
+          null;
+        markerRef.current =
+          null;
+        mapContainerRef.current =
+          null;
+      }
+
       return;
+    }
+
+    if (!containerRef.current) {
+      return;
+    }
+
+    if (
+      mapRef.current &&
+      mapContainerRef.current !==
+        containerRef.current
+    ) {
+      mapRef.current.remove();
+      mapRef.current =
+        null;
+      markerRef.current =
+        null;
+      mapContainerRef.current =
+        null;
     }
 
     let cancelled =
@@ -348,6 +385,9 @@ export default function MapboxLocationPicker({
 
             mapRef.current =
               map;
+
+            mapContainerRef.current =
+              containerRef.current;
 
             markerRef.current =
               marker;
