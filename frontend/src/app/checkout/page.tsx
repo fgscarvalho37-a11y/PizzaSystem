@@ -1418,12 +1418,12 @@ export default function CheckoutPage() {
       if (
         !orderResponse.ok
       ) {
-        const text =
+        const responseText =
           await orderResponse.text();
 
         console.error(
           "Erro ao criar pedido:",
-          text
+          responseText
         );
 
         let message =
@@ -1432,7 +1432,7 @@ export default function CheckoutPage() {
         try {
           const data =
             JSON.parse(
-              text
+              responseText
             );
 
           if (
@@ -1496,12 +1496,12 @@ export default function CheckoutPage() {
         if (
           !pixResponse.ok
         ) {
-          const text =
+          const responseText =
             await pixResponse.text();
 
           console.error(
             "Erro ao gerar Pix:",
-            text
+            responseText
           );
 
           throw new Error(
