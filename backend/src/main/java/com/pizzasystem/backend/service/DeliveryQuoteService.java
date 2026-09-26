@@ -159,9 +159,15 @@ public class DeliveryQuoteService {
             );
         }
 
+        String countryCode =
+                normalizeCountryCode(
+                        store.getCountryCode()
+                );
+
         String destinationAddress =
                 buildDestinationAddress(
-                        request
+                        request,
+                        countryCode
                 );
 
         Coordinates origin =
@@ -179,7 +185,8 @@ public class DeliveryQuoteService {
                                 DeliveryAddress.fromOrigin(
                                         originAddress
                                 ),
-                                "saída da pizzaria"
+                                "saída da pizzaria",
+                                countryCode
                         );
 
         Coordinates destination =
@@ -192,7 +199,8 @@ public class DeliveryQuoteService {
                                 request.state(),
                                 request.postalCode()
                         ),
-                        "entrega"
+                        "entrega",
+                        countryCode
                 );
 
         BigDecimal distanceKm =
@@ -528,7 +536,8 @@ public class DeliveryQuoteService {
     }
 
     private String buildDestinationAddress(
-            DeliveryQuoteRequest request
+            DeliveryQuoteRequest request,
+            String countryCode
     ) {
         String street =
                 clean(
@@ -553,14 +562,12 @@ public class DeliveryQuoteService {
         String state =
                 clean(
                         request.state()
-                ).toUpperCase();
+                );
 
         String postalCode =
-                clean(
-                        request.postalCode()
-                ).replaceAll(
-                        "\\D",
-                        ""
+                normalizePostalCode(
+                        request.postalCode(),
+                        countryCode
                 );
 
         if (street.isBlank()) {
@@ -584,33 +591,65 @@ public class DeliveryQuoteService {
             );
         }
 
-        if (state.isBlank()) {
+        if (
+                "BR".equals(
+                        countryCode
+                ) &&
+                state.isBlank()
+        ) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Informe o estado para calcular a entrega."
             );
         }
 
-        String destination =
-                String.join(
-                        ", ",
-                        street,
-                        number,
-                        neighborhood,
-                        city + " - " + state
-                );
+        java.util.List<String> parts =
+                new java.util.ArrayList<>();
 
-        if (!postalCode.isBlank()) {
-            destination += ", " + postalCode;
+        parts.add(
+                street
+        );
+        parts.add(
+                number
+        );
+
+        if (!neighborhood.isBlank()) {
+            parts.add(
+                    neighborhood
+            );
         }
 
-        return destination + ", Brasil";
+        parts.add(
+                city
+        );
+
+        if (!state.isBlank()) {
+            parts.add(
+                    state
+            );
+        }
+
+        if (!postalCode.isBlank()) {
+            parts.add(
+                    postalCode
+            );
+        }
+
+        parts.add(
+                countryCode
+        );
+
+        return String.join(
+                ", ",
+                parts
+        );
     }
 
     private Coordinates geocode(
             String text,
             DeliveryAddress address,
-            String role
+            String role,
+            String countryCode
     ) {
         if (
                 address.street().isBlank() ||
@@ -620,9 +659,14 @@ public class DeliveryQuoteService {
                     HttpStatus.BAD_REQUEST,
                     "O endereço de "
                             + role
-                            + " está incompleto. Informe rua, número, cidade, UF e CEP."
+                            + " está incompleto. Informe rua, número e cidade."
             );
         }
+
+        String normalizedCountryCode =
+                normalizeCountryCode(
+                        countryCode
+                );
 
         StringBuilder url =
                 new StringBuilder(
@@ -630,7 +674,11 @@ public class DeliveryQuoteService {
                 );
 
         url.append(
-                "?country=BR"
+                "?country="
+        ).append(
+                encode(
+                        normalizedCountryCode
+                )
         );
         url.append(
                 "&autocomplete=false"
@@ -671,11 +719,9 @@ public class DeliveryQuoteService {
         }
 
         String postalCode =
-                clean(
-                        address.postalCode()
-                ).replaceAll(
-                        "\\D",
-                        ""
+                normalizePostalCode(
+                        address.postalCode(),
+                        normalizedCountryCode
                 );
 
         if (!postalCode.isBlank()) {
@@ -709,7 +755,10 @@ public class DeliveryQuoteService {
                             + encode(
                                     text
                             )
-                            + "&country=BR"
+                            + "&country="
+                            + encode(
+                                    normalizedCountryCode
+                            )
                             + "&limit=5"
                             + "&autocomplete=false"
                             + "&access_token="
@@ -729,7 +778,7 @@ public class DeliveryQuoteService {
                     HttpStatus.BAD_REQUEST,
                     "Não foi possível localizar o endereço de "
                             + role
-                            + " no Mapbox. Confira CEP, rua, número, cidade e UF."
+                            + " no Mapbox. Confira rua, número, cidade, região e código postal."
             );
         }
 
@@ -1036,6 +1085,55 @@ public class DeliveryQuoteService {
                     "Não foi possível calcular a distância da entrega."
             );
         }
+    }
+
+    private String normalizeCountryCode(
+            String value
+    ) {
+        String normalized =
+                clean(
+                        value
+                ).toUpperCase(
+                        java.util.Locale.ROOT
+                );
+
+        return normalized.matches(
+                "^[A-Z]{2}$"
+        )
+                ? normalized
+                : "BR";
+    }
+
+    private String normalizePostalCode(
+            String value,
+            String countryCode
+    ) {
+        String normalized =
+                clean(
+                        value
+                );
+
+        if (
+                "BR".equals(
+                        normalizeCountryCode(
+                                countryCode
+                        )
+                )
+        ) {
+            return normalized.replaceAll(
+                    "\\D",
+                    ""
+            );
+        }
+
+        return normalized
+                .toUpperCase(
+                        java.util.Locale.ROOT
+                )
+                .replaceAll(
+                        "[^A-Z0-9 -]",
+                        ""
+                );
     }
 
     private boolean validCoordinates(

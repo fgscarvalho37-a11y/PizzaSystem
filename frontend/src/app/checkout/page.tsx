@@ -241,6 +241,35 @@ export default function CheckoutPage() {
     );
   }
 
+  const countryCode =
+    (
+      storeProfile?.countryCode ??
+      "BR"
+    ).toUpperCase();
+
+  const isBrazil =
+    countryCode === "BR";
+
+  const regionRequired =
+    ["BR", "US", "CA"].includes(
+      countryCode
+    );
+
+  const normalizedPostalCode =
+    isBrazil
+      ? postalCode.replace(
+          /\D/g,
+          ""
+        )
+      : postalCode
+          .trim()
+          .toUpperCase();
+
+  const postalCodeValid =
+    isBrazil
+      ? normalizedPostalCode.length === 8
+      : normalizedPostalCode.length >= 3;
+
   const [
     loaded,
     setLoaded,
@@ -409,6 +438,26 @@ export default function CheckoutPage() {
     storeSlug
       ? `pizzasystem-cart:${storeSlug}`
       : "";
+
+  useEffect(() => {
+    setCepError("");
+
+    if (!isBrazil) {
+      setCepLoading(false);
+
+      if (
+        paymentMethod ===
+          "PIX"
+      ) {
+        setPaymentMethod(
+          ""
+        );
+      }
+    }
+  }, [
+    isBrazil,
+    paymentMethod,
+  ]);
 
   // =========================
   // CARRINHO
@@ -806,6 +855,12 @@ export default function CheckoutPage() {
 
 
   useEffect(() => {
+    if (!isBrazil) {
+      setCepLoading(false);
+      setCepError("");
+      return;
+    }
+
     const digits =
       postalCode.replace(/\D/g, "");
 
@@ -898,7 +953,7 @@ export default function CheckoutPage() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [postalCode]);
+  }, [postalCode, isBrazil]);
 
   // =========================
   // ENTREGA - CÁLCULO AUTOMÁTICO
@@ -911,12 +966,14 @@ export default function CheckoutPage() {
     setDeliveryQuote(null);
 
     if (
-      postalCode.replace(/\D/g, "").length !== 8 ||
+      !postalCodeValid ||
       !street.trim() ||
       !number.trim() ||
       !city.trim() ||
-      !state.trim() ||
-      !neighborhood.trim() ||
+      (regionRequired &&
+        !state.trim()) ||
+      (isBrazil &&
+        !neighborhood.trim()) ||
       !storeSlug ||
       subtotal <= 0
     ) {
@@ -973,7 +1030,7 @@ export default function CheckoutPage() {
                       state:
                         state.trim().toUpperCase(),
                       postalCode:
-                        postalCode.replace(/\D/g, ""),
+                        normalizedPostalCode,
                       complement:
                         complement.trim() ||
                         null,
@@ -1084,6 +1141,10 @@ export default function CheckoutPage() {
     storeSlug,
     subtotal,
     deliveryQuoteAttempt,
+    postalCodeValid,
+    normalizedPostalCode,
+    regionRequired,
+    isBrazil,
   ]);
 
   // =========================
@@ -1314,6 +1375,21 @@ export default function CheckoutPage() {
     );
 
     if (
+      !isBrazil &&
+      paymentMethod ===
+        "PIX"
+    ) {
+      setCheckoutError(
+        text(
+          "Pix está disponível apenas para lojas no Brasil.",
+          "Pix is only available for stores in Brazil."
+        )
+      );
+
+      return;
+    }
+
+    if (
       paymentMethod ===
       "DEBIT_CARD"
     ) {
@@ -1357,10 +1433,38 @@ export default function CheckoutPage() {
     }
 
     if (
+      isBrazil &&
       !neighborhood
     ) {
       setCheckoutError(
         text("Informe o bairro para continuar.", "Enter the neighborhood to continue.")
+      );
+
+      return;
+    }
+
+    if (
+      !postalCodeValid
+    ) {
+      setCheckoutError(
+        text(
+          "Informe um código postal válido.",
+          "Enter a valid postal code."
+        )
+      );
+
+      return;
+    }
+
+    if (
+      regionRequired &&
+      !state.trim()
+    ) {
+      setCheckoutError(
+        text(
+          "Informe o estado ou região para continuar.",
+          "Enter the state or region to continue."
+        )
       );
 
       return;
@@ -1421,7 +1525,7 @@ export default function CheckoutPage() {
         state,
 
         postalCode:
-          postalCode.replace(/\D/g, ""),
+          normalizedPostalCode,
 
         complement,
 
@@ -2220,9 +2324,21 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
-                  inputMode="numeric"
-                  maxLength={9}
-                  placeholder={text("CEP", "Postal code")}
+                  inputMode={
+                    isBrazil
+                      ? "numeric"
+                      : "text"
+                  }
+                  maxLength={
+                    isBrazil
+                      ? 9
+                      : 16
+                  }
+                  placeholder={
+                    isBrazil
+                      ? text("CEP", "Postal code")
+                      : text("Código postal", "Postal code")
+                  }
                   required
                   value={
                     postalCode
@@ -2230,12 +2346,23 @@ export default function CheckoutPage() {
                   onChange={(
                     event
                   ) => {
+                    const nextValue =
+                      isBrazil
+                        ? formatCep(
+                            event.target.value
+                          )
+                        : event.target.value
+                            .toUpperCase()
+                            .slice(0, 16);
+
                     setPostalCode(
-                      formatCep(
-                        event.target.value
-                      )
+                      nextValue
                     );
-                    setState("");
+
+                    if (isBrazil) {
+                      setState("");
+                    }
+
                     setCepError("");
                   }}
                 />
@@ -2280,8 +2407,14 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
-                  placeholder={text("Bairro", "Neighborhood")}
-                  required
+                  placeholder={
+                    isBrazil
+                      ? text("Bairro", "Neighborhood")
+                      : text("Bairro / distrito (opcional)", "Neighborhood / district (optional)")
+                  }
+                  required={
+                    isBrazil
+                  }
                   value={
                     neighborhood
                   }
@@ -2316,9 +2449,19 @@ export default function CheckoutPage() {
                   className={
                     inputClass
                   }
-                  maxLength={2}
-                  placeholder={text("UF", "State")}
-                  required
+                  maxLength={
+                    isBrazil
+                      ? 2
+                      : 50
+                  }
+                  placeholder={
+                    isBrazil
+                      ? text("UF", "State")
+                      : text("Estado / região", "State / region")
+                  }
+                  required={
+                    regionRequired
+                  }
                   value={
                     state
                   }
@@ -2326,25 +2469,38 @@ export default function CheckoutPage() {
                     event
                   ) =>
                     setState(
-                      event.target.value
-                        .replace(/[^a-zA-Z]/g, "")
-                        .slice(0, 2)
-                        .toUpperCase()
+                      isBrazil
+                        ? event.target.value
+                            .replace(/[^a-zA-Z]/g, "")
+                            .slice(0, 2)
+                            .toUpperCase()
+                        : event.target.value
+                            .slice(0, 50)
                     )
                   }
                 />
 
-                {(cepLoading || cepError) && (
-                  <p
-                    className={
-                      cepError
-                        ? "text-xs font-medium text-primary sm:col-span-2"
-                        : "text-xs text-muted-foreground sm:col-span-2"
-                    }
-                  >
-                    {cepLoading
-                      ? text("Buscando endereço pelo CEP...", "Looking up address...")
-                      : cepError}
+                {isBrazil &&
+                  (cepLoading || cepError) && (
+                    <p
+                      className={
+                        cepError
+                          ? "text-xs font-medium text-primary sm:col-span-2"
+                          : "text-xs text-muted-foreground sm:col-span-2"
+                      }
+                    >
+                      {cepLoading
+                        ? text("Buscando endereço pelo CEP...", "Looking up address...")
+                        : cepError}
+                    </p>
+                  )}
+
+                {!isBrazil && (
+                  <p className="text-xs leading-5 text-muted-foreground sm:col-span-2">
+                    {text(
+                      "Preencha o endereço como usado no país da loja. O Mapbox valida o endereço e calcula a rota.",
+                      "Enter the address in the store's local format. Mapbox validates it and calculates the route."
+                    )}
                   </p>
                 )}
 
@@ -2485,10 +2641,15 @@ export default function CheckoutPage() {
 
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    {text(
-                      "Informe o CEP e o número. Rua, bairro, cidade e UF são preenchidos automaticamente e você pode corrigi-los se necessário.",
-                      "Enter the postal code and number. Street, neighborhood, city and state are filled automatically and can be edited if needed."
-                    )}
+                    {isBrazil
+                      ? text(
+                          "Informe o CEP e o número. Rua, bairro, cidade e UF são preenchidos automaticamente e você pode corrigi-los se necessário.",
+                          "Enter the postal code and number. Street, neighborhood, city and state are filled automatically and can be edited if needed."
+                        )
+                      : text(
+                          "Preencha rua, número, cidade, região e código postal conforme o endereço local.",
+                          "Enter street, number, city, region and postal code using the local address format."
+                        )}
                   </p>
                 )}
 
@@ -2504,6 +2665,7 @@ export default function CheckoutPage() {
 
               <div className="mt-3 flex flex-wrap gap-2">
 
+                {isBrazil && (
                 <button
                   type="button"
                   onClick={() =>
@@ -2520,6 +2682,7 @@ export default function CheckoutPage() {
                 >
                   Pix
                 </button>
+                )}
 
                 <button
                   type="button"
@@ -2731,7 +2894,11 @@ export default function CheckoutPage() {
                   !street ||
                   !number ||
                   !city ||
-                  !neighborhood ||
+                  (isBrazil &&
+                    !neighborhood) ||
+                  !postalCodeValid ||
+                  (regionRequired &&
+                    !state.trim()) ||
                   !deliveryQuote ||
                   !paymentMethod ||
                   !storeStatus?.open

@@ -34,6 +34,12 @@ type ViaCepResponse = {
   erro?: boolean;
 };
 
+type StoreIntlSettings = {
+  countryCode: string;
+  defaultLocale: "pt-BR" | "en-US";
+  currencyCode: string;
+};
+
 type DeliveryConfig = {
   pricingMode: "FIXED" | "PER_KM" | "DISTANCE_TIERED";
   originAddress: string | null;
@@ -81,7 +87,7 @@ function formatCep(value: string) {
     : digits;
 }
 
-function money(
+function formatMoney(
   value: number
 ) {
   return Number(
@@ -96,6 +102,39 @@ function money(
 }
 
 export default function AdminEntregasPage() {
+  const [
+    countryCode,
+    setCountryCode,
+  ] = useState("BR");
+
+  const [
+    defaultLocale,
+    setDefaultLocale,
+  ] = useState<"pt-BR" | "en-US">("pt-BR");
+
+  const [
+    currencyCode,
+    setCurrencyCode,
+  ] = useState("BRL");
+
+  const isBrazil =
+    countryCode === "BR";
+
+  function formatMoney(
+    value: number
+  ) {
+    return Number(
+      value || 0
+    ).toLocaleString(
+      defaultLocale,
+      {
+        style: "currency",
+        currency:
+          currencyCode,
+      }
+    );
+  }
+
   const [
     config,
     setConfig,
@@ -251,6 +290,40 @@ export default function AdminEntregasPage() {
 
       setConfig(data);
       setPricingMode(data.pricingMode ?? "PER_KM");
+
+      const storeResponse =
+        await adminFetch(
+          `${API_URL}/api/store`,
+          {
+            cache: "no-store",
+          }
+        );
+
+      if (storeResponse.ok) {
+        const storeData:
+          StoreIntlSettings =
+          await storeResponse.json();
+
+        setCountryCode(
+          (
+            storeData.countryCode ||
+            "BR"
+          ).toUpperCase()
+        );
+
+        setDefaultLocale(
+          storeData.defaultLocale ===
+            "en-US"
+            ? "en-US"
+            : "pt-BR"
+        );
+
+        setCurrencyCode(
+          storeData.currencyCode ||
+            "BRL"
+        );
+      }
+
       const areaResponse = await adminFetch(`${API_URL}/api/delivery-areas`, { cache: "no-store" });
       if (areaResponse.ok) setAreas(await areaResponse.json());
 
@@ -369,6 +442,13 @@ export default function AdminEntregasPage() {
 
 
   useEffect(() => {
+    if (!isBrazil) {
+      setOriginCepLoading(false);
+      setOriginCepData(null);
+      setOriginCepError("");
+      return;
+    }
+
     const digits =
       originCep.replace(/\D/g, "");
 
@@ -446,10 +526,13 @@ export default function AdminEntregasPage() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [originCep]);
+  }, [originCep, isBrazil]);
 
   useEffect(() => {
-    if (!originCepData) {
+    if (
+      !isBrazil ||
+      !originCepData
+    ) {
       return;
     }
 
@@ -484,10 +567,16 @@ export default function AdminEntregasPage() {
         .filter(Boolean)
         .join(", ")
     );
-  }, [originCepData, originNumber, originCep]);
+  }, [
+    originCepData,
+    originNumber,
+    originCep,
+    isBrazil,
+  ]);
 
   useEffect(() => {
     if (
+      !isBrazil ||
       !MAPBOX_PUBLIC_TOKEN ||
       !originCepData ||
       !originNumber.trim()
@@ -598,6 +687,149 @@ export default function AdminEntregasPage() {
     originCepData,
     originNumber,
     originCep,
+    isBrazil,
+  ]);
+
+  useEffect(() => {
+    if (
+      isBrazil ||
+      !MAPBOX_PUBLIC_TOKEN ||
+      !originAddress.trim() ||
+      !originNumber.trim()
+    ) {
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    const timer =
+      window.setTimeout(
+        async () => {
+          try {
+            setOriginMapLoading(true);
+            setOriginMapError("");
+
+            const query =
+              [
+                originAddress.trim(),
+                originNumber.trim(),
+                originCep.trim(),
+                countryCode,
+              ]
+                .filter(Boolean)
+                .join(", ");
+
+            const params =
+              new URLSearchParams({
+                q: query,
+                country:
+                  countryCode,
+                autocomplete:
+                  "false",
+                limit: "1",
+                access_token:
+                  MAPBOX_PUBLIC_TOKEN,
+              });
+
+            const response =
+              await fetch(
+                `https://api.mapbox.com/search/geocode/v6/forward?${params.toString()}`,
+                {
+                  signal:
+                    controller.signal,
+                }
+              );
+
+            if (!response.ok) {
+              throw new Error(
+                "Mapbox could not locate the store address."
+              );
+            }
+
+            const data =
+              await response.json();
+
+            const coordinates =
+              data?.features?.[0]
+                ?.geometry
+                ?.coordinates;
+
+            if (
+              !Array.isArray(
+                coordinates
+              ) ||
+              coordinates.length <
+                2 ||
+              !Number.isFinite(
+                Number(
+                  coordinates[0]
+                )
+              ) ||
+              !Number.isFinite(
+                Number(
+                  coordinates[1]
+                )
+              )
+            ) {
+              throw new Error(
+                "Mapbox could not find this address. Check the postal code, street and number."
+              );
+            }
+
+            setOriginLongitude(
+              Number(
+                coordinates[0]
+              )
+            );
+
+            setOriginLatitude(
+              Number(
+                coordinates[1]
+              )
+            );
+          } catch (error) {
+            if (
+              error instanceof
+                DOMException &&
+              error.name ===
+                "AbortError"
+            ) {
+              return;
+            }
+
+            setOriginMapError(
+              error instanceof Error
+                ? error.message
+                : "Could not locate the store on the map."
+            );
+          } finally {
+            if (
+              !controller.signal
+                .aborted
+            ) {
+              setOriginMapLoading(
+                false
+              );
+            }
+          }
+        },
+        500
+      );
+
+    return () => {
+      window.clearTimeout(
+        timer
+      );
+
+      controller.abort();
+    };
+  }, [
+    isBrazil,
+    countryCode,
+    originAddress,
+    originNumber,
+    originCep,
   ]);
 
   const googleMapsOriginUrl =
@@ -656,7 +888,7 @@ export default function AdminEntregasPage() {
           )
         : null;
 
-    if (pricingMode !== "FIXED" && originCep.replace(/\D/g, "").length === 8 && !originNumber.trim()) {
+    if (pricingMode !== "FIXED" && isBrazil && originCep.replace(/\D/g, "").length === 8 && !originNumber.trim()) {
       setErrorMessage(
         "Informe o número da pizzaria para completar o endereço pelo CEP."
       );
@@ -664,7 +896,19 @@ export default function AdminEntregasPage() {
       return;
     }
 
-    if (pricingMode !== "FIXED" && (!normalizedOrigin || normalizedOrigin.split(",").length < 3)) {
+    if (
+      pricingMode !== "FIXED" &&
+      !isBrazil &&
+      !originNumber.trim()
+    ) {
+      setErrorMessage(
+        "Informe o número do estabelecimento."
+      );
+
+      return;
+    }
+
+    if (pricingMode !== "FIXED" && (!normalizedOrigin || normalizedOrigin.split(",").length < 2)) {
       setErrorMessage(
         "Informe o endereço completo de saída da pizzaria."
       );
@@ -1121,16 +1365,36 @@ export default function AdminEntregasPage() {
 
                 <div className="grid gap-3 md:grid-cols-[180px_140px_1fr]">
                   <input
-                    inputMode="numeric"
-                    maxLength={9}
+                    inputMode={
+                      isBrazil
+                        ? "numeric"
+                        : "text"
+                    }
+                    maxLength={
+                      isBrazil
+                        ? 9
+                        : 16
+                    }
                     value={originCep}
                     onChange={(event) => {
-                      setOriginCep(formatCep(event.target.value));
+                      setOriginCep(
+                        isBrazil
+                          ? formatCep(
+                              event.target.value
+                            )
+                          : event.target.value
+                              .toUpperCase()
+                              .slice(0, 16)
+                      );
                       setOriginCepError("");
                       setOriginLatitude(null);
                       setOriginLongitude(null);
                     }}
-                    placeholder="CEP"
+                    placeholder={
+                      isBrazil
+                        ? "CEP"
+                        : "Postal code"
+                    }
                     className={fieldClass}
                   />
 
@@ -1156,7 +1420,11 @@ export default function AdminEntregasPage() {
                         event.target.value
                       )
                     }
-                    placeholder="Endereço completo da pizzaria"
+                    placeholder={
+                      isBrazil
+                        ? "Endereço completo da pizzaria"
+                        : "Street, city, state / region"
+                    }
                     className={
                       fieldClass
                     }
@@ -1166,7 +1434,9 @@ export default function AdminEntregasPage() {
                 <div className="mt-2 flex flex-wrap items-center gap-3">
 
                   <p className="text-xs leading-5 text-muted-foreground">
-                    Digite o CEP e o número. Rua, bairro, cidade e UF são preenchidos automaticamente. O endereço completo continua editável.
+                    {isBrazil
+                      ? "Digite o CEP e o número. Rua, bairro, cidade e UF são preenchidos automaticamente. O endereço completo continua editável."
+                      : "Informe o postal code, número e endereço no formato local. O Mapbox localizará o estabelecimento e você poderá ajustar o pino."}
                   </p>
 
                   {originCepLoading && (
@@ -1399,7 +1669,7 @@ export default function AdminEntregasPage() {
                 <p className="mt-2 text-sm leading-6 text-foreground">
                   {pricingMode === "PER_KM"
                     ? feePerKm.trim()
-                      ? `Uma entrega de 5 km custaria ${money(
+                      ? `Uma entrega de 5 km custaria ${formatMoney(
                           Math.max(
                             0,
                             5 -
@@ -1423,7 +1693,7 @@ export default function AdminEntregasPage() {
                     : ""}
 
                   {freeDeliveryAbove.trim()
-                    ? ` Pedidos a partir de ${money(
+                    ? ` Pedidos a partir de ${formatMoney(
                         Number(
                           freeDeliveryAbove || 0
                         )
@@ -1572,7 +1842,7 @@ export default function AdminEntregasPage() {
                                 Mais de {Number(tier.minDistanceKm)} km até {Number(tier.maxDistanceKm)} km
                               </p>
                               <p className="mt-1 text-xs text-muted-foreground">
-                                Taxa fixa: {money(tier.fee)}
+                                Taxa fixa: {formatMoney(tier.fee)}
                               </p>
                             </div>
 
@@ -1606,7 +1876,7 @@ export default function AdminEntregasPage() {
                 <ul className="mt-5 divide-y divide-border">
                   {areas.filter(area => area.active && area.pricingMode === "FIXED").map(area => (
                     <li key={area.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-                      <span>{area.neighborhood}, {area.city} — {money(area.fee)}</span>
+                      <span>{area.neighborhood}, {area.city} — {formatMoney(area.fee)}</span>
                       <button type="button" onClick={() => void removeArea(area.id)} className="font-bold text-primary">Desativar</button>
                     </li>
                   ))}

@@ -15,6 +15,7 @@ import com.pizzasystem.backend.entity.OrderItem;
 import com.pizzasystem.backend.entity.OrderItemAddon;
 import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentStatus;
+import com.pizzasystem.backend.entity.PaymentMethod;
 import com.pizzasystem.backend.entity.Product;
 import com.pizzasystem.backend.entity.Store;
 
@@ -270,8 +271,15 @@ public class OrderController {
             );
         }
 
-        if (request.getNeighborhood() == null
-                || request.getNeighborhood().isBlank()) {
+        if (
+                "BR".equalsIgnoreCase(
+                        store.getCountryCode()
+                ) &&
+                (
+                        request.getNeighborhood() == null ||
+                        request.getNeighborhood().isBlank()
+                )
+        ) {
 
             throw new IllegalArgumentException(
                     "Bairro não informado"
@@ -290,6 +298,18 @@ public class OrderController {
 
             throw new IllegalArgumentException(
                     "Forma de pagamento não informada"
+            );
+        }
+
+        if (
+                !"BR".equalsIgnoreCase(
+                        store.getCountryCode()
+                ) &&
+                request.getPaymentMethod() ==
+                        PaymentMethod.PIX
+        ) {
+            throw new IllegalArgumentException(
+                    "Pix está disponível apenas para lojas no Brasil"
             );
         }
 
