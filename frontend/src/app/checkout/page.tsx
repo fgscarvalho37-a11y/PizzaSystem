@@ -255,21 +255,6 @@ export default function CheckoutPage() {
       countryCode
     );
 
-  const normalizedPostalCode =
-    isBrazil
-      ? postalCode.replace(
-          /\D/g,
-          ""
-        )
-      : postalCode
-          .trim()
-          .toUpperCase();
-
-  const postalCodeValid =
-    isBrazil
-      ? normalizedPostalCode.length === 8
-      : normalizedPostalCode.length >= 3;
-
   const [
     loaded,
     setLoaded,
@@ -299,6 +284,21 @@ export default function CheckoutPage() {
     postalCode,
     setPostalCode,
   ] = useState("");
+
+  const normalizedPostalCode =
+    isBrazil
+      ? postalCode.replace(
+          /\D/g,
+          ""
+        )
+      : postalCode
+          .trim()
+          .toUpperCase();
+
+  const postalCodeValid =
+    isBrazil
+      ? normalizedPostalCode.length === 8
+      : normalizedPostalCode.length >= 3;
 
   const [
     state,
