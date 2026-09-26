@@ -183,6 +183,24 @@ public class StoreSettingsController {
                 )
         );
 
+        store.setCountryCode(
+                normalizeCountryCode(
+                        data.countryCode()
+                )
+        );
+
+        store.setDefaultLocale(
+                normalizeLocale(
+                        data.defaultLocale()
+                )
+        );
+
+        store.setCurrencyCode(
+                normalizeCurrencyCode(
+                        data.currencyCode()
+                )
+        );
+
         store.setOpen(
                 data.open()
         );
@@ -526,7 +544,10 @@ public class StoreSettingsController {
                 store.getName(),
                 store.isOpen(),
                 store.getWhatsapp(),
-                store.getDailyOrderLimit()
+                store.getDailyOrderLimit(),
+                store.getCountryCode(),
+                store.getDefaultLocale(),
+                store.getCurrencyCode()
         );
     }
 
@@ -576,6 +597,11 @@ public class StoreSettingsController {
                 store.getWhatsapp(),
                 store.getPhone(),
                 store.getEmail(),
+
+                // Internacionalização
+                store.getCountryCode(),
+                store.getDefaultLocale(),
+                store.getCurrencyCode(),
 
                 // Fidelidade
                 store.isLoyaltyEnabled(),
@@ -640,6 +666,102 @@ public class StoreSettingsController {
         return cleaned == null
                 ? defaultValue
                 : cleaned;
+    }
+
+    // =========================
+    // INTERNACIONALIZAÇÃO
+    // =========================
+
+    private String normalizeCountryCode(
+            String value
+    ) {
+        String normalized =
+                cleanNullable(
+                        value
+                );
+
+        if (normalized == null) {
+            return "BR";
+        }
+
+        normalized =
+                normalized.toUpperCase(
+                        java.util.Locale.ROOT
+                );
+
+        if (!normalized.matches(
+                "^[A-Z]{2}$"
+        )) {
+            throw new IllegalArgumentException(
+                    "País inválido."
+            );
+        }
+
+        return normalized;
+    }
+
+    private String normalizeLocale(
+            String value
+    ) {
+        String normalized =
+                cleanNullable(
+                        value
+                );
+
+        if (normalized == null) {
+            return "pt-BR";
+        }
+
+        if (
+                !"pt-BR".equals(
+                        normalized
+                ) &&
+                !"en-US".equals(
+                        normalized
+                )
+        ) {
+            throw new IllegalArgumentException(
+                    "Idioma inválido."
+            );
+        }
+
+        return normalized;
+    }
+
+    private String normalizeCurrencyCode(
+            String value
+    ) {
+        String normalized =
+                cleanNullable(
+                        value
+                );
+
+        if (normalized == null) {
+            return "BRL";
+        }
+
+        normalized =
+                normalized.toUpperCase(
+                        java.util.Locale.ROOT
+                );
+
+        if (
+                !java.util.Set.of(
+                        "BRL",
+                        "USD",
+                        "EUR",
+                        "GBP",
+                        "CAD"
+                ).contains(
+                        normalized
+                )
+        ) {
+            throw new IllegalArgumentException(
+                    "Moeda inválida."
+            );
+        }
+
+        return normalized;
     }
 
     // =========================
@@ -807,7 +929,10 @@ public class StoreSettingsController {
             String storeName,
             boolean open,
             String whatsapp,
-            Integer dailyOrderLimit
+            Integer dailyOrderLimit,
+            String countryCode,
+            String defaultLocale,
+            String currencyCode
     ) {
     }
 
@@ -820,7 +945,10 @@ public class StoreSettingsController {
             String storeName,
             boolean open,
             String whatsapp,
-            Integer dailyOrderLimit
+            Integer dailyOrderLimit,
+            String countryCode,
+            String defaultLocale,
+            String currencyCode
     ) {
     }
 
@@ -917,6 +1045,11 @@ public class StoreSettingsController {
             String whatsapp,
             String phone,
             String email,
+
+            // Internacionalização
+            String countryCode,
+            String defaultLocale,
+            String currencyCode,
 
             // Fidelidade
             boolean loyaltyEnabled,

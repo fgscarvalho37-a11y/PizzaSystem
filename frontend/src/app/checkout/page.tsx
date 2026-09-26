@@ -75,6 +75,12 @@ type StoreStatus = {
   message: string;
 };
 
+type StoreProfileIntl = {
+  countryCode: string;
+  defaultLocale: "pt-BR" | "en-US";
+  currencyCode: string;
+};
+
 type PaymentMethod =
   | "PIX"
   | "CREDIT_CARD"
@@ -162,7 +168,9 @@ export default function CheckoutPage() {
     useRouter();
 
   const {
+    locale,
     text,
+    applyDefaultLocale,
   } =
     useLanguage();
 
@@ -208,6 +216,30 @@ export default function CheckoutPage() {
   ] = useState<
     StoreStatus | null
   >(null);
+
+  const [
+    storeProfile,
+    setStoreProfile,
+  ] = useState<
+    StoreProfileIntl | null
+  >(null);
+
+  function formatMoney(
+    value: number
+  ) {
+    return new Intl.NumberFormat(
+      storeProfile?.defaultLocale ??
+        locale,
+      {
+        style: "currency",
+        currency:
+          storeProfile?.currencyCode ??
+          "BRL",
+      }
+    ).format(
+      value
+    );
+  }
 
   const [
     loaded,
@@ -480,16 +512,30 @@ export default function CheckoutPage() {
 
     async function loadData() {
       try {
-        const statusResponse =
-          await fetch(
-            `${API_URL}/api/store/status?store=${encodeURIComponent(
-              storeSlug
-            )}`,
-            {
-              cache:
-                "no-store",
-            }
-          );
+        const [
+          statusResponse,
+          profileResponse,
+        ] =
+          await Promise.all([
+            fetch(
+              `${API_URL}/api/store/status?store=${encodeURIComponent(
+                storeSlug
+              )}`,
+              {
+                cache:
+                  "no-store",
+              }
+            ),
+            fetch(
+              `${API_URL}/api/store/profile?store=${encodeURIComponent(
+                storeSlug
+              )}`,
+              {
+                cache:
+                  "no-store",
+              }
+            ),
+          ]);
 
         if (
           !statusResponse.ok
@@ -503,6 +549,12 @@ export default function CheckoutPage() {
           StoreStatus =
           await statusResponse.json();
 
+        const profileData:
+          StoreProfileIntl | null =
+          profileResponse.ok
+            ? await profileResponse.json()
+            : null;
+
         if (!mounted) {
           return;
         }
@@ -510,6 +562,21 @@ export default function CheckoutPage() {
         setStoreStatus(
           statusData
         );
+
+        setStoreProfile(
+          profileData
+        );
+
+        if (
+          profileData?.defaultLocale
+        ) {
+          applyDefaultLocale(
+            profileData.defaultLocale ===
+              "en-US"
+              ? "en-US"
+              : "pt-BR"
+          );
+        }
       } catch (
         error
       ) {
@@ -2332,7 +2399,8 @@ export default function CheckoutPage() {
                               ? `${Number(
                                   deliveryQuote.distanceKm
                                 ).toLocaleString(
-                                  "pt-BR",
+                                  storeProfile?.defaultLocale ??
+                                    locale,
                                   {
                                     maximumFractionDigits:
                                       2,
@@ -2341,7 +2409,8 @@ export default function CheckoutPage() {
                               : `${Number(
                                   deliveryQuote.distanceKm
                                 ).toLocaleString(
-                                  "pt-BR",
+                                  storeProfile?.defaultLocale ??
+                                    locale,
                                   {
                                     maximumFractionDigits:
                                       2,
@@ -2608,7 +2677,8 @@ export default function CheckoutPage() {
                           {Number(
                             deliveryQuote.distanceKm
                           ).toLocaleString(
-                            "pt-BR",
+                            storeProfile?.defaultLocale ??
+                              locale,
                             {
                               maximumFractionDigits:
                                 2,

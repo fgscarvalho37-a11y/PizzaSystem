@@ -3,6 +3,7 @@
 import {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -17,6 +18,9 @@ type LanguageContextValue = {
   locale: AppLocale;
   isEnglish: boolean;
   setLocale: (
+    locale: AppLocale
+  ) => void;
+  applyDefaultLocale: (
     locale: AppLocale
   ) => void;
   text: (
@@ -82,10 +86,11 @@ export function LanguageProvider({
       detected;
   }, []);
 
-  function setLocale(
-    nextLocale:
-      AppLocale
-  ) {
+  const setLocale =
+    useCallback((
+      nextLocale:
+        AppLocale
+    ) => {
     setLocaleState(
       nextLocale
     );
@@ -97,7 +102,32 @@ export function LanguageProvider({
 
     document.documentElement.lang =
       nextLocale;
-  }
+  }, []);
+
+  const applyDefaultLocale =
+    useCallback((
+      nextLocale:
+        AppLocale
+    ) => {
+    const saved =
+      window.localStorage.getItem(
+        STORAGE_KEY
+      );
+
+    if (
+      saved === "pt-BR" ||
+      saved === "en-US"
+    ) {
+      return;
+    }
+
+    setLocaleState(
+      nextLocale
+    );
+
+    document.documentElement.lang =
+      nextLocale;
+  }, []);
 
   const value =
     useMemo<LanguageContextValue>(
@@ -107,6 +137,7 @@ export function LanguageProvider({
           locale ===
           "en-US",
         setLocale,
+        applyDefaultLocale,
         text: (
           pt,
           en
@@ -118,6 +149,8 @@ export function LanguageProvider({
       }),
       [
         locale,
+        setLocale,
+        applyDefaultLocale,
       ]
     );
 

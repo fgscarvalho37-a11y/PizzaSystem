@@ -17,6 +17,8 @@ import {
   clearAdminCsrfToken,
 } from "@/lib/adminFetch";
 import { setBrowserIcon } from "@/lib/browserIcon";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 type IconProps = {
   className?: string;
@@ -581,6 +583,11 @@ const sections = [
         icon: SettingsIcon,
       },
       {
+        label: "Idioma e moeda",
+        href: "/admin/internacionalizacao",
+        icon: SettingsIcon,
+      },
+      {
         label: "Guia",
         href: "/admin/guia",
         icon: GuideIcon,
@@ -589,7 +596,46 @@ const sections = [
   },
 ];
 
+const NAV_EN: Record<string, string> = {
+  "Operação": "Operations",
+  "Painel": "Dashboard",
+  "Pedidos": "Orders",
+  "Cozinha": "Kitchen",
+  "Entregas": "Delivery",
+  "Gestão": "Management",
+  "Histórico": "History",
+  "Relatórios": "Reports",
+  "Caixa": "Cash register",
+  "Cupons": "Coupons",
+  "Fidelidade": "Loyalty",
+  "Cardápio": "Menu",
+  "Produtos": "Products",
+  "Categorias": "Categories",
+  "Adicionais": "Add-ons",
+  "Bordas": "Crusts",
+  "Sistema": "System",
+  "Loja online": "Online store",
+  "Horários": "Business hours",
+  "Personalização": "Customization",
+  "Configurações": "Settings",
+  "Idioma e moeda": "Language & currency",
+  "Guia": "Guide",
+};
+
 export default function AdminHeader() {
+  const {
+    text,
+  } = useLanguage();
+
+  function navText(
+    value: string
+  ) {
+    return text(
+      value,
+      NAV_EN[value] ?? value
+    );
+  }
+
   const pathname =
     usePathname();
 
@@ -855,7 +901,7 @@ export default function AdminHeader() {
               </p>
 
               <p className="mt-0.5 whitespace-nowrap text-sm font-semibold text-foreground">
-                Administração
+                {text("Administração", "Administration")}
               </p>
 
             </div>
@@ -865,7 +911,7 @@ export default function AdminHeader() {
         </div>
 
         <nav
-          aria-label="Navegação administrativa"
+          aria-label={text("Navegação administrativa", "Admin navigation")}
           className="
             flex-1 overflow-y-auto
             overflow-x-hidden
@@ -900,7 +946,7 @@ export default function AdminHeader() {
                       group-hover/sidebar:opacity-100
                     "
                   >
-                    {section.title}
+                    {navText(section.title)}
                   </div>
 
                   <div className="space-y-1 px-3">
@@ -928,7 +974,7 @@ export default function AdminHeader() {
                               item.href
                             }
                             title={
-                              item.label
+                              navText(item.label)
                             }
                             aria-current={
                               active
@@ -959,7 +1005,7 @@ export default function AdminHeader() {
                                 group-hover/sidebar:opacity-100
                               "
                             >
-                              {item.label}
+                              {navText(item.label)}
                             </span>
 
                             {active && (
@@ -991,6 +1037,10 @@ export default function AdminHeader() {
 
         <div className="shrink-0 border-t border-border bg-card/30 py-3">
 
+          <div className="px-3 pb-2 opacity-0 transition-opacity duration-200 group-hover/sidebar:opacity-100">
+            <LanguageSwitcher />
+          </div>
+
           <div className="space-y-1 px-3">
 
             <Link
@@ -999,7 +1049,7 @@ export default function AdminHeader() {
               }
               target="_blank"
               rel="noreferrer"
-              title="Ver cardápio"
+              title={text("Ver cardápio", "View menu")}
               className="
                 flex h-11 w-14
                 items-center overflow-hidden
@@ -1028,7 +1078,7 @@ export default function AdminHeader() {
                   group-hover/sidebar:opacity-100
                 "
               >
-                Ver cardápio
+                {text("Ver cardápio", "View menu")}
               </span>
 
             </Link>
@@ -1041,7 +1091,7 @@ export default function AdminHeader() {
               disabled={
                 loggingOut
               }
-              title="Sair"
+              title={text("Sair", "Sign out")}
               className="
                 flex h-11 w-14
                 items-center overflow-hidden
@@ -1093,8 +1143,8 @@ export default function AdminHeader() {
                 "
               >
                 {loggingOut
-                  ? "Saindo..."
-                  : "Sair"}
+                  ? text("Saindo...", "Signing out...")
+                  : text("Sair", "Sign out")}
               </span>
 
             </button>
@@ -1140,12 +1190,14 @@ export default function AdminHeader() {
             </p>
 
             <p className="text-sm font-semibold text-foreground">
-              Administração
+              {text("Administração", "Administration")}
             </p>
 
           </div>
 
         </Link>
+
+        <LanguageSwitcher />
 
         <button
           type="button"
@@ -1159,8 +1211,8 @@ export default function AdminHeader() {
           }
           aria-label={
             mobileOpen
-              ? "Fechar menu"
-              : "Abrir menu"
+              ? text("Fechar menu", "Close menu")
+              : text("Abrir menu", "Open menu")
           }
           aria-expanded={
             mobileOpen
@@ -1269,7 +1321,7 @@ export default function AdminHeader() {
                     >
 
                       <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                        {section.title}
+                        {navText(section.title)}
                       </p>
 
                       <div className="space-y-1">
@@ -1318,7 +1370,7 @@ export default function AdminHeader() {
                                 <Icon className="h-5 w-5 shrink-0" />
 
                                 <span>
-                                  {item.label}
+                                  {navText(item.label)}
                                 </span>
 
                               </Link>
@@ -1352,7 +1404,7 @@ export default function AdminHeader() {
 
                 <ExternalIcon className="h-5 w-5" />
 
-                Ver cardápio
+                {text("Ver cardápio", "View menu")}
 
               </Link>
 

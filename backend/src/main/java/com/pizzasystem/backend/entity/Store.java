@@ -149,6 +149,34 @@ public class Store {
     private String email;
 
     // =========================
+    // INTERNACIONALIZAÇÃO
+    // =========================
+
+    @Column(
+            name = "country_code",
+            nullable = false,
+            length = 2
+    )
+    private String countryCode =
+            "BR";
+
+    @Column(
+            name = "default_locale",
+            nullable = false,
+            length = 10
+    )
+    private String defaultLocale =
+            "pt-BR";
+
+    @Column(
+            name = "currency_code",
+            nullable = false,
+            length = 3
+    )
+    private String currencyCode =
+            "BRL";
+
+    // =========================
     // OPERAÇÃO
     // =========================
 
@@ -440,6 +468,48 @@ public class Store {
     ) {
         this.email =
                 email;
+    }
+
+    public String getCountryCode() {
+        return countryCode == null
+                || countryCode.isBlank()
+                ? "BR"
+                : countryCode;
+    }
+
+    public void setCountryCode(
+            String countryCode
+    ) {
+        this.countryCode =
+                countryCode;
+    }
+
+    public String getDefaultLocale() {
+        return defaultLocale == null
+                || defaultLocale.isBlank()
+                ? "pt-BR"
+                : defaultLocale;
+    }
+
+    public void setDefaultLocale(
+            String defaultLocale
+    ) {
+        this.defaultLocale =
+                defaultLocale;
+    }
+
+    public String getCurrencyCode() {
+        return currencyCode == null
+                || currencyCode.isBlank()
+                ? "BRL"
+                : currencyCode;
+    }
+
+    public void setCurrencyCode(
+            String currencyCode
+    ) {
+        this.currencyCode =
+                currencyCode;
     }
 
     public boolean isOpen() {

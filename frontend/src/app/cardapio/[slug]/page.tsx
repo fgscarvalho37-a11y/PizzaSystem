@@ -84,6 +84,9 @@ type StoreProfile = {
   menuEmptyTitle: string | null;
   menuEmptyDescription: string | null;
   footerTagline: string | null;
+  countryCode: string;
+  defaultLocale: "pt-BR" | "en-US";
+  currencyCode: string;
 };
 
 type StoreStatus = {
@@ -347,6 +350,7 @@ export default function CardapioPage() {
   const {
     locale,
     text,
+    applyDefaultLocale,
   } =
     useLanguage();
 
@@ -360,6 +364,23 @@ export default function CardapioPage() {
 
   const cartKey =
     `pizzasystem-cart:${storeSlug}`;
+
+  function formatMoney(
+    value: number
+  ) {
+    return new Intl.NumberFormat(
+      storeProfile?.defaultLocale ??
+        locale,
+      {
+        style: "currency",
+        currency:
+          storeProfile?.currencyCode ??
+          "BRL",
+      }
+    ).format(
+      value
+    );
+  }
 
   const [
     products,
@@ -475,6 +496,13 @@ export default function CardapioPage() {
       return;
     }
 
+    applyDefaultLocale(
+      storeProfile.defaultLocale ===
+        "en-US"
+        ? "en-US"
+        : "pt-BR"
+    );
+
     setBrowserIcon(
       resolveStoreImageUrl(
         storeProfile.logoUrl
@@ -486,6 +514,7 @@ export default function CardapioPage() {
 
   }, [
     storeProfile,
+    applyDefaultLocale,
   ]);
 
   // =========================
