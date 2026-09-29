@@ -1,0 +1,748 @@
+"use client";
+
+import {
+  FormEvent,
+  useEffect,
+  useState,
+} from "react";
+
+import AdminHeader from "@/components/AdminHeader";
+import { adminFetch } from "@/lib/adminFetch";
+import { useLanguage } from "@/i18n/LanguageProvider";
+
+type StoreProfile = {
+  id: number;
+  name: string;
+  countryCode: string;
+  currencyCode: string;
+  defaultLocale: "pt-BR" | "en-US";
+};
+
+type MercadoPagoStatus = {
+  connected: boolean;
+  cardPaymentsReady?: boolean;
+  mercadoPagoUserId?: string | null;
+};
+
+type StripeStatus = {
+  connected: boolean;
+  provider: "STRIPE";
+  countryCode: string;
+  currencyCode: string;
+  recommended: boolean;
+  keyLast4?: string | null;
+  connectedAt?: string | null;
+  webhookPath: string;
+  webhookUrl: string;
+};
+
+const API_URL = "";
+
+export default function AdminPaymentsPage() {
+  const { text } =
+    useLanguage();
+
+  const [profile, setProfile] =
+    useState<StoreProfile | null>(
+      null
+    );
+
+  const [
+    mercadoPagoStatus,
+    setMercadoPagoStatus,
+  ] =
+    useState<MercadoPagoStatus | null>(
+      null
+    );
+
+  const [
+    stripeStatus,
+    setStripeStatus,
+  ] =
+    useState<StripeStatus | null>(
+      null
+    );
+
+  const [
+    restrictedApiKey,
+    setRestrictedApiKey,
+  ] = useState("");
+
+  const [
+    webhookSecret,
+    setWebhookSecret,
+  ] = useState("");
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [
+    disconnecting,
+    setDisconnecting,
+  ] = useState(false);
+
+  const [message, setMessage] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
+
+  async function load() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const [
+        profileResponse,
+        mercadoPagoResponse,
+        stripeResponse,
+      ] =
+        await Promise.all([
+          adminFetch(
+            `${API_URL}/api/store/profile`,
+            {
+              cache: "no-store",
+            }
+          ),
+          adminFetch(
+            `${API_URL}/api/admin/mercadopago/status`,
+            {
+              cache: "no-store",
+            }
+          ),
+          adminFetch(
+            `${API_URL}/api/admin/stripe-payment/status`,
+            {
+              cache: "no-store",
+            }
+          ),
+        ]);
+
+      if (!profileResponse.ok) {
+        throw new Error(
+          text(
+            "Não foi possível carregar a loja.",
+            "Could not load the store."
+          )
+        );
+      }
+
+      const profileData:
+        StoreProfile =
+        await profileResponse.json();
+
+      setProfile(
+        profileData
+      );
+
+      if (
+        mercadoPagoResponse.ok
+      ) {
+        setMercadoPagoStatus(
+          await mercadoPagoResponse.json()
+        );
+      }
+
+      if (
+        stripeResponse.ok
+      ) {
+        setStripeStatus(
+          await stripeResponse.json()
+        );
+      }
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : text(
+              "Não foi possível carregar os pagamentos.",
+              "Could not load payment settings."
+            )
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  async function connectStripe(
+    event: FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    setError("");
+    setMessage("");
+
+    if (
+      !restrictedApiKey.trim() ||
+      !webhookSecret.trim()
+    ) {
+      setError(
+        text(
+          "Informe a Restricted API Key e o webhook secret.",
+          "Enter the Restricted API Key and webhook signing secret."
+        )
+      );
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/admin/stripe-payment/connect`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              restrictedApiKey:
+                restrictedApiKey.trim(),
+              webhookSecret:
+                webhookSecret.trim(),
+            }),
+          }
+        );
+
+      if (!response.ok) {
+        let detail =
+          text(
+            "Não foi possível conectar a Stripe.",
+            "Could not connect Stripe."
+          );
+
+        try {
+          const data =
+            await response.json();
+
+          detail =
+            data.message ??
+            data.detail ??
+            data.error ??
+            detail;
+        } catch {
+          // mantém mensagem padrão
+        }
+
+        throw new Error(
+          detail
+        );
+      }
+
+      const data:
+        StripeStatus =
+        await response.json();
+
+      setStripeStatus(data);
+      setRestrictedApiKey("");
+      setWebhookSecret("");
+
+      setMessage(
+        text(
+          "Stripe configurada. Os pagamentos internacionais podem usar o checkout da própria conta da loja.",
+          "Stripe configured. International orders can now use the store's own Stripe Checkout."
+        )
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : text(
+              "Não foi possível conectar a Stripe.",
+              "Could not connect Stripe."
+            )
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function disconnectStripe() {
+    if (
+      !window.confirm(
+        text(
+          "Desconectar a Stripe desta loja?",
+          "Disconnect Stripe from this store?"
+        )
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setDisconnecting(true);
+      setError("");
+      setMessage("");
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/admin/stripe-payment/disconnect`,
+          {
+            method: "POST",
+          }
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          text(
+            "Não foi possível desconectar a Stripe.",
+            "Could not disconnect Stripe."
+          )
+        );
+      }
+
+      await load();
+
+      setMessage(
+        text(
+          "Stripe desconectada.",
+          "Stripe disconnected."
+        )
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : text(
+              "Não foi possível desconectar.",
+              "Could not disconnect."
+            )
+      );
+    } finally {
+      setDisconnecting(false);
+    }
+  }
+
+  async function copyWebhook() {
+    if (
+      !stripeStatus?.webhookUrl
+    ) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(
+      stripeStatus.webhookUrl
+    );
+
+    setMessage(
+      text(
+        "URL do webhook copiada.",
+        "Webhook URL copied."
+      )
+    );
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background text-foreground">
+        <AdminHeader />
+        <div className="mx-auto max-w-[1120px] px-4 py-10 sm:px-6 lg:px-8">
+          <div className="rounded-[28px] border border-border bg-card p-8">
+            <p className="text-sm text-muted-foreground">
+              {text(
+                "Carregando pagamentos...",
+                "Loading payments..."
+              )}
+            </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const isBrazil =
+    (
+      profile?.countryCode ??
+      "BR"
+    ).toUpperCase() === "BR";
+
+  return (
+    <main className="min-h-screen bg-background pb-16 text-foreground">
+      <AdminHeader />
+
+      <div className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="border-b border-border pb-7">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+            {text(
+              "Recebimentos",
+              "Payments"
+            )}
+          </p>
+
+          <h1 className="mt-2 font-display text-4xl uppercase tracking-tight">
+            {text(
+              "Pagamentos da loja",
+              "Store payments"
+            )}
+          </h1>
+
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
+            {text(
+              "Configure onde o dinheiro dos pedidos dos seus clientes será recebido. O valor das vendas vai para a conta do próprio estabelecimento.",
+              "Configure where customer order payments are received. Sales revenue goes to the store's own payment account."
+            )}
+          </p>
+        </div>
+
+        {error && (
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {message && (
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+            {message}
+          </div>
+        )}
+
+        <section className="mt-6 rounded-[26px] border border-border bg-card p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                {text(
+                  "Roteamento",
+                  "Routing"
+                )}
+              </p>
+
+              <h2 className="mt-1 text-xl font-bold">
+                {profile?.name}
+              </h2>
+
+              <p className="mt-2 text-sm text-muted-foreground">
+                {profile?.countryCode} ·{" "}
+                {profile?.currencyCode}
+              </p>
+            </div>
+
+            <span className="inline-flex w-fit rounded-full border border-border bg-background px-4 py-2 text-xs font-bold">
+              {isBrazil
+                ? "Mercado Pago"
+                : "Stripe"}
+            </span>
+          </div>
+
+          <p className="mt-5 rounded-2xl bg-secondary/70 p-4 text-xs leading-6 text-muted-foreground">
+            {isBrazil
+              ? text(
+                  "Lojas brasileiras continuam usando Mercado Pago e Pix. A Stripe fica disponível para a operação internacional.",
+                  "Brazilian stores continue using Mercado Pago and Pix. Stripe is available for international operations."
+                )
+              : text(
+                  "Para esta loja internacional, cartão e carteiras compatíveis são processados pela própria conta Stripe do estabelecimento.",
+                  "For this international store, cards and supported wallets are processed by the store's own Stripe account."
+                )}
+          </p>
+        </section>
+
+        <section className="mt-6 rounded-[26px] border border-border bg-card p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                Brasil
+              </p>
+
+              <h2 className="mt-1 font-display text-3xl uppercase tracking-tight">
+                Mercado Pago
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                {text(
+                  "Pix e cartão para estabelecimentos brasileiros.",
+                  "Pix and card payments for Brazilian stores."
+                )}
+              </p>
+            </div>
+
+            <StatusBadge
+              connected={
+                !!mercadoPagoStatus
+                  ?.connected
+              }
+              connectedText={text(
+                "Conectado",
+                "Connected"
+              )}
+              disconnectedText={text(
+                "Não conectado",
+                "Not connected"
+              )}
+            />
+          </div>
+
+          <p className="mt-5 text-xs leading-5 text-muted-foreground">
+            {text(
+              "A conexão Mercado Pago continua disponível em Configurações para não alterar o fluxo brasileiro que já funciona.",
+              "The existing Mercado Pago connection remains available in Settings so the current Brazilian flow is unchanged."
+            )}
+          </p>
+        </section>
+
+        <section className="mt-6 rounded-[26px] border border-border bg-card p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                International
+              </p>
+
+              <h2 className="mt-1 font-display text-3xl uppercase tracking-tight">
+                Stripe
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                {text(
+                  "A loja usa uma Restricted API Key própria. A chave é criptografada antes de ser salva e nunca volta para o navegador.",
+                  "The store uses its own Restricted API Key. The key is encrypted before storage and is never returned to the browser."
+                )}
+              </p>
+            </div>
+
+            <StatusBadge
+              connected={
+                !!stripeStatus?.connected
+              }
+              connectedText={text(
+                "Pronta para receber",
+                "Ready to accept payments"
+              )}
+              disconnectedText={text(
+                "Configuração pendente",
+                "Setup required"
+              )}
+            />
+          </div>
+
+          {stripeStatus?.connected ? (
+            <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+              <p className="text-sm font-bold text-emerald-800">
+                {text(
+                  "Stripe conectada",
+                  "Stripe connected"
+                )}
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-emerald-700">
+                {text(
+                  `Restricted key terminando em •••• ${stripeStatus.keyLast4 ?? "----"}.`,
+                  `Restricted key ending in •••• ${stripeStatus.keyLast4 ?? "----"}.`
+                )}
+              </p>
+
+              <button
+                type="button"
+                onClick={
+                  disconnectStripe
+                }
+                disabled={
+                  disconnecting
+                }
+                className="mt-4 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-xs font-bold text-red-700 disabled:opacity-50"
+              >
+                {disconnecting
+                  ? text(
+                      "Desconectando...",
+                      "Disconnecting..."
+                    )
+                  : text(
+                      "Desconectar Stripe",
+                      "Disconnect Stripe"
+                    )}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                <div className="rounded-2xl border border-border bg-background p-5">
+                  <p className="text-sm font-bold">
+                    1. Restricted API Key
+                  </p>
+
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    {text(
+                      "Na conta Stripe da pizzaria, crie uma chave restrita com Checkout Sessions em escrita. Use rk_live_... em produção.",
+                      "In the restaurant's Stripe account, create a restricted key with Checkout Sessions write access. Use rk_live_... in production."
+                    )}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-border bg-background p-5">
+                  <p className="text-sm font-bold">
+                    2. Webhook
+                  </p>
+
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    {text(
+                      "Cadastre a URL abaixo na Stripe e assine os eventos de Checkout Session.",
+                      "Add the URL below to Stripe and subscribe to Checkout Session events."
+                    )}
+                  </p>
+
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      readOnly
+                      value={
+                        stripeStatus
+                          ?.webhookUrl ??
+                        ""
+                      }
+                      className="min-w-0 flex-1 rounded-xl border border-border bg-secondary px-3 py-2 text-xs"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={
+                        copyWebhook
+                      }
+                      className="rounded-xl border border-border bg-card px-3 text-xs font-bold"
+                    >
+                      {text(
+                        "Copiar",
+                        "Copy"
+                      )}
+                    </button>
+                  </div>
+
+                  <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
+                    checkout.session.completed<br />
+                    checkout.session.async_payment_succeeded<br />
+                    checkout.session.async_payment_failed<br />
+                    checkout.session.expired
+                  </p>
+                </div>
+              </div>
+
+              <form
+                onSubmit={
+                  connectStripe
+                }
+                className="mt-5 grid gap-4"
+              >
+                <label>
+                  <span className="text-xs font-bold">
+                    Restricted API Key
+                  </span>
+
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={
+                      restrictedApiKey
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setRestrictedApiKey(
+                        event.target.value
+                      )
+                    }
+                    placeholder="rk_live_..."
+                    className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
+                  />
+                </label>
+
+                <label>
+                  <span className="text-xs font-bold">
+                    Webhook signing secret
+                  </span>
+
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={
+                      webhookSecret
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setWebhookSecret(
+                        event.target.value
+                      )
+                    }
+                    placeholder="whsec_..."
+                    className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={
+                    saving
+                  }
+                  className="h-11 w-fit rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                >
+                  {saving
+                    ? text(
+                        "Validando...",
+                        "Validating..."
+                      )
+                    : text(
+                        "Conectar Stripe",
+                        "Connect Stripe"
+                      )}
+                </button>
+              </form>
+            </>
+          )}
+        </section>
+
+        <section className="mt-6 rounded-[26px] border border-border bg-card p-6">
+          <h2 className="text-sm font-bold">
+            {text(
+              "Como o pedido internacional funciona",
+              "How international checkout works"
+            )}
+          </h2>
+
+          <p className="mt-3 text-xs leading-6 text-muted-foreground">
+            {text(
+              "O PizzaSystem cria uma página de pagamento hospedada pela Stripe usando a conta do próprio estabelecimento. Após a confirmação, o webhook marca o pedido como pago e ele entra automaticamente em Recebidos/Cozinha. O PizzaSystem não recebe o valor da venda.",
+              "PizzaSystem creates a Stripe-hosted payment page using the store's own Stripe account. After confirmation, the webhook marks the order as paid and it automatically enters the Received/Kitchen flow. PizzaSystem does not receive the sale proceeds."
+            )}
+          </p>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function StatusBadge({
+  connected,
+  connectedText,
+  disconnectedText,
+}: {
+  connected: boolean;
+  connectedText: string;
+  disconnectedText: string;
+}) {
+  return (
+    <span
+      className={
+        connected
+          ? "inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-700"
+          : "inline-flex w-fit items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-700"
+      }
+    >
+      <span
+        className={
+          connected
+            ? "h-2 w-2 rounded-full bg-emerald-500"
+            : "h-2 w-2 rounded-full bg-amber-500"
+        }
+      />
+
+      {connected
+        ? connectedText
+        : disconnectedText}
+    </span>
+  );
+}

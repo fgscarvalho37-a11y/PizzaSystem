@@ -81,6 +81,18 @@ type StoreProfileIntl = {
   currencyCode: string;
 };
 
+type PaymentConfig = {
+  provider:
+    | "MERCADO_PAGO"
+    | "STRIPE";
+  ready: boolean;
+  pixAvailable: boolean;
+  cardAvailable: boolean;
+  hostedCheckout: boolean;
+  countryCode: string;
+  currencyCode: string;
+};
+
 type PaymentMethod =
   | "PIX"
   | "CREDIT_CARD"
@@ -222,6 +234,13 @@ export default function CheckoutPage() {
     setStoreProfile,
   ] = useState<
     StoreProfileIntl | null
+  >(null);
+
+  const [
+    paymentConfig,
+    setPaymentConfig,
+  ] = useState<
+    PaymentConfig | null
   >(null);
 
   function formatMoney(
@@ -564,6 +583,7 @@ export default function CheckoutPage() {
         const [
           statusResponse,
           profileResponse,
+          paymentConfigResponse,
         ] =
           await Promise.all([
             fetch(
@@ -577,6 +597,15 @@ export default function CheckoutPage() {
             ),
             fetch(
               `${API_URL}/api/store/profile?store=${encodeURIComponent(
+                storeSlug
+              )}`,
+              {
+                cache:
+                  "no-store",
+              }
+            ),
+            fetch(
+              `${API_URL}/api/payments/config?store=${encodeURIComponent(
                 storeSlug
               )}`,
               {
@@ -604,6 +633,12 @@ export default function CheckoutPage() {
             ? await profileResponse.json()
             : null;
 
+        const paymentConfigData:
+          PaymentConfig | null =
+          paymentConfigResponse.ok
+            ? await paymentConfigResponse.json()
+            : null;
+
         if (!mounted) {
           return;
         }
@@ -614,6 +649,10 @@ export default function CheckoutPage() {
 
         setStoreProfile(
           profileData
+        );
+
+        setPaymentConfig(
+          paymentConfigData
         );
 
         if (
@@ -1482,6 +1521,19 @@ export default function CheckoutPage() {
     }
 
     if (
+      !paymentConfig?.ready
+    ) {
+      setCheckoutError(
+        text(
+          "Os pagamentos online ainda não foram configurados por este estabelecimento.",
+          "Online payments have not been configured by this store yet."
+        )
+      );
+
+      return;
+    }
+
+    if (
       !paymentMethod
     ) {
       setCheckoutError(
@@ -1702,6 +1754,19 @@ export default function CheckoutPage() {
         localStorage.removeItem(
           cartKey
         );
+
+        if (
+          paymentConfig?.provider ===
+          "STRIPE"
+        ) {
+          router.push(
+            `/pagamento/stripe/${order.id}?token=${encodedToken}&store=${encodeURIComponent(
+              storeSlug
+            )}`
+          );
+
+          return;
+        }
 
         router.push(
           `/pagamento/cartao/${order.id}?token=${encodedToken}&store=${encodeURIComponent(
@@ -2665,43 +2730,85 @@ export default function CheckoutPage() {
 
               <div className="mt-3 flex flex-wrap gap-2">
 
-                {isBrazil && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPaymentMethod(
+                {isBrazil &&
+                  paymentConfig?.pixAvailable && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPaymentMethod(
+                        "PIX"
+                      )
+                    }
+                    className={
+                      paymentMethod ===
                       "PIX"
-                    )
-                  }
-                  className={
-                    paymentMethod ===
-                    "PIX"
-                      ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
-                      : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
-                  }
-                >
-                  Pix
-                </button>
+                        ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
+                        : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
+                    }
+                  >
+                    Pix
+                  </button>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPaymentMethod(
+                {paymentConfig?.cardAvailable && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPaymentMethod(
+                        "CREDIT_CARD"
+                      )
+                    }
+                    className={
+                      paymentMethod ===
                       "CREDIT_CARD"
-                    )
-                  }
-                  className={
-                    paymentMethod ===
-                    "CREDIT_CARD"
-                      ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
-                      : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
-                  }
-                >{text("Cartão de crédito", "Credit card")}</button>
+                        ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
+                        : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
+                    }
+                  >
+                    {isBrazil
+                      ? text(
+                          "Cartão de crédito",
+                          "Credit card"
+                        )
+                      : text(
+                          "Cartão / carteira",
+                          "Card / wallet"
+                        )}
+                  </button>
+                )}
 
-                <span className="cursor-not-allowed rounded-full border border-border bg-secondary px-4 py-2 text-sm font-medium text-muted-foreground opacity-60">{text("Débito indisponível", "Debit unavailable")}</span>
+                {isBrazil && (
+                  <span className="cursor-not-allowed rounded-full border border-border bg-secondary px-4 py-2 text-sm font-medium text-muted-foreground opacity-60">
+                    {text(
+                      "Débito indisponível",
+                      "Debit unavailable"
+                    )}
+                  </span>
+                )}
 
               </div>
+
+              {paymentConfig &&
+                !paymentConfig.ready && (
+                  <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
+                    {text(
+                      "O estabelecimento ainda não configurou o recebimento de pagamentos online.",
+                      "This store has not configured online payments yet."
+                    )}
+                  </p>
+                )}
+
+              {!isBrazil &&
+                paymentConfig?.provider ===
+                  "STRIPE" &&
+                paymentConfig.ready && (
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                    {text(
+                      "O pagamento será concluído no checkout seguro da Stripe. Cartões e carteiras compatíveis aparecem automaticamente.",
+                      "Payment is completed in secure Stripe Checkout. Supported cards and wallets appear automatically."
+                    )}
+                  </p>
+                )}
 
             </section>
 
@@ -2900,6 +3007,7 @@ export default function CheckoutPage() {
                   (regionRequired &&
                     !state.trim()) ||
                   !deliveryQuote ||
+                  !paymentConfig?.ready ||
                   !paymentMethod ||
                   !storeStatus?.open
                 }

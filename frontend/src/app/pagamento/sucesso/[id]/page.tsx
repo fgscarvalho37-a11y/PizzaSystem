@@ -11,21 +11,31 @@ import {
   useSearchParams,
 } from "next/navigation";
 
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/i18n/LanguageProvider";
+
 type Order = {
   id: number;
   total: number;
   paymentStatus: string;
   status: string;
+  paymentProvider?: string | null;
+  paymentCurrencyCode?: string | null;
 };
 
 const API_URL = "";
 
-function formatMoney(value: number) {
+function formatMoney(
+  value: number,
+  currency: string,
+  locale: string
+) {
   return new Intl.NumberFormat(
-    "pt-BR",
+    locale,
     {
       style: "currency",
-      currency: "BRL",
+      currency:
+        currency || "BRL",
     }
   ).format(value);
 }
@@ -83,6 +93,12 @@ export default function PaymentSuccessPage() {
   const searchParams =
     useSearchParams();
 
+  const {
+    locale,
+    text,
+  } =
+    useLanguage();
+
   const id =
     params.id as string;
 
@@ -91,6 +107,16 @@ export default function PaymentSuccessPage() {
 
   const storeSlug =
     searchParams.get("store");
+
+  const stripeSuccess =
+    searchParams.get(
+      "stripe"
+    ) === "success";
+
+  const stripeSessionId =
+    searchParams.get(
+      "session_id"
+    );
 
   const menuUrl =
     storeSlug
@@ -189,6 +215,31 @@ export default function PaymentSuccessPage() {
             accessToken
           );
 
+        if (
+          stripeSuccess &&
+          stripeSessionId
+        ) {
+          const syncResponse =
+            await fetch(
+              `${API_URL}/api/payments/${id}/stripe/sync?token=${encodedToken}&sessionId=${encodeURIComponent(
+                stripeSessionId
+              )}`,
+              {
+                method:
+                  "POST",
+              }
+            );
+
+          if (
+            !syncResponse.ok
+          ) {
+            console.warn(
+              "Stripe sync pending:",
+              await syncResponse.text()
+            );
+          }
+        }
+
         const response =
           await fetch(
             `${API_URL}/api/orders/${id}?token=${encodedToken}`,
@@ -225,6 +276,8 @@ export default function PaymentSuccessPage() {
     id,
     accessToken,
     tokenReady,
+    stripeSuccess,
+    stripeSessionId,
   ]);
 
   if (
@@ -236,7 +289,7 @@ export default function PaymentSuccessPage() {
         <header className="border-b border-border bg-background/85 backdrop-blur-md">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
             <div className="skeleton h-9 w-40 rounded-xl" />
-            <div className="skeleton h-9 w-24 rounded-full" />
+            <LanguageSwitcher />
           </div>
         </header>
 
@@ -252,15 +305,15 @@ export default function PaymentSuccessPage() {
       <main className="grid min-h-screen place-items-center bg-background px-5 py-10 text-foreground">
         <div className="w-full max-w-lg rounded-[28px] border border-border bg-card p-8 text-center shadow-[0_18px_60px_-30px] shadow-foreground/40">
           <p className="font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-primary">
-            Pagamento
+            {text("Pagamento", "Payment")}
           </p>
 
           <h1 className="mt-2 font-display text-4xl tracking-tight">
-            Pedido não encontrado
+            {text("Pedido não encontrado", "Order not found")}
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Não conseguimos localizar esse pedido agora.
+            {text("Não conseguimos localizar esse pedido agora.", "We could not find this order right now.")}
           </p>
 
           <button
@@ -272,7 +325,7 @@ export default function PaymentSuccessPage() {
             }
             className="brand-button mt-6 w-full rounded-2xl px-5 py-3.5"
           >
-            Voltar ao cardápio
+            {text("Voltar ao cardápio", "Back to menu")}
           </button>
         </div>
       </main>
@@ -315,9 +368,16 @@ export default function PaymentSuccessPage() {
             </span>
           </button>
 
-          <span className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-cream">
-            Pedido #{order.id}
-          </span>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+
+            <span className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-cream">
+              {text(
+                "Pedido",
+                "Order"
+              )} #{order.id}
+            </span>
+          </div>
 
         </div>
       </header>
@@ -342,20 +402,20 @@ export default function PaymentSuccessPage() {
 
           <p className="mt-6 font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
             {approved
-              ? "Pagamento confirmado"
-              : "Confirmação pendente"}
+              ? text("Pagamento confirmado", "Payment confirmed")
+              : text("Confirmação pendente", "Confirmation pending")}
           </p>
 
           <h1 className="mt-2 font-display text-5xl tracking-tight">
             {approved
-              ? "Pagamento aprovado"
-              : "Pagamento em processamento"}
+              ? text("Pagamento aprovado", "Payment approved")
+              : text("Pagamento em processamento", "Payment processing")}
           </h1>
 
           <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
             {approved
-              ? "Seu pagamento foi confirmado e a pizzaria já recebeu o pedido."
-              : "Estamos aguardando a confirmação do pagamento. Você pode acompanhar o pedido enquanto isso."}
+              ? text("Seu pagamento foi confirmado e a pizzaria já recebeu o pedido.", "Your payment was confirmed and the store has received your order.")
+              : text("Estamos aguardando a confirmação do pagamento. Você pode acompanhar o pedido enquanto isso.", "We are waiting for payment confirmation. You can keep tracking the order in the meantime.")}
           </p>
 
           <div className="mx-auto mt-7 max-w-md overflow-hidden rounded-2xl border border-border bg-secondary">
@@ -364,7 +424,7 @@ export default function PaymentSuccessPage() {
 
               <div className="p-5">
                 <p className="font-mono-brand text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                  Pedido
+                  {text("Pedido", "Order")}
                 </p>
 
                 <p className="mt-1 font-display text-3xl tracking-tight">
@@ -374,14 +434,17 @@ export default function PaymentSuccessPage() {
 
               <div className="p-5">
                 <p className="font-mono-brand text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                  Total
+                  {text("Total", "Total")}
                 </p>
 
                 <p className="mt-1 font-display text-3xl tracking-tight text-primary">
                   {formatMoney(
                     Number(
                       order.total
-                    )
+                    ),
+                    order.paymentCurrencyCode ??
+                      "BRL",
+                    locale
                   )}
                 </p>
               </div>
@@ -391,7 +454,7 @@ export default function PaymentSuccessPage() {
             <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-4">
 
               <span className="text-sm text-muted-foreground">
-                Status do pedido
+                {text("Status do pedido", "Order status")}
               </span>
 
               <span
@@ -402,8 +465,8 @@ export default function PaymentSuccessPage() {
                 }`}
               >
                 {approved
-                  ? "Recebido"
-                  : "Aguardando confirmação"}
+                  ? text("Recebido", "Received")
+                  : text("Aguardando confirmação", "Awaiting confirmation")}
               </span>
 
             </div>
@@ -419,7 +482,7 @@ export default function PaymentSuccessPage() {
             }
             className="brand-button mt-7 w-full rounded-2xl px-5 py-3.5"
           >
-            Acompanhar pedido
+            {text("Acompanhar pedido", "Track order")}
           </button>
 
           <button
@@ -431,7 +494,7 @@ export default function PaymentSuccessPage() {
             }
             className="mt-3 w-full rounded-2xl border-2 border-foreground px-5 py-3.5 text-sm font-bold transition-colors hover:bg-foreground hover:text-cream"
           >
-            Voltar ao cardápio
+            {text("Voltar ao cardápio", "Back to menu")}
           </button>
 
         </div>

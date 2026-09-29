@@ -419,9 +419,10 @@ public class OrderController {
         );
 
         order.setNeighborhood(
-                request
-                        .getNeighborhood()
-                        .trim()
+                request.getNeighborhood() == null
+                        ? null
+                        : request.getNeighborhood()
+                                .trim()
         );
 
         order.setComplement(
@@ -462,6 +463,18 @@ public class OrderController {
 
         order.setPaymentMethod(
                 request.getPaymentMethod()
+        );
+
+        order.setPaymentProvider(
+                "BR".equalsIgnoreCase(
+                        store.getCountryCode()
+                )
+                        ? "MERCADO_PAGO"
+                        : "STRIPE"
+        );
+
+        order.setPaymentCurrencyCode(
+                store.getCurrencyCode()
         );
 
         order =

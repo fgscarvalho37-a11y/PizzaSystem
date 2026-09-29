@@ -578,6 +578,11 @@ const sections = [
         icon: PersonalizationIcon,
       },
       {
+        label: "Pagamentos",
+        href: "/admin/pagamentos",
+        icon: CashIcon,
+      },
+      {
         label: "Configurações",
         href: "/admin/configuracoes",
         icon: SettingsIcon,
@@ -618,6 +623,7 @@ const NAV_EN: Record<string, string> = {
   "Horários": "Business hours",
   "Personalização": "Customization",
   "Configurações": "Settings",
+  "Pagamentos": "Payments",
   "Idioma e moeda": "Language & currency",
   "Guia": "Guide",
 };

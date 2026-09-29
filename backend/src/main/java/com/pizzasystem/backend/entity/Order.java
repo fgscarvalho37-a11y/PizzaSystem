@@ -171,6 +171,23 @@ public class Order {
 
     private String paymentExternalId;
 
+    @Column(
+            name = "payment_provider",
+            length = 30
+    )
+    private String paymentProvider;
+
+    @Column(
+            name = "payment_currency_code",
+            length = 3
+    )
+    private String paymentCurrencyCode;
+
+    @Column(
+            name = "payment_paid_at"
+    )
+    private LocalDateTime paymentPaidAt;
+
     // =========================
     // DATA
     // =========================
@@ -451,6 +468,39 @@ public class Order {
     ) {
         this.paymentExternalId =
                 paymentExternalId;
+    }
+
+    public String getPaymentProvider() {
+        return paymentProvider;
+    }
+
+    public void setPaymentProvider(
+            String paymentProvider
+    ) {
+        this.paymentProvider =
+                paymentProvider;
+    }
+
+    public String getPaymentCurrencyCode() {
+        return paymentCurrencyCode;
+    }
+
+    public void setPaymentCurrencyCode(
+            String paymentCurrencyCode
+    ) {
+        this.paymentCurrencyCode =
+                paymentCurrencyCode;
+    }
+
+    public LocalDateTime getPaymentPaidAt() {
+        return paymentPaidAt;
+    }
+
+    public void setPaymentPaidAt(
+            LocalDateTime paymentPaidAt
+    ) {
+        this.paymentPaidAt =
+                paymentPaidAt;
     }
 
     public LocalDateTime getCreatedAt() {

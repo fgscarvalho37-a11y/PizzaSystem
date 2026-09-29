@@ -36,3 +36,15 @@ PIZZASYSTEM_STORAGE_BUCKET=pizzasystem-assets
 
 # Deixe false em produção para impedir imagens Base64 no PostgreSQL.
 PIZZASYSTEM_ALLOW_DATABASE_IMAGE_FALLBACK=false
+
+# ===============================
+# STRIPE - PAGAMENTOS DAS LOJAS INTERNACIONAIS
+# ===============================
+# Chave aleatória de 32 bytes em Base64 usada apenas para criptografar
+# credenciais de Stripe das lojas antes de persistir no banco.
+# Configure somente no backend/Render.
+PIZZASYSTEM_CREDENTIAL_ENCRYPTION_KEY=
+
+# URL pública do backend usada para montar o webhook que cada loja
+# cadastra na própria conta Stripe.
+PIZZASYSTEM_PUBLIC_API_URL=https://pizzasystem-api.onrender.com
