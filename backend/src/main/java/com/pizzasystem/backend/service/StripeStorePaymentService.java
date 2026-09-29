@@ -1637,7 +1637,7 @@ public class StripeStorePaymentService {
         }
     }
 
-    private void handlePaymentIntentWebhook(    private void handlePaymentIntentWebhook(
+    private void handlePaymentIntentWebhook(
             Long storeId,
             String type,
             JsonNode intent
