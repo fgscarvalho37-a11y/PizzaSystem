@@ -29,8 +29,10 @@ import com.pizzasystem.backend.repository.ProductRepository;
 import com.pizzasystem.backend.service.CouponService;
 import com.pizzasystem.backend.service.CurrentStoreService;
 import com.pizzasystem.backend.service.DeliveryQuoteService;
+import com.pizzasystem.backend.service.PayPalStorePaymentService;
 import com.pizzasystem.backend.service.PublicStoreService;
 import com.pizzasystem.backend.service.StoreStatusService;
+import com.pizzasystem.backend.service.StripeStorePaymentService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -93,6 +95,12 @@ public class OrderController {
     private final CustomerRepository
             customerRepository;
 
+    private final StripeStorePaymentService
+            stripeStorePaymentService;
+
+    private final PayPalStorePaymentService
+            payPalStorePaymentService;
+
     private static final String SESSION_CUSTOMER_ID =
             "CUSTOMER_ID";
 
@@ -107,7 +115,9 @@ public class OrderController {
             AddonRepository addonRepository,
             PublicStoreService publicStoreService,
             CurrentStoreService currentStoreService,
-            CustomerRepository customerRepository
+            CustomerRepository customerRepository,
+            StripeStorePaymentService stripeStorePaymentService,
+            PayPalStorePaymentService payPalStorePaymentService
     ) {
 
         this.orderRepository =
@@ -142,6 +152,12 @@ public class OrderController {
 
         this.customerRepository =
                 customerRepository;
+
+        this.stripeStorePaymentService =
+                stripeStorePaymentService;
+
+        this.payPalStorePaymentService =
+                payPalStorePaymentService;
     }
 
     // =========================
@@ -301,15 +317,56 @@ public class OrderController {
             );
         }
 
-        if (
-                !"BR".equalsIgnoreCase(
+        boolean brazil =
+                "BR".equalsIgnoreCase(
                         store.getCountryCode()
-                ) &&
+                );
+
+        if (
+                !brazil &&
                 request.getPaymentMethod() ==
                         PaymentMethod.PIX
         ) {
             throw new IllegalArgumentException(
                     "Pix está disponível apenas para lojas no Brasil"
+            );
+        }
+
+        if (
+                brazil &&
+                request.getPaymentMethod() ==
+                        PaymentMethod.PAYPAL
+        ) {
+            throw new IllegalArgumentException(
+                    "PayPal está disponível neste fluxo apenas para lojas internacionais"
+            );
+        }
+
+        if (
+                !brazil &&
+                request.getPaymentMethod() ==
+                        PaymentMethod.CREDIT_CARD &&
+                !stripeStorePaymentService
+                        .isReady(
+                                store.getId()
+                        )
+        ) {
+            throw new IllegalArgumentException(
+                    "A loja ainda não configurou a Stripe"
+            );
+        }
+
+        if (
+                !brazil &&
+                request.getPaymentMethod() ==
+                        PaymentMethod.PAYPAL &&
+                !payPalStorePaymentService
+                        .isReady(
+                                store.getId()
+                        )
+        ) {
+            throw new IllegalArgumentException(
+                    "A loja ainda não configurou o PayPal"
             );
         }
 
@@ -453,8 +510,14 @@ public class OrderController {
                 false
         );
 
+        boolean cashPayment =
+                request.getPaymentMethod() ==
+                        PaymentMethod.CASH;
+
         order.setStatus(
-                OrderStatus.PENDING_PAYMENT
+                cashPayment
+                        ? OrderStatus.RECEIVED
+                        : OrderStatus.PENDING_PAYMENT
         );
 
         order.setPaymentStatus(
@@ -465,12 +528,28 @@ public class OrderController {
                 request.getPaymentMethod()
         );
 
+        String paymentProvider;
+
+        if (cashPayment) {
+            paymentProvider =
+                    "CASH";
+
+        } else if (
+                request.getPaymentMethod() ==
+                        PaymentMethod.PAYPAL
+        ) {
+            paymentProvider =
+                    "PAYPAL";
+
+        } else {
+            paymentProvider =
+                    brazil
+                            ? "MERCADO_PAGO"
+                            : "STRIPE";
+        }
+
         order.setPaymentProvider(
-                "BR".equalsIgnoreCase(
-                        store.getCountryCode()
-                )
-                        ? "MERCADO_PAGO"
-                        : "STRIPE"
+                paymentProvider
         );
 
         order.setPaymentCurrencyCode(
