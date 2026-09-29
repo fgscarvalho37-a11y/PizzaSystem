@@ -33,7 +33,9 @@ type PaymentStatus =
 type PaymentMethod =
   | "PIX"
   | "CREDIT_CARD"
-  | "DEBIT_CARD";
+  | "DEBIT_CARD"
+  | "PAYPAL"
+  | "CASH";
 
 type Product = {
   id: number;
@@ -297,6 +299,12 @@ function paymentMethodName(
     case "DEBIT_CARD":
       return "Cartão de débito";
 
+    case "PAYPAL":
+      return "PayPal";
+
+    case "CASH":
+      return "Dinheiro";
+
     default:
       return method;
   }
@@ -544,6 +552,14 @@ export default function AdminPedidosPage() {
       number | null
     >(null);
 
+  const [
+    confirmingCashId,
+    setConfirmingCashId,
+  ] =
+    useState<
+      number | null
+    >(null);
+
   /* =========================
      CARREGAR PEDIDOS
   ========================= */
@@ -635,6 +651,67 @@ export default function AdminPedidosPage() {
   useEffect(() => {
     loadOrders();
   }, []);
+
+  async function confirmCashPayment(
+    orderId: number
+  ) {
+    if (
+      !window.confirm(
+        "Confirmar que o pagamento em dinheiro foi recebido?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setConfirmingCashId(
+        orderId
+      );
+      setErrorMessage("");
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/admin/cash-payments/${orderId}/confirm`,
+          {
+            method: "POST",
+          }
+        );
+
+      if (!response.ok) {
+        let message =
+          "Não foi possível confirmar o pagamento em dinheiro.";
+
+        try {
+          const data =
+            await response.json();
+
+          message =
+            data.message ??
+            data.detail ??
+            message;
+        } catch {
+        }
+
+        throw new Error(
+          message
+        );
+      }
+
+      await loadOrders();
+
+    } catch (caught) {
+      setErrorMessage(
+        caught instanceof Error
+          ? caught.message
+          : "Não foi possível confirmar o pagamento em dinheiro."
+      );
+
+    } finally {
+      setConfirmingCashId(
+        null
+      );
+    }
+  }
 
   /* =========================
      FILTROS
@@ -1576,6 +1653,30 @@ export default function AdminPedidosPage() {
                                   order.paymentStatus
                                 )}
                               </span>
+
+                              {order.paymentMethod ===
+                                "CASH" &&
+                                order.paymentStatus ===
+                                  "PENDING" && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void confirmCashPayment(
+                                        order.id
+                                      )
+                                    }
+                                    disabled={
+                                      confirmingCashId ===
+                                      order.id
+                                    }
+                                    className="mt-3 block rounded-xl bg-foreground px-4 py-2.5 text-xs font-bold text-cream disabled:opacity-50"
+                                  >
+                                    {confirmingCashId ===
+                                    order.id
+                                      ? "Confirmando..."
+                                      : "Confirmar dinheiro recebido"}
+                                  </button>
+                                )}
 
                               {order.paymentExternalId && (
                                 <div className="mt-4 border-t border-border pt-4">
