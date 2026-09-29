@@ -21,6 +21,7 @@ const API_URL = "";
 
 type WalletConfig = {
   publishableKey: string;
+  connectedAccountId?: string | null;
   amount: number;
   currency: string;
 };
@@ -72,7 +73,10 @@ type StripeClient = {
 declare global {
   interface Window {
     Stripe?: (
-      publishableKey: string
+      publishableKey: string,
+      options?: {
+        stripeAccount?: string;
+      }
     ) => StripeClient;
   }
 }
@@ -274,7 +278,13 @@ export default function StripePaymentPage() {
 
     const stripe =
       window.Stripe(
-        walletConfig.publishableKey
+        walletConfig.publishableKey,
+        walletConfig.connectedAccountId
+          ? {
+              stripeAccount:
+                walletConfig.connectedAccountId,
+            }
+          : undefined
       );
 
     const elements =

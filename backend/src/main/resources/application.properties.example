@@ -38,13 +38,23 @@ PIZZASYSTEM_STORAGE_BUCKET=pizzasystem-assets
 PIZZASYSTEM_ALLOW_DATABASE_IMAGE_FALLBACK=false
 
 # ===============================
-# STRIPE - PAGAMENTOS DAS LOJAS INTERNACIONAIS
+# STRIPE CONNECT - PAGAMENTOS DAS LOJAS INTERNACIONAIS
 # ===============================
-# Chave aleatória de 32 bytes em Base64 usada apenas para criptografar
-# credenciais de Stripe das lojas antes de persistir no banco.
-# Configure somente no backend/Render.
+# Configuração única da plataforma Orbitta/PizzaSystem.
+# As pizzarias NÃO informam chaves: usam o botão "Conectar com Stripe".
+STRIPE_CONNECT_CLIENT_ID=
+STRIPE_CONNECT_SECRET_KEY=
+STRIPE_CONNECT_PUBLISHABLE_KEY=
+STRIPE_CONNECT_REDIRECT_URI=https://pizzasystem-api.onrender.com/api/admin/stripe-payment/oauth/callback
+STRIPE_CONNECT_WEBHOOK_SECRET=
+
+stripe.connect.client-id=${STRIPE_CONNECT_CLIENT_ID:}
+stripe.connect.secret-key=${STRIPE_CONNECT_SECRET_KEY:}
+stripe.connect.publishable-key=${STRIPE_CONNECT_PUBLISHABLE_KEY:}
+stripe.connect.redirect-uri=${STRIPE_CONNECT_REDIRECT_URI:}
+stripe.connect.webhook-secret=${STRIPE_CONNECT_WEBHOOK_SECRET:}
+
+# Mantido apenas para compatibilidade com conexões antigas por chave.
 PIZZASYSTEM_CREDENTIAL_ENCRYPTION_KEY=
 
-# URL pública do backend usada para montar o webhook que cada loja
-# cadastra na própria conta Stripe.
 PIZZASYSTEM_PUBLIC_API_URL=https://pizzasystem-api.onrender.com

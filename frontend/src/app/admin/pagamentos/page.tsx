@@ -6,6 +6,10 @@ import {
   useState,
 } from "react";
 
+import {
+  useSearchParams,
+} from "next/navigation";
+
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
 import { useLanguage } from "@/i18n/LanguageProvider";
@@ -30,9 +34,13 @@ type StripeStatus = {
   countryCode: string;
   currencyCode: string;
   recommended: boolean;
-  keyLast4?: string | null;
+  automaticConnection: boolean;
+  connectionMode: "CONNECT" | "LEGACY" | "NONE";
+  stripeAccountId?: string | null;
+  chargesEnabled: boolean;
+  detailsSubmitted: boolean;
+  paymentDomainRegistered: boolean;
   walletsReady: boolean;
-  publishableKeyLast4?: string | null;
   connectedAt?: string | null;
   webhookPath: string;
   webhookUrl: string;
@@ -54,6 +62,9 @@ const API_URL = "";
 export default function AdminPaymentsPage() {
   const { text } =
     useLanguage();
+
+  const searchParams =
+    useSearchParams();
 
   const [profile, setProfile] =
     useState<StoreProfile | null>(
@@ -242,27 +253,44 @@ export default function AdminPaymentsPage() {
     void load();
   }, []);
 
-  async function connectStripe(
-    event: FormEvent<HTMLFormElement>
-  ) {
-    event.preventDefault();
-
-    setError("");
-    setMessage("");
+  useEffect(() => {
+    const stripeResult =
+      searchParams.get(
+        "stripe"
+      );
 
     if (
-      !restrictedApiKey.trim() ||
-      !webhookSecret.trim() ||
-      !publishableKey.trim()
+      stripeResult ===
+      "connected"
+    ) {
+      setMessage(
+        text(
+          "Conta Stripe conectada com sucesso. Cartão, Apple Pay e Google Pay passam a usar automaticamente a conta da própria loja.",
+          "Stripe account connected successfully. Card, Apple Pay, and Google Pay now automatically use the store's own account."
+        )
+      );
+
+      void load();
+    }
+
+    if (
+      stripeResult ===
+      "error"
     ) {
       setError(
         text(
-          "Informe a Restricted API Key, a Publishable Key e o webhook secret.",
-          "Enter the Restricted API Key, Publishable Key, and webhook signing secret."
+          "A conexão com a Stripe não foi concluída. Tente novamente.",
+          "Stripe connection was not completed. Try again."
         )
       );
-      return;
     }
+  }, [
+    searchParams,
+  ]);
+
+  async function connectStripe() {
+    setError("");
+    setMessage("");
 
     try {
       setSaving(true);
@@ -271,27 +299,15 @@ export default function AdminPaymentsPage() {
         await adminFetch(
           `${API_URL}/api/admin/stripe-payment/connect`,
           {
-            method: "PUT",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              restrictedApiKey:
-                restrictedApiKey.trim(),
-              webhookSecret:
-                webhookSecret.trim(),
-              publishableKey:
-                publishableKey.trim(),
-            }),
+            method: "POST",
           }
         );
 
       if (!response.ok) {
         let detail =
           text(
-            "Não foi possível conectar a Stripe.",
-            "Could not connect Stripe."
+            "Não foi possível iniciar a conexão com a Stripe.",
+            "Could not start Stripe connection."
           );
 
         try {
@@ -304,7 +320,6 @@ export default function AdminPaymentsPage() {
             data.error ??
             detail;
         } catch {
-          // mantém mensagem padrão
         }
 
         throw new Error(
@@ -312,21 +327,24 @@ export default function AdminPaymentsPage() {
         );
       }
 
-      const data:
-        StripeStatus =
+      const data: {
+        authorizationUrl?: string;
+      } =
         await response.json();
 
-      setStripeStatus(data);
-      setRestrictedApiKey("");
-      setWebhookSecret("");
-      setPublishableKey("");
+      if (!data.authorizationUrl) {
+        throw new Error(
+          text(
+            "A Stripe não retornou a página de conexão.",
+            "Stripe did not return the connection page."
+          )
+        );
+      }
 
-      setMessage(
-        text(
-          "Stripe configurada. Os pagamentos internacionais podem usar o checkout da própria conta da loja.",
-          "Stripe configured. International orders can now use the store's own Stripe Checkout."
-        )
+      window.location.assign(
+        data.authorizationUrl
       );
+
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -336,91 +354,7 @@ export default function AdminPaymentsPage() {
               "Could not connect Stripe."
             )
       );
-    } finally {
       setSaving(false);
-    }
-  }
-
-  async function configureStripeWallets(
-    event: FormEvent<HTMLFormElement>
-  ) {
-    event.preventDefault();
-
-    if (!publishableKey.trim()) {
-      setError(
-        text(
-          "Informe a Publishable Key da Stripe.",
-          "Enter the Stripe Publishable Key."
-        )
-      );
-      return;
-    }
-
-    try {
-      setSavingWallets(true);
-      setError("");
-      setMessage("");
-
-      const response =
-        await adminFetch(
-          `${API_URL}/api/admin/stripe-payment/wallets`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              publishableKey:
-                publishableKey.trim(),
-            }),
-          }
-        );
-
-      if (!response.ok) {
-        let detail =
-          text(
-            "Não foi possível ativar Apple Pay e Google Pay.",
-            "Could not enable Apple Pay and Google Pay."
-          );
-
-        try {
-          const data =
-            await response.json();
-
-          detail =
-            data.message ??
-            data.detail ??
-            data.error ??
-            detail;
-        } catch {
-        }
-
-        throw new Error(detail);
-      }
-
-      setStripeStatus(
-        await response.json()
-      );
-      setPublishableKey("");
-
-      setMessage(
-        text(
-          "Apple Pay e Google Pay foram habilitados para a integração Stripe desta loja.",
-          "Apple Pay and Google Pay were enabled for this store's Stripe integration."
-        )
-      );
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : text(
-              "Não foi possível ativar as carteiras.",
-              "Could not enable wallets."
-            )
-      );
-    } finally {
-      setSavingWallets(false);
     }
   }
 
@@ -809,8 +743,8 @@ export default function AdminPaymentsPage() {
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                 {text(
-                  "A loja usa uma Restricted API Key própria. A chave é criptografada antes de ser salva e nunca volta para o navegador.",
-                  "The store uses its own Restricted API Key. The key is encrypted before storage and is never returned to the browser."
+                  "Conecte a conta Stripe da própria pizzaria. O dono entra na Stripe, autoriza o PizzaSystem e volta para cá sem copiar nenhuma chave.",
+                  "Connect the restaurant's own Stripe account. The owner signs in to Stripe, authorizes PizzaSystem, and returns here without copying any API keys."
                 )}
               </p>
             </div>
@@ -820,12 +754,12 @@ export default function AdminPaymentsPage() {
                 !!stripeStatus?.connected
               }
               connectedText={text(
-                "Pronta para receber",
-                "Ready to accept payments"
+                "Conta conectada",
+                "Account connected"
               )}
               disconnectedText={text(
-                "Configuração pendente",
-                "Setup required"
+                "Não conectada",
+                "Not connected"
               )}
             />
           </div>
@@ -834,81 +768,68 @@ export default function AdminPaymentsPage() {
             <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
               <p className="text-sm font-bold text-emerald-800">
                 {text(
-                  "Stripe conectada",
-                  "Stripe connected"
+                  "Stripe Connect ativa",
+                  "Stripe Connect active"
                 )}
               </p>
 
               <p className="mt-1 text-xs leading-5 text-emerald-700">
-                {text(
-                  `Restricted key terminando em •••• ${stripeStatus.keyLast4 ?? "----"}.`,
-                  `Restricted key ending in •••• ${stripeStatus.keyLast4 ?? "----"}.`
-                )}
+                {stripeStatus.stripeAccountId
+                  ? text(
+                      `Conta ${stripeStatus.stripeAccountId}. Os pagamentos vão diretamente para esta conta.`,
+                      `Account ${stripeStatus.stripeAccountId}. Payments go directly to this account.`
+                    )
+                  : text(
+                      "A integração Stripe desta loja está conectada.",
+                      "This store's Stripe integration is connected."
+                    )}
               </p>
 
-              {stripeStatus.walletsReady ? (
-                <p className="mt-3 rounded-xl border border-emerald-200 bg-white/70 px-3 py-2 text-xs font-medium text-emerald-800">
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <ConnectionCheck
+                  ok={
+                    stripeStatus.chargesEnabled
+                  }
+                  label={text(
+                    "Recebimentos",
+                    "Payments"
+                  )}
+                />
+
+                <ConnectionCheck
+                  ok={
+                    stripeStatus.detailsSubmitted
+                  }
+                  label={text(
+                    "Cadastro Stripe",
+                    "Stripe onboarding"
+                  )}
+                />
+
+                <ConnectionCheck
+                  ok={
+                    stripeStatus.walletsReady
+                  }
+                  label="Apple Pay / Google Pay"
+                />
+              </div>
+
+              {!stripeStatus.chargesEnabled && (
+                <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
                   {text(
-                    `Apple Pay e Google Pay habilitados · pk_•••• ${stripeStatus.publishableKeyLast4 ?? "----"}`,
-                    `Apple Pay and Google Pay enabled · pk_•••• ${stripeStatus.publishableKeyLast4 ?? "----"}`
+                    "A conta foi vinculada, mas a Stripe ainda não liberou cobranças. O dono deve concluir os dados pendentes na própria Stripe.",
+                    "The account is linked, but Stripe has not enabled charges yet. The owner must complete any pending Stripe requirements."
                   )}
                 </p>
-              ) : (
-                <form
-                  onSubmit={
-                    configureStripeWallets
-                  }
-                  className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4"
-                >
-                  <p className="text-xs font-bold text-amber-900">
-                    {text(
-                      "Ativar Apple Pay e Google Pay",
-                      "Enable Apple Pay and Google Pay"
-                    )}
-                  </p>
+              )}
 
-                  <p className="mt-1 text-[11px] leading-5 text-amber-800">
-                    {text(
-                      "Informe a Publishable Key da mesma conta Stripe. A Restricted API Key também precisa ter Payment Intents em leitura/escrita.",
-                      "Enter the Publishable Key from the same Stripe account. The Restricted API Key must also have Payment Intents read/write access."
-                    )}
-                  </p>
-
-                  <input
-                    type="text"
-                    autoComplete="off"
-                    value={
-                      publishableKey
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setPublishableKey(
-                        event.target.value
-                      )
-                    }
-                    placeholder="pk_live_..."
-                    className="mt-3 h-11 w-full rounded-xl border border-amber-300 bg-white px-4 text-sm outline-none focus:border-primary"
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={
-                      savingWallets
-                    }
-                    className="mt-3 h-10 rounded-xl bg-foreground px-4 text-xs font-bold text-background disabled:opacity-50"
-                  >
-                    {savingWallets
-                      ? text(
-                          "Ativando...",
-                          "Enabling..."
-                        )
-                      : text(
-                          "Ativar carteiras",
-                          "Enable wallets"
-                        )}
-                  </button>
-                </form>
+              {!stripeStatus.paymentDomainRegistered && (
+                <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
+                  {text(
+                    "O domínio das carteiras ainda não foi confirmado. Cartão continua disponível, mas Apple Pay/Google Pay podem não aparecer até o registro do domínio ser concluído.",
+                    "The wallet domain is not confirmed yet. Card remains available, but Apple Pay/Google Pay may not appear until domain registration is complete."
+                  )}
+                </p>
               )}
 
               <button
@@ -933,171 +854,49 @@ export default function AdminPaymentsPage() {
               </button>
             </div>
           ) : (
-            <>
-              <div className="mt-6 grid gap-4 lg:grid-cols-2">
-                <div className="rounded-2xl border border-border bg-background p-5">
-                  <p className="text-sm font-bold">
-                    1. Restricted API Key
-                  </p>
+            <div className="mt-6 rounded-2xl border border-border bg-background p-5">
+              <p className="text-sm font-bold">
+                {text(
+                  "Conexão automática",
+                  "Automatic connection"
+                )}
+              </p>
 
-                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                    {text(
-                      "Na conta Stripe da pizzaria, crie uma chave restrita com Checkout Sessions e Payment Intents em leitura/escrita. Use rk_live_... em produção.",
-                      "In the restaurant's Stripe account, create a restricted key with Checkout Sessions and Payment Intents read/write access. Use rk_live_... in production."
-                    )}
-                  </p>
-                </div>
+              <p className="mt-2 max-w-2xl text-xs leading-6 text-muted-foreground">
+                {text(
+                  "Ao clicar abaixo, você será redirecionado para a Stripe. Entre em uma conta existente ou crie uma conta, autorize o PizzaSystem e pronto. Nenhuma chave API da pizzaria é solicitada.",
+                  "Click below to go to Stripe. Sign in to an existing account or create one, authorize PizzaSystem, and you're done. No restaurant API keys are requested."
+                )}
+              </p>
 
-                <div className="rounded-2xl border border-border bg-background p-5">
-                  <p className="text-sm font-bold">
-                    2. Webhook
-                  </p>
-
-                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                    {text(
-                      "Cadastre a URL abaixo na Stripe e assine os eventos de Checkout Session e Payment Intent.",
-                      "Add the URL below to Stripe and subscribe to Checkout Session and Payment Intent events."
-                    )}
-                  </p>
-
-                  <div className="mt-3 flex gap-2">
-                    <input
-                      readOnly
-                      value={
-                        stripeStatus
-                          ?.webhookUrl ??
-                        ""
-                      }
-                      className="min-w-0 flex-1 rounded-xl border border-border bg-secondary px-3 py-2 text-xs"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={
-                        copyWebhook
-                      }
-                      className="rounded-xl border border-border bg-card px-3 text-xs font-bold"
-                    >
-                      {text(
-                        "Copiar",
-                        "Copy"
-                      )}
-                    </button>
-                  </div>
-
-                  <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
-                    checkout.session.completed<br />
-                    checkout.session.async_payment_succeeded<br />
-                    checkout.session.async_payment_failed<br />
-                    checkout.session.expired<br />
-                    payment_intent.succeeded<br />
-                    payment_intent.payment_failed<br />
-                    payment_intent.canceled
-                  </p>
-                </div>
-              </div>
-
-              <form
-                onSubmit={
-                  connectStripe
+              <button
+                type="button"
+                onClick={() =>
+                  void connectStripe()
                 }
-                className="mt-5 grid gap-4"
+                disabled={
+                  saving
+                }
+                className="mt-5 h-11 rounded-xl bg-[#635BFF] px-6 text-sm font-bold text-white disabled:opacity-50"
               >
-                <label>
-                  <span className="text-xs font-bold">
-                    Restricted API Key
-                  </span>
-
-                  <input
-                    type="password"
-                    autoComplete="off"
-                    value={
-                      restrictedApiKey
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setRestrictedApiKey(
-                        event.target.value
-                      )
-                    }
-                    placeholder="rk_live_..."
-                    className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
-                  />
-                </label>
-
-                <label>
-                  <span className="text-xs font-bold">
-                    Publishable Key
-                  </span>
-
-                  <input
-                    type="text"
-                    autoComplete="off"
-                    value={
-                      publishableKey
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setPublishableKey(
-                        event.target.value
-                      )
-                    }
-                    placeholder="pk_live_..."
-                    className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
-                  />
-
-                  <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
-                    {text(
-                      "Usada somente no navegador para Stripe.js, Apple Pay e Google Pay. Registre também o domínio público da loja em Payment method domains na Stripe.",
-                      "Used only in the browser for Stripe.js, Apple Pay, and Google Pay. Also register the store's public domain under Payment method domains in Stripe."
+                {saving
+                  ? text(
+                      "Abrindo Stripe...",
+                      "Opening Stripe..."
+                    )
+                  : text(
+                      "Conectar com Stripe",
+                      "Connect with Stripe"
                     )}
-                  </p>
-                </label>
+              </button>
 
-                <label>
-                  <span className="text-xs font-bold">
-                    Webhook signing secret
-                  </span>
-
-                  <input
-                    type="password"
-                    autoComplete="off"
-                    value={
-                      webhookSecret
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setWebhookSecret(
-                        event.target.value
-                      )
-                    }
-                    placeholder="whsec_..."
-                    className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
-                  />
-                </label>
-
-                <button
-                  type="submit"
-                  disabled={
-                    saving
-                  }
-                  className="h-11 w-fit rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground disabled:opacity-50"
-                >
-                  {saving
-                    ? text(
-                        "Validando...",
-                        "Validating..."
-                      )
-                    : text(
-                        "Conectar Stripe",
-                        "Connect Stripe"
-                      )}
-                </button>
-              </form>
-            </>
+              <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
+                {text(
+                  "Depois da conexão, Cartão, Apple Pay e Google Pay usam automaticamente a conta conectada quando disponíveis.",
+                  "After connecting, Card, Apple Pay, and Google Pay automatically use the connected account when available."
+                )}
+              </p>
+            </div>
           )}
         </section>
 
@@ -1319,6 +1118,29 @@ export default function AdminPaymentsPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+function ConnectionCheck({
+  ok,
+  label,
+}: {
+  ok: boolean;
+  label: string;
+}) {
+  return (
+    <div
+      className={
+        ok
+          ? "rounded-xl border border-emerald-200 bg-white/70 px-3 py-2 text-xs font-bold text-emerald-800"
+          : "rounded-xl border border-amber-200 bg-white/70 px-3 py-2 text-xs font-bold text-amber-800"
+      }
+    >
+      {ok
+        ? "✓ "
+        : "• "}
+      {label}
+    </div>
   );
 }
 

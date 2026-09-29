@@ -40,6 +40,37 @@ public class StripePaymentConnection {
     private Store store;
 
     @Column(
+            name = "stripe_account_id",
+            unique = true,
+            length = 64
+    )
+    private String stripeAccountId;
+
+    @Column(
+            name = "connect_livemode"
+    )
+    private Boolean connectLivemode =
+            false;
+
+    @Column(
+            name = "charges_enabled"
+    )
+    private Boolean chargesEnabled =
+            false;
+
+    @Column(
+            name = "details_submitted"
+    )
+    private Boolean detailsSubmitted =
+            false;
+
+    @Column(
+            name = "payment_domain_registered"
+    )
+    private Boolean paymentDomainRegistered =
+            false;
+
+    @Column(
             name = "restricted_api_key_encrypted",
             columnDefinition = "TEXT"
     )
@@ -100,6 +131,69 @@ public class StripePaymentConnection {
     ) {
         this.store =
                 store;
+    }
+
+    public String getStripeAccountId() {
+        return stripeAccountId;
+    }
+
+    public void setStripeAccountId(
+            String stripeAccountId
+    ) {
+        this.stripeAccountId =
+                stripeAccountId;
+    }
+
+    public boolean isConnectLivemode() {
+        return Boolean.TRUE.equals(
+                connectLivemode
+        );
+    }
+
+    public void setConnectLivemode(
+            boolean connectLivemode
+    ) {
+        this.connectLivemode =
+                connectLivemode;
+    }
+
+    public boolean isChargesEnabled() {
+        return Boolean.TRUE.equals(
+                chargesEnabled
+        );
+    }
+
+    public void setChargesEnabled(
+            boolean chargesEnabled
+    ) {
+        this.chargesEnabled =
+                chargesEnabled;
+    }
+
+    public boolean isDetailsSubmitted() {
+        return Boolean.TRUE.equals(
+                detailsSubmitted
+        );
+    }
+
+    public void setDetailsSubmitted(
+            boolean detailsSubmitted
+    ) {
+        this.detailsSubmitted =
+                detailsSubmitted;
+    }
+
+    public boolean isPaymentDomainRegistered() {
+        return Boolean.TRUE.equals(
+                paymentDomainRegistered
+        );
+    }
+
+    public void setPaymentDomainRegistered(
+            boolean paymentDomainRegistered
+    ) {
+        this.paymentDomainRegistered =
+                paymentDomainRegistered;
     }
 
     public String getRestrictedApiKeyEncrypted() {

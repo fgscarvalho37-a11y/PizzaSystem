@@ -74,6 +74,9 @@ public class StripeStorePaymentService {
     private final LoyaltyService
             loyaltyService;
 
+    private final StripeConnectService
+            stripeConnectService;
+
     private final RestTemplate
             restTemplate =
             new RestTemplate();
@@ -92,7 +95,8 @@ public class StripeStorePaymentService {
             OrderRepository orderRepository,
             CredentialEncryptionService encryptionService,
             CouponService couponService,
-            LoyaltyService loyaltyService
+            LoyaltyService loyaltyService,
+            StripeConnectService stripeConnectService
     ) {
         this.connectionRepository =
                 connectionRepository;
@@ -108,6 +112,9 @@ public class StripeStorePaymentService {
 
         this.loyaltyService =
                 loyaltyService;
+
+        this.stripeConnectService =
+                stripeConnectService;
     }
 
     // =========================
@@ -128,7 +135,14 @@ public class StripeStorePaymentService {
                                 null
                         );
 
-        boolean connected =
+        boolean connectAccount =
+                connection != null &&
+                connection.isConnected() &&
+                hasText(
+                        connection.getStripeAccountId()
+                );
+
+        boolean legacyAccount =
                 connection != null &&
                 connection.isConnected() &&
                 hasText(
@@ -137,6 +151,10 @@ public class StripeStorePaymentService {
                 hasText(
                         connection.getWebhookSecretEncrypted()
                 );
+
+        boolean connected =
+                connectAccount ||
+                legacyAccount;
 
         Map<String, Object> response =
                 new HashMap<>();
@@ -169,36 +187,66 @@ public class StripeStorePaymentService {
         );
 
         response.put(
-                "keyLast4",
-                connection != null
-                        ? connection.getKeyLast4()
+                "automaticConnection",
+                connectAccount
+        );
+
+        response.put(
+                "connectionMode",
+                connectAccount
+                        ? "CONNECT"
+                        : (
+                                legacyAccount
+                                        ? "LEGACY"
+                                        : "NONE"
+                        )
+        );
+
+        response.put(
+                "stripeAccountId",
+                connectAccount
+                        ? connection.getStripeAccountId()
                         : null
         );
 
+        response.put(
+                "chargesEnabled",
+                connectAccount
+                        ? connection.isChargesEnabled()
+                        : legacyAccount
+        );
+
+        response.put(
+                "detailsSubmitted",
+                connectAccount
+                        ? connection.isDetailsSubmitted()
+                        : legacyAccount
+        );
+
+        response.put(
+                "paymentDomainRegistered",
+                connectAccount
+                        ? connection.isPaymentDomainRegistered()
+                        : legacyAccount &&
+                        hasText(
+                                connection.getPublishableKey()
+                        )
+        );
+
         boolean walletsReady =
-                connected &&
-                connection != null &&
-                hasText(
-                        connection.getPublishableKey()
-                );
+                connectAccount
+                        ? stripeConnectService
+                                .isWalletReady(
+                                        store.getId()
+                                )
+                        : legacyAccount &&
+                        hasText(
+                                connection.getPublishableKey()
+                        );
 
         response.put(
                 "walletsReady",
                 walletsReady
-        );
-
-        response.put(
-                "publishableKeyLast4",
-                walletsReady
-                        ? connection.getPublishableKey()
-                                .substring(
-                                        Math.max(
-                                                0,
-                                                connection.getPublishableKey()
-                                                        .length() - 4
-                                        )
-                                )
-                        : null
         );
 
         response.put(
@@ -209,7 +257,9 @@ public class StripeStorePaymentService {
         );
 
         String webhookPath =
-                "/api/payments/stripe/webhook/"
+                connectAccount
+                        ? "/api/payments/stripe/connect/webhook"
+                        : "/api/payments/stripe/webhook/"
                         + store.getId();
 
         response.put(
@@ -373,7 +423,22 @@ public class StripeStorePaymentService {
                                 null
                         );
 
-        if (connection == null) {
+        if (
+                connection == null
+        ) {
+            return;
+        }
+
+        if (
+                hasText(
+                        connection.getStripeAccountId()
+                )
+        ) {
+            stripeConnectService
+                    .disconnect(
+                            store
+                    );
+
             return;
         }
 
@@ -411,20 +476,39 @@ public class StripeStorePaymentService {
             Long storeId
     ) {
 
-        return connectionRepository
-                .findByStoreIdAndConnectedTrue(
-                        storeId
+        StripePaymentConnection connection =
+                connectionRepository
+                        .findByStoreIdAndConnectedTrue(
+                                storeId
+                        )
+                        .orElse(
+                                null
+                        );
+
+        if (
+                connection == null
+        ) {
+            return false;
+        }
+
+        if (
+                hasText(
+                        connection.getStripeAccountId()
                 )
-                .filter(
-                        connection ->
-                                hasText(
-                                        connection.getRestrictedApiKeyEncrypted()
-                                ) &&
-                                hasText(
-                                        connection.getWebhookSecretEncrypted()
-                                )
-                )
-                .isPresent();
+        ) {
+            return stripeConnectService
+                    .isPaymentReady(
+                            storeId
+                    );
+        }
+
+        return hasText(
+                connection.getRestrictedApiKeyEncrypted()
+        )
+                &&
+                hasText(
+                        connection.getWebhookSecretEncrypted()
+                );
     }
 
     @Transactional(readOnly = true)
@@ -432,23 +516,43 @@ public class StripeStorePaymentService {
             Long storeId
     ) {
 
-        return connectionRepository
-                .findByStoreIdAndConnectedTrue(
-                        storeId
+        StripePaymentConnection connection =
+                connectionRepository
+                        .findByStoreIdAndConnectedTrue(
+                                storeId
+                        )
+                        .orElse(
+                                null
+                        );
+
+        if (
+                connection == null
+        ) {
+            return false;
+        }
+
+        if (
+                hasText(
+                        connection.getStripeAccountId()
                 )
-                .filter(
-                        connection ->
-                                hasText(
-                                        connection.getRestrictedApiKeyEncrypted()
-                                ) &&
-                                hasText(
-                                        connection.getWebhookSecretEncrypted()
-                                ) &&
-                                hasText(
-                                        connection.getPublishableKey()
-                                )
+        ) {
+            return stripeConnectService
+                    .isWalletReady(
+                            storeId
+                    );
+        }
+
+        return hasText(
+                connection.getRestrictedApiKeyEncrypted()
+        )
+                &&
+                hasText(
+                        connection.getWebhookSecretEncrypted()
                 )
-                .isPresent();
+                &&
+                hasText(
+                        connection.getPublishableKey()
+                );
     }
 
     @Transactional(readOnly = true)
@@ -466,14 +570,35 @@ public class StripeStorePaymentService {
                                 .getId()
                 );
 
+        String publishableKey;
+        String connectedAccountId =
+                null;
+
         if (
-                !hasText(
-                        connection.getPublishableKey()
+                hasText(
+                        connection.getStripeAccountId()
                 )
         ) {
-            throw new IllegalStateException(
-                    "Apple Pay e Google Pay ainda não foram configurados para esta loja."
-            );
+            publishableKey =
+                    stripeConnectService
+                            .getPlatformPublishableKey();
+
+            connectedAccountId =
+                    connection.getStripeAccountId();
+
+        } else {
+            publishableKey =
+                    connection.getPublishableKey();
+
+            if (
+                    !hasText(
+                            publishableKey
+                    )
+            ) {
+                throw new IllegalStateException(
+                        "Apple Pay e Google Pay ainda não foram configurados para esta loja."
+                );
+            }
         }
 
         String currency =
@@ -487,7 +612,8 @@ public class StripeStorePaymentService {
                 );
 
         return new StripeWalletConfig(
-                connection.getPublishableKey(),
+                publishableKey,
+                connectedAccountId,
                 toMinorUnits(
                         order.getTotal(),
                         currency
@@ -499,6 +625,8 @@ public class StripeStorePaymentService {
     }
 
     // =========================
+    // CHECKOUT
+    // =========================    // =========================
     // CHECKOUT
     // =========================
 
@@ -534,10 +662,13 @@ public class StripeStorePaymentService {
         Store store =
                 order.getStore();
 
-        String apiKey =
-                getRestrictedApiKey(
+        StripeRequestContext requestContext =
+                getRequestContext(
                         store.getId()
                 );
+
+        String apiKey =
+                requestContext.apiKey();
 
         String currency =
                 normalizeCurrency(
@@ -658,7 +789,8 @@ public class StripeStorePaymentService {
                 postForm(
                         "/payment_intents",
                         form,
-                        apiKey
+                        apiKey,
+                        requestContext.stripeAccountId()
                 );
 
         String intentId =
@@ -875,10 +1007,13 @@ public class StripeStorePaymentService {
         Store store =
                 order.getStore();
 
-        String apiKey =
-                getRestrictedApiKey(
+        StripeRequestContext requestContext =
+                getRequestContext(
                         store.getId()
                 );
+
+        String apiKey =
+                requestContext.apiKey();
 
         String origin =
                 normalizeReturnOrigin(
@@ -1018,7 +1153,8 @@ public class StripeStorePaymentService {
                 postForm(
                         "/checkout/sessions",
                         form,
-                        apiKey
+                        apiKey,
+                        requestContext.stripeAccountId()
                 );
 
         String sessionId =
@@ -1185,13 +1321,78 @@ public class StripeStorePaymentService {
             );
         }
 
-        JsonNode event;
+        processStripeEvent(
+                storeId,
+                parseEvent(
+                        payload
+                )
+        );
+    }
+
+    @Transactional
+    public void handleConnectWebhook(
+            String payload,
+            String signatureHeader
+    ) {
+
+        if (
+                !verifyWebhookSignature(
+                        payload,
+                        signatureHeader,
+                        stripeConnectService
+                                .getPlatformWebhookSecret()
+                )
+        ) {
+            throw new SecurityException(
+                    "Assinatura Stripe Connect inválida."
+            );
+        }
+
+        JsonNode event =
+                parseEvent(
+                        payload
+                );
+
+        String accountId =
+                event.path(
+                        "account"
+                )
+                        .asText();
+
+        if (
+                !hasText(
+                        accountId
+                )
+        ) {
+            return;
+        }
+
+        Long storeId =
+                stripeConnectService
+                        .getStoreIdForAccount(
+                                accountId
+                        );
+
+        if (
+                storeId == null
+        ) {
+            return;
+        }
+
+        processStripeEvent(
+                storeId,
+                event
+        );
+    }
+
+    private JsonNode parseEvent(
+            String payload
+    ) {
 
         try {
-            event =
-                    objectMapper.readTree(
-                            payload
-                    );
+            return objectMapper.readTree(
+                    payload
+            );
 
         } catch (Exception exception) {
             throw new IllegalArgumentException(
@@ -1199,6 +1400,12 @@ public class StripeStorePaymentService {
                     exception
             );
         }
+    }
+
+    private void processStripeEvent(
+            Long storeId,
+            JsonNode event
+    ) {
 
         String type =
                 event.path(
@@ -1213,6 +1420,50 @@ public class StripeStorePaymentService {
                         .path(
                                 "object"
                         );
+
+        String connectedAccountId =
+                event.path(
+                        "account"
+                )
+                        .asText();
+
+        if (
+                "account.updated".equals(
+                        type
+                )
+        ) {
+            stripeConnectService
+                    .updateConnectedAccountStatus(
+                            connectedAccountId,
+                            eventObject.path(
+                                    "charges_enabled"
+                            )
+                                    .asBoolean(
+                                            false
+                                    ),
+                            eventObject.path(
+                                    "details_submitted"
+                            )
+                                    .asBoolean(
+                                            false
+                                    )
+                    );
+
+            return;
+        }
+
+        if (
+                "account.application.deauthorized".equals(
+                        type
+                )
+        ) {
+            stripeConnectService
+                    .markDisconnectedByAccountId(
+                            connectedAccountId
+                    );
+
+            return;
+        }
 
         if (
                 type.startsWith(
@@ -1386,7 +1637,7 @@ public class StripeStorePaymentService {
         }
     }
 
-    private void handlePaymentIntentWebhook(
+    private void handlePaymentIntentWebhook(    private void handlePaymentIntentWebhook(
             Long storeId,
             String type,
             JsonNode intent
@@ -1545,12 +1796,16 @@ public class StripeStorePaymentService {
             String intentId
     ) {
 
+        StripeRequestContext requestContext =
+                getRequestContext(
+                        storeId
+                );
+
         return get(
                 "/payment_intents/"
                         + intentId,
-                getRestrictedApiKey(
-                        storeId
-                )
+                requestContext.apiKey(),
+                requestContext.stripeAccountId()
         );
     }
 
@@ -1559,12 +1814,16 @@ public class StripeStorePaymentService {
             String sessionId
     ) {
 
+        StripeRequestContext requestContext =
+                getRequestContext(
+                        storeId
+                );
+
         return get(
                 "/checkout/sessions/"
                         + sessionId,
-                getRestrictedApiKey(
-                        storeId
-                )
+                requestContext.apiKey(),
+                requestContext.stripeAccountId()
         );
     }
 
@@ -1573,9 +1832,23 @@ public class StripeStorePaymentService {
             String apiKey
     ) {
 
+        return get(
+                path,
+                apiKey,
+                null
+        );
+    }
+
+    private JsonNode get(
+            String path,
+            String apiKey,
+            String stripeAccountId
+    ) {
+
         HttpHeaders headers =
                 authHeaders(
-                        apiKey
+                        apiKey,
+                        stripeAccountId
                 );
 
         try {
@@ -1616,9 +1889,25 @@ public class StripeStorePaymentService {
             String apiKey
     ) {
 
+        return postForm(
+                path,
+                form,
+                apiKey,
+                null
+        );
+    }
+
+    private JsonNode postForm(
+            String path,
+            MultiValueMap<String, String> form,
+            String apiKey,
+            String stripeAccountId
+    ) {
+
         HttpHeaders headers =
                 authHeaders(
-                        apiKey
+                        apiKey,
+                        stripeAccountId
                 );
 
         headers.setContentType(
@@ -1662,12 +1951,34 @@ public class StripeStorePaymentService {
             String apiKey
     ) {
 
+        return authHeaders(
+                apiKey,
+                null
+        );
+    }
+
+    private HttpHeaders authHeaders(
+            String apiKey,
+            String stripeAccountId
+    ) {
+
         HttpHeaders headers =
                 new HttpHeaders();
 
         headers.setBearerAuth(
                 apiKey
         );
+
+        if (
+                hasText(
+                        stripeAccountId
+                )
+        ) {
+            headers.set(
+                    "Stripe-Account",
+                    stripeAccountId
+            );
+        }
 
         headers.setAccept(
                 java.util.List.of(
@@ -1738,6 +2049,35 @@ public class StripeStorePaymentService {
                                         "Stripe não está configurada para esta loja."
                                 )
                 );
+    }
+
+    private StripeRequestContext getRequestContext(
+            Long storeId
+    ) {
+
+        StripePaymentConnection connection =
+                getConnectedConnection(
+                        storeId
+                );
+
+        if (
+                hasText(
+                        connection.getStripeAccountId()
+                )
+        ) {
+            return new StripeRequestContext(
+                    stripeConnectService
+                            .getPlatformSecretKey(),
+                    connection.getStripeAccountId()
+            );
+        }
+
+        return new StripeRequestContext(
+                getRestrictedApiKey(
+                        storeId
+                ),
+                null
+        );
     }
 
     private String getRestrictedApiKey(
@@ -2497,8 +2837,15 @@ public class StripeStorePaymentService {
         }
     }
 
+    private record StripeRequestContext(
+            String apiKey,
+            String stripeAccountId
+    ) {
+    }
+
     public record StripeWalletConfig(
             String publishableKey,
+            String connectedAccountId,
             long amount,
             String currency
     ) {

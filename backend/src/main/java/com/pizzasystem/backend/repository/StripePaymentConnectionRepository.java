@@ -19,6 +19,11 @@ public interface StripePaymentConnectionRepository
             Long storeId
     );
 
+    Optional<StripePaymentConnection>
+    findByStripeAccountIdAndConnectedTrue(
+            String stripeAccountId
+    );
+
     boolean existsByStoreIdAndConnectedTrue(
             Long storeId
     );

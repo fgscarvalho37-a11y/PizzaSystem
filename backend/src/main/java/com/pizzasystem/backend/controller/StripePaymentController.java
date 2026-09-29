@@ -236,15 +236,31 @@ public class StripePaymentController {
                                 order
                         );
 
+        Map<String, Object> response =
+                new HashMap<>();
+
+        response.put(
+                "publishableKey",
+                config.publishableKey()
+        );
+
+        response.put(
+                "connectedAccountId",
+                config.connectedAccountId()
+        );
+
+        response.put(
+                "amount",
+                config.amount()
+        );
+
+        response.put(
+                "currency",
+                config.currency()
+        );
+
         return ResponseEntity.ok(
-                Map.of(
-                        "publishableKey",
-                        config.publishableKey(),
-                        "amount",
-                        config.amount(),
-                        "currency",
-                        config.currency()
-                )
+                response
         );
     }
 
@@ -402,7 +418,50 @@ public class StripePaymentController {
     }
 
     // =========================
-    // WEBHOOK DA LOJA
+    // WEBHOOK STRIPE CONNECT
+    // =========================
+
+    @PostMapping("/stripe/connect/webhook")
+    public ResponseEntity<Void> stripeConnectWebhook(
+            @RequestBody String body,
+            @RequestHeader(
+                    value = "Stripe-Signature",
+                    required = false
+            )
+            String stripeSignature
+    ) {
+
+        try {
+            stripeStorePaymentService
+                    .handleConnectWebhook(
+                            body,
+                            stripeSignature
+                    );
+
+            return ResponseEntity
+                    .ok()
+                    .build();
+
+        } catch (
+                SecurityException exception
+        ) {
+            return ResponseEntity
+                    .status(
+                            HttpStatus.UNAUTHORIZED
+                    )
+                    .build();
+
+        } catch (
+                IllegalArgumentException exception
+        ) {
+            return ResponseEntity
+                    .badRequest()
+                    .build();
+        }
+    }
+
+    // =========================
+    // WEBHOOK LEGADO DA LOJA
     // =========================
 
     @PostMapping("/stripe/webhook/{storeId}")

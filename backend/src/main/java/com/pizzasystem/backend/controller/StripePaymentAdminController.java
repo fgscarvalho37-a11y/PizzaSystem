@@ -1,11 +1,19 @@
 package com.pizzasystem.backend.controller;
 
 import com.pizzasystem.backend.entity.Store;
+
 import com.pizzasystem.backend.service.CurrentStoreService;
+import com.pizzasystem.backend.service.StripeConnectService;
 import com.pizzasystem.backend.service.StripeStorePaymentService;
 
+import org.springframework.beans.factory.annotation.Value;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
 
 import java.util.Map;
 
@@ -19,15 +27,25 @@ public class StripePaymentAdminController {
     private final StripeStorePaymentService
             stripeStorePaymentService;
 
+    private final StripeConnectService
+            stripeConnectService;
+
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
+
     public StripePaymentAdminController(
             CurrentStoreService currentStoreService,
-            StripeStorePaymentService stripeStorePaymentService
+            StripeStorePaymentService stripeStorePaymentService,
+            StripeConnectService stripeConnectService
     ) {
         this.currentStoreService =
                 currentStoreService;
 
         this.stripeStorePaymentService =
                 stripeStorePaymentService;
+
+        this.stripeConnectService =
+                stripeConnectService;
     }
 
     @GetMapping("/status")
@@ -45,57 +63,59 @@ public class StripePaymentAdminController {
         );
     }
 
-    @PutMapping("/connect")
-    public ResponseEntity<Map<String, Object>> connect(
-            @RequestBody StripeConnectRequest request
-    ) {
+    @PostMapping("/connect")
+    public ResponseEntity<Map<String, String>> connect() {
 
-        if (request == null) {
-            throw new IllegalArgumentException(
-                    "Credenciais Stripe não informadas."
-            );
-        }
-
-        Store store =
-                currentStoreService
-                        .getCurrentStore();
+        String authorizationUrl =
+                stripeConnectService
+                        .createAuthorizationUrl();
 
         return ResponseEntity.ok(
-                stripeStorePaymentService
-                        .connect(
-                                store,
-                                request.restrictedApiKey(),
-                                request.webhookSecret(),
-                                request.publishableKey()
-                        )
+                Map.of(
+                        "authorizationUrl",
+                        authorizationUrl
+                )
         );
     }
 
-    @PutMapping("/wallets")
-    public ResponseEntity<Map<String, Object>> configureWallets(
-            @RequestBody StripeWalletRequest request
+    @GetMapping("/oauth/callback")
+    public ResponseEntity<Void> callback(
+            @RequestParam(required = false)
+            String code,
+
+            @RequestParam(required = false)
+            String state,
+
+            @RequestParam(required = false)
+            String error
     ) {
 
         if (
-                request == null ||
-                request.publishableKey() == null
+                error != null &&
+                !error.isBlank()
         ) {
-            throw new IllegalArgumentException(
-                    "Publishable Key Stripe não informada."
+            return redirectToFrontend(
+                    false
             );
         }
 
-        Store store =
-                currentStoreService
-                        .getCurrentStore();
+        try {
+            Store store =
+                    stripeConnectService
+                            .processCallback(
+                                    code,
+                                    state
+                            );
 
-        return ResponseEntity.ok(
-                stripeStorePaymentService
-                        .configureWallets(
-                                store,
-                                request.publishableKey()
-                        )
-        );
+            return redirectToFrontend(
+                    store != null
+            );
+
+        } catch (Exception exception) {
+            return redirectToFrontend(
+                    false
+            );
+        }
     }
 
     @PostMapping("/disconnect")
@@ -118,15 +138,36 @@ public class StripePaymentAdminController {
         );
     }
 
-    public record StripeConnectRequest(
-            String restrictedApiKey,
-            String webhookSecret,
-            String publishableKey
+    private ResponseEntity<Void> redirectToFrontend(
+            boolean success
     ) {
-    }
 
-    public record StripeWalletRequest(
-            String publishableKey
-    ) {
+        String base =
+                frontendUrl.endsWith("/")
+                        ? frontendUrl.substring(
+                                0,
+                                frontendUrl.length() - 1
+                        )
+                        : frontendUrl;
+
+        String redirectUrl =
+                base
+                        + "/admin/pagamentos?stripe="
+                        + (
+                                success
+                                        ? "connected"
+                                        : "error"
+                        );
+
+        return ResponseEntity
+                .status(
+                        HttpStatus.FOUND
+                )
+                .location(
+                        URI.create(
+                                redirectUrl
+                        )
+                )
+                .build();
     }
 }
