@@ -37,8 +37,14 @@ import java.util.List;
 @Service
 public class StripeConnectService {
 
-    private static final String API_BASE =
+    private static final String API_BASE_V1 =
             "https://api.stripe.com/v1";
+
+    private static final String API_BASE_V2 =
+            "https://api.stripe.com/v2";
+
+    private static final String STRIPE_V2_VERSION =
+            "2026-08-26.dahlia";
 
     private static final int STATE_EXPIRATION_MINUTES =
             30;
@@ -166,22 +172,9 @@ public class StripeConnectService {
                             )
             );
 
-            connection.setChargesEnabled(
-                    account.path(
-                            "charges_enabled"
-                    )
-                            .asBoolean(
-                                    false
-                            )
-            );
-
-            connection.setDetailsSubmitted(
-                    account.path(
-                            "details_submitted"
-                    )
-                            .asBoolean(
-                                    false
-                            )
+            applyV2AccountStatus(
+                    connection,
+                    account
             );
 
             connection.setRestrictedApiKeyEncrypted(
@@ -309,22 +302,9 @@ public class StripeConnectService {
                         accountId
                 );
 
-        connection.setChargesEnabled(
-                account.path(
-                        "charges_enabled"
-                )
-                        .asBoolean(
-                                false
-                        )
-        );
-
-        connection.setDetailsSubmitted(
-                account.path(
-                        "details_submitted"
-                )
-                        .asBoolean(
-                                false
-                        )
+        applyV2AccountStatus(
+                connection,
+                account
         );
 
         connection.setConnected(
@@ -705,41 +685,101 @@ public class StripeConnectService {
             Store store
     ) {
 
-        MultiValueMap<String, String> form =
-                new LinkedMultiValueMap<>();
-
-        form.add(
-                "type",
-                "standard"
-        );
-
-        if (
-                hasText(
-                        store.getCountryCode()
-                )
-        ) {
-            form.add(
-                    "country",
-                    store.getCountryCode()
-                            .trim()
-                            .toUpperCase()
-            );
-        }
+        var payload =
+                objectMapper.createObjectNode();
 
         if (
                 hasText(
                         store.getName()
                 )
         ) {
-            form.add(
-                    "business_profile[name]",
+            payload.put(
+                    "display_name",
                     store.getName()
             );
         }
 
-        return platformPostForm(
-                "/accounts",
-                form
+        var identity =
+                payload.putObject(
+                        "identity"
+                );
+
+        if (
+                hasText(
+                        store.getCountryCode()
+                )
+        ) {
+            identity.put(
+                    "country",
+                    store.getCountryCode()
+                            .trim()
+                            .toLowerCase()
+            );
+        }
+
+        payload
+                .putObject(
+                        "configuration"
+                )
+                .putObject(
+                        "merchant"
+                )
+                .putObject(
+                        "capabilities"
+                )
+                .putObject(
+                        "card_payments"
+                )
+                .put(
+                        "requested",
+                        true
+                );
+
+        var responsibilities =
+                payload
+                        .putObject(
+                                "defaults"
+                        )
+                        .putObject(
+                                "responsibilities"
+                        );
+
+        responsibilities.put(
+                "fees_collector",
+                "stripe"
+        );
+
+        responsibilities.put(
+                "losses_collector",
+                "stripe"
+        );
+
+        payload.put(
+                "dashboard",
+                "full"
+        );
+
+        var include =
+                payload.putArray(
+                        "include"
+                );
+
+        include.add(
+                "configuration.merchant"
+        );
+        include.add(
+                "requirements"
+        );
+        include.add(
+                "identity"
+        );
+        include.add(
+                "defaults"
+        );
+
+        return platformV2PostJson(
+                "/core/accounts",
+                payload
         );
     }
 
@@ -748,20 +788,38 @@ public class StripeConnectService {
             String state
     ) {
 
-        MultiValueMap<String, String> form =
-                new LinkedMultiValueMap<>();
+        var payload =
+                objectMapper.createObjectNode();
 
-        form.add(
+        payload.put(
                 "account",
                 accountId
         );
 
-        form.add(
+        var useCase =
+                payload.putObject(
+                        "use_case"
+                );
+
+        useCase.put(
                 "type",
                 "account_onboarding"
         );
 
-        form.add(
+        var onboarding =
+                useCase.putObject(
+                        "account_onboarding"
+                );
+
+        onboarding
+                .putArray(
+                        "configurations"
+                )
+                .add(
+                        "merchant"
+                );
+
+        onboarding.put(
                 "return_url",
                 appendState(
                         onboardingReturnUri,
@@ -769,7 +827,7 @@ public class StripeConnectService {
                 )
         );
 
-        form.add(
+        onboarding.put(
                 "refresh_url",
                 appendState(
                         onboardingRefreshUri,
@@ -777,10 +835,19 @@ public class StripeConnectService {
                 )
         );
 
+        onboarding
+                .putObject(
+                        "collection_options"
+                )
+                .put(
+                        "fields",
+                        "eventually_due"
+                );
+
         JsonNode response =
-                platformPostForm(
-                        "/account_links",
-                        form
+                platformV2PostJson(
+                        "/core/account_links",
+                        payload
                 );
 
         String url =
@@ -864,35 +931,25 @@ public class StripeConnectService {
                 + state;
     }
 
-    private JsonNode platformPostForm(
+    private JsonNode platformV2PostJson(
             String path,
-            MultiValueMap<String, String> form
+            JsonNode payload
     ) {
 
         HttpHeaders headers =
-                new HttpHeaders();
-
-        headers.setBearerAuth(
-                getPlatformSecretKey()
-        );
+                platformV2Headers();
 
         headers.setContentType(
-                MediaType.APPLICATION_FORM_URLENCODED
-        );
-
-        headers.setAccept(
-                List.of(
-                        MediaType.APPLICATION_JSON
-                )
+                MediaType.APPLICATION_JSON
         );
 
         try {
             ResponseEntity<JsonNode> response =
                     restTemplate.exchange(
-                            API_BASE + path,
+                            API_BASE_V2 + path,
                             HttpMethod.POST,
                             new HttpEntity<>(
-                                    form,
+                                    payload,
                                     headers
                             ),
                             JsonNode.class
@@ -918,27 +975,17 @@ public class StripeConnectService {
         }
     }
 
-    private JsonNode platformGet(
+    private JsonNode platformV2Get(
             String path
     ) {
 
         HttpHeaders headers =
-                new HttpHeaders();
-
-        headers.setBearerAuth(
-                getPlatformSecretKey()
-        );
-
-        headers.setAccept(
-                List.of(
-                        MediaType.APPLICATION_JSON
-                )
-        );
+                platformV2Headers();
 
         try {
             ResponseEntity<JsonNode> response =
                     restTemplate.exchange(
-                            API_BASE + path,
+                            API_BASE_V2 + path,
                             HttpMethod.GET,
                             new HttpEntity<>(
                                     headers
@@ -966,13 +1013,143 @@ public class StripeConnectService {
         }
     }
 
+    private HttpHeaders platformV2Headers() {
+
+        HttpHeaders headers =
+                new HttpHeaders();
+
+        headers.setBearerAuth(
+                getPlatformSecretKey()
+        );
+
+        headers.set(
+                "Stripe-Version",
+                STRIPE_V2_VERSION
+        );
+
+        headers.setAccept(
+                List.of(
+                        MediaType.APPLICATION_JSON
+                )
+        );
+
+        return headers;
+    }
+
     private JsonNode getConnectedAccount(
             String accountId
     ) {
-        return platformGet(
-                "/accounts/"
+
+        return platformV2Get(
+                "/core/accounts/"
                         + accountId
+                        + "?include%5B0%5D=configuration.merchant"
+                        + "&include%5B1%5D=requirements"
+                        + "&include%5B2%5D=identity"
+                        + "&include%5B3%5D=defaults"
         );
+    }
+
+    private void applyV2AccountStatus(
+            StripePaymentConnection connection,
+            JsonNode account
+    ) {
+
+        String cardPaymentsStatus =
+                account.path(
+                        "configuration"
+                )
+                        .path(
+                                "merchant"
+                        )
+                        .path(
+                                "capabilities"
+                        )
+                        .path(
+                                "card_payments"
+                        )
+                        .path(
+                                "status"
+                        )
+                        .asText();
+
+        boolean chargesEnabled =
+                "active".equalsIgnoreCase(
+                        cardPaymentsStatus
+                );
+
+        connection.setConnectLivemode(
+                account.path(
+                        "livemode"
+                )
+                        .asBoolean(
+                                getPlatformSecretKey()
+                                        .startsWith(
+                                                "sk_live_"
+                                        )
+                        )
+        );
+
+        connection.setChargesEnabled(
+                chargesEnabled
+        );
+
+        connection.setDetailsSubmitted(
+                chargesEnabled ||
+                !hasRoutineOnboardingRequirements(
+                        account.path(
+                                "requirements"
+                        )
+                )
+        );
+    }
+
+    private boolean hasRoutineOnboardingRequirements(
+            JsonNode requirements
+    ) {
+
+        JsonNode entries =
+                requirements.path(
+                        "entries"
+                );
+
+        if (
+                !entries.isArray()
+        ) {
+            return true;
+        }
+
+        for (
+                JsonNode entry :
+                entries
+        ) {
+            JsonNode reasons =
+                    entry.path(
+                            "requested_reasons"
+                    );
+
+            if (
+                    !reasons.isArray()
+            ) {
+                continue;
+            }
+
+            for (
+                    JsonNode reason :
+                    reasons
+            ) {
+                if (
+                        "routine_onboarding"
+                                .equalsIgnoreCase(
+                                        reason.asText()
+                                )
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private boolean ensurePaymentDomain(
@@ -1046,7 +1223,7 @@ public class StripeConnectService {
         try {
             ResponseEntity<JsonNode> response =
                     restTemplate.exchange(
-                            API_BASE + path,
+                            API_BASE_V1 + path,
                             HttpMethod.GET,
                             new HttpEntity<>(
                                     headers
@@ -1089,7 +1266,7 @@ public class StripeConnectService {
         try {
             ResponseEntity<JsonNode> response =
                     restTemplate.exchange(
-                            API_BASE + path,
+                            API_BASE_V1 + path,
                             HttpMethod.POST,
                             new HttpEntity<>(
                                     form,
