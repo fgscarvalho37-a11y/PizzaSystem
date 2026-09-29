@@ -84,10 +84,13 @@ type StoreProfileIntl = {
 type PaymentConfig = {
   provider:
     | "MERCADO_PAGO"
-    | "STRIPE";
+    | "MULTIPLE";
   ready: boolean;
   pixAvailable: boolean;
   cardAvailable: boolean;
+  stripeAvailable: boolean;
+  paypalAvailable: boolean;
+  cashAvailable: boolean;
   hostedCheckout: boolean;
   countryCode: string;
   currencyCode: string;
@@ -96,7 +99,9 @@ type PaymentConfig = {
 type PaymentMethod =
   | "PIX"
   | "CREDIT_CARD"
-  | "DEBIT_CARD";
+  | "DEBIT_CARD"
+  | "PAYPAL"
+  | "CASH";
 
 type ViaCepResponse = {
   cep?: string;
@@ -1747,6 +1752,23 @@ export default function CheckoutPage() {
 
       if (
         paymentMethod ===
+        "PAYPAL"
+      ) {
+        localStorage.removeItem(
+          cartKey
+        );
+
+        router.push(
+          `/pagamento/paypal/${order.id}?token=${encodedToken}&store=${encodeURIComponent(
+            storeSlug
+          )}`
+        );
+
+        return;
+      }
+
+      if (
+        paymentMethod ===
           "CREDIT_CARD" ||
         paymentMethod ===
           "DEBIT_CARD"
@@ -1755,10 +1777,7 @@ export default function CheckoutPage() {
           cartKey
         );
 
-        if (
-          paymentConfig?.provider ===
-          "STRIPE"
-        ) {
+        if (!isBrazil) {
           router.push(
             `/pagamento/stripe/${order.id}?token=${encodedToken}&store=${encodeURIComponent(
               storeSlug
@@ -2777,6 +2796,47 @@ export default function CheckoutPage() {
                   </button>
                 )}
 
+                {paymentConfig?.paypalAvailable && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPaymentMethod(
+                        "PAYPAL"
+                      )
+                    }
+                    className={
+                      paymentMethod ===
+                      "PAYPAL"
+                        ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
+                        : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
+                    }
+                  >
+                    PayPal
+                  </button>
+                )}
+
+                {paymentConfig?.cashAvailable && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPaymentMethod(
+                        "CASH"
+                      )
+                    }
+                    className={
+                      paymentMethod ===
+                      "CASH"
+                        ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
+                        : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
+                    }
+                  >
+                    {text(
+                      "Dinheiro",
+                      "Cash"
+                    )}
+                  </button>
+                )}
+
                 {isBrazil && (
                   <span className="cursor-not-allowed rounded-full border border-border bg-secondary px-4 py-2 text-sm font-medium text-muted-foreground opacity-60">
                     {text(
@@ -2799,16 +2859,23 @@ export default function CheckoutPage() {
                 )}
 
               {!isBrazil &&
-                paymentConfig?.provider ===
-                  "STRIPE" &&
-                paymentConfig.ready && (
+                paymentConfig?.stripeAvailable && (
                   <p className="mt-3 text-xs leading-5 text-muted-foreground">
                     {text(
-                      "O pagamento será concluído no checkout seguro da Stripe. Cartões e carteiras compatíveis aparecem automaticamente.",
-                      "Payment is completed in secure Stripe Checkout. Supported cards and wallets appear automatically."
+                      "Cartões e carteiras compatíveis, como Apple Pay e Google Pay, são processados pela conta Stripe da própria loja quando disponíveis.",
+                      "Cards and compatible wallets such as Apple Pay and Google Pay are processed by the store's own Stripe account when available."
                     )}
                   </p>
                 )}
+
+              {paymentConfig?.cashAvailable && (
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  {text(
+                    "Em dinheiro, o pedido é enviado à loja imediatamente e o pagamento fica pendente até ser recebido.",
+                    "For cash payments, the order is sent to the store immediately and remains pending until the cash is received."
+                  )}
+                </p>
+              )}
 
             </section>
 
