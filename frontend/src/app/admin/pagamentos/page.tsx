@@ -36,6 +36,17 @@ type StripeStatus = {
   webhookUrl: string;
 };
 
+type PayPalStatus = {
+  connected: boolean;
+  provider: "PAYPAL";
+  countryCode: string;
+  currencyCode: string;
+  recommended: boolean;
+  clientIdLast4?: string | null;
+  connectedAt?: string | null;
+  sandbox: boolean;
+};
+
 const API_URL = "";
 
 export default function AdminPaymentsPage() {
@@ -64,6 +75,14 @@ export default function AdminPaymentsPage() {
     );
 
   const [
+    payPalStatus,
+    setPayPalStatus,
+  ] =
+    useState<PayPalStatus | null>(
+      null
+    );
+
+  const [
     restrictedApiKey,
     setRestrictedApiKey,
   ] = useState("");
@@ -73,6 +92,21 @@ export default function AdminPaymentsPage() {
     setWebhookSecret,
   ] = useState("");
 
+  const [
+    payPalClientId,
+    setPayPalClientId,
+  ] = useState("");
+
+  const [
+    payPalClientSecret,
+    setPayPalClientSecret,
+  ] = useState("");
+
+  const [
+    payPalSandbox,
+    setPayPalSandbox,
+  ] = useState(false);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -80,8 +114,18 @@ export default function AdminPaymentsPage() {
     useState(false);
 
   const [
+    savingPayPal,
+    setSavingPayPal,
+  ] = useState(false);
+
+  const [
     disconnecting,
     setDisconnecting,
+  ] = useState(false);
+
+  const [
+    disconnectingPayPal,
+    setDisconnectingPayPal,
   ] = useState(false);
 
   const [message, setMessage] =
@@ -99,6 +143,7 @@ export default function AdminPaymentsPage() {
         profileResponse,
         mercadoPagoResponse,
         stripeResponse,
+        payPalResponse,
       ] =
         await Promise.all([
           adminFetch(
@@ -115,6 +160,12 @@ export default function AdminPaymentsPage() {
           ),
           adminFetch(
             `${API_URL}/api/admin/stripe-payment/status`,
+            {
+              cache: "no-store",
+            }
+          ),
+          adminFetch(
+            `${API_URL}/api/admin/paypal-payment/status`,
             {
               cache: "no-store",
             }
@@ -151,6 +202,14 @@ export default function AdminPaymentsPage() {
       ) {
         setStripeStatus(
           await stripeResponse.json()
+        );
+      }
+
+      if (
+        payPalResponse.ok
+      ) {
+        setPayPalStatus(
+          await payPalResponse.json()
         );
       }
     } catch (caught) {
@@ -322,6 +381,156 @@ export default function AdminPaymentsPage() {
     }
   }
 
+  async function connectPayPal(
+    event: FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    setError("");
+    setMessage("");
+
+    if (
+      !payPalClientId.trim() ||
+      !payPalClientSecret.trim()
+    ) {
+      setError(
+        text(
+          "Informe o Client ID e o Client Secret do PayPal.",
+          "Enter the PayPal Client ID and Client Secret."
+        )
+      );
+      return;
+    }
+
+    try {
+      setSavingPayPal(true);
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/admin/paypal-payment/connect`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              clientId:
+                payPalClientId.trim(),
+              clientSecret:
+                payPalClientSecret.trim(),
+              sandbox:
+                payPalSandbox,
+            }),
+          }
+        );
+
+      if (!response.ok) {
+        let detail =
+          text(
+            "Não foi possível conectar o PayPal.",
+            "Could not connect PayPal."
+          );
+
+        try {
+          const data =
+            await response.json();
+
+          detail =
+            data.message ??
+            data.detail ??
+            data.error ??
+            detail;
+        } catch {
+        }
+
+        throw new Error(detail);
+      }
+
+      setPayPalStatus(
+        await response.json()
+      );
+      setPayPalClientId("");
+      setPayPalClientSecret("");
+
+      setMessage(
+        text(
+          "PayPal conectado. Os pagamentos vão para a conta PayPal da própria loja.",
+          "PayPal connected. Payments go to the store's own PayPal account."
+        )
+      );
+
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : text(
+              "Não foi possível conectar o PayPal.",
+              "Could not connect PayPal."
+            )
+      );
+    } finally {
+      setSavingPayPal(false);
+    }
+  }
+
+  async function disconnectPayPal() {
+    if (
+      !window.confirm(
+        text(
+          "Desconectar o PayPal desta loja?",
+          "Disconnect PayPal from this store?"
+        )
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setDisconnectingPayPal(true);
+      setError("");
+      setMessage("");
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/admin/paypal-payment/disconnect`,
+          {
+            method: "POST",
+          }
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          text(
+            "Não foi possível desconectar o PayPal.",
+            "Could not disconnect PayPal."
+          )
+        );
+      }
+
+      await load();
+
+      setMessage(
+        text(
+          "PayPal desconectado.",
+          "PayPal disconnected."
+        )
+      );
+
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : text(
+              "Não foi possível desconectar.",
+              "Could not disconnect."
+            )
+      );
+    } finally {
+      setDisconnectingPayPal(false);
+    }
+  }
+
   async function copyWebhook() {
     if (
       !stripeStatus?.webhookUrl
@@ -427,8 +636,8 @@ export default function AdminPaymentsPage() {
 
             <span className="inline-flex w-fit rounded-full border border-border bg-background px-4 py-2 text-xs font-bold">
               {isBrazil
-                ? "Mercado Pago"
-                : "Stripe"}
+                ? "Mercado Pago + Dinheiro"
+                : "Stripe + PayPal + Dinheiro"}
             </span>
           </div>
 
@@ -439,8 +648,8 @@ export default function AdminPaymentsPage() {
                   "Brazilian stores continue using Mercado Pago and Pix. Stripe is available for international operations."
                 )
               : text(
-                  "Para esta loja internacional, cartão e carteiras compatíveis são processados pela própria conta Stripe do estabelecimento.",
-                  "For this international store, cards and supported wallets are processed by the store's own Stripe account."
+                  "A loja pode conectar Stripe para cartões e carteiras, PayPal como alternativa e também aceitar dinheiro. Cada gateway usa a conta do próprio estabelecimento.",
+                  "The store can connect Stripe for cards and wallets, use PayPal as an alternative, and also accept cash. Each gateway uses the store's own account."
                 )}
           </p>
         </section>
@@ -693,6 +902,207 @@ export default function AdminPaymentsPage() {
               </form>
             </>
           )}
+        </section>
+
+        <section className="mt-6 rounded-[26px] border border-border bg-card p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                International
+              </p>
+
+              <h2 className="mt-1 font-display text-3xl uppercase tracking-tight">
+                PayPal
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                {text(
+                  "Alternativa à Stripe. A loja usa as credenciais da própria conta PayPal Business e recebe diretamente nela.",
+                  "An alternative to Stripe. The store uses credentials from its own PayPal Business account and receives payments directly."
+                )}
+              </p>
+            </div>
+
+            <StatusBadge
+              connected={
+                !!payPalStatus?.connected
+              }
+              connectedText={text(
+                "Pronto para receber",
+                "Ready to accept payments"
+              )}
+              disconnectedText={text(
+                "Configuração pendente",
+                "Setup required"
+              )}
+            />
+          </div>
+
+          {payPalStatus?.connected ? (
+            <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+              <p className="text-sm font-bold text-emerald-800">
+                {text(
+                  "PayPal conectado",
+                  "PayPal connected"
+                )}
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-emerald-700">
+                {text(
+                  `Client ID terminando em •••• ${payPalStatus.clientIdLast4 ?? "----"} · ${payPalStatus.sandbox ? "Sandbox" : "Live"}.`,
+                  `Client ID ending in •••• ${payPalStatus.clientIdLast4 ?? "----"} · ${payPalStatus.sandbox ? "Sandbox" : "Live"}.`
+                )}
+              </p>
+
+              <button
+                type="button"
+                onClick={
+                  disconnectPayPal
+                }
+                disabled={
+                  disconnectingPayPal
+                }
+                className="mt-4 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-xs font-bold text-red-700 disabled:opacity-50"
+              >
+                {disconnectingPayPal
+                  ? text(
+                      "Desconectando...",
+                      "Disconnecting..."
+                    )
+                  : text(
+                      "Desconectar PayPal",
+                      "Disconnect PayPal"
+                    )}
+              </button>
+            </div>
+          ) : (
+            <form
+              onSubmit={
+                connectPayPal
+              }
+              className="mt-6 grid gap-4"
+            >
+              <label>
+                <span className="text-xs font-bold">
+                  Client ID
+                </span>
+
+                <input
+                  type="text"
+                  autoComplete="off"
+                  value={
+                    payPalClientId
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setPayPalClientId(
+                      event.target.value
+                    )
+                  }
+                  placeholder="PayPal Client ID"
+                  className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
+                />
+              </label>
+
+              <label>
+                <span className="text-xs font-bold">
+                  Client Secret
+                </span>
+
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={
+                    payPalClientSecret
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setPayPalClientSecret(
+                      event.target.value
+                    )
+                  }
+                  placeholder="PayPal Client Secret"
+                  className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
+                />
+              </label>
+
+              <label className="flex items-center gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={
+                    payPalSandbox
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setPayPalSandbox(
+                      event.target.checked
+                    )
+                  }
+                />
+                {text(
+                  "Usar Sandbox para testes",
+                  "Use Sandbox for testing"
+                )}
+              </label>
+
+              <button
+                type="submit"
+                disabled={
+                  savingPayPal
+                }
+                className="h-11 w-fit rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {savingPayPal
+                  ? text(
+                      "Validando...",
+                      "Validating..."
+                    )
+                  : text(
+                      "Conectar PayPal",
+                      "Connect PayPal"
+                    )}
+              </button>
+            </form>
+          )}
+        </section>
+
+        <section className="mt-6 rounded-[26px] border border-border bg-card p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                {text(
+                  "Sem gateway",
+                  "No gateway"
+                )}
+              </p>
+
+              <h2 className="mt-1 font-display text-3xl uppercase tracking-tight">
+                {text(
+                  "Dinheiro",
+                  "Cash"
+                )}
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                {text(
+                  "Disponível no checkout sem Stripe, PayPal ou Mercado Pago. O pedido entra imediatamente para a loja e fica com pagamento pendente até o recebimento.",
+                  "Available at checkout without Stripe, PayPal, or Mercado Pago. The order is sent to the store immediately and payment remains pending until cash is received."
+                )}
+              </p>
+            </div>
+
+            <StatusBadge
+              connected={true}
+              connectedText={text(
+                "Disponível",
+                "Available"
+              )}
+              disconnectedText=""
+            />
+          </div>
         </section>
 
         <section className="mt-6 rounded-[26px] border border-border bg-card p-6">
