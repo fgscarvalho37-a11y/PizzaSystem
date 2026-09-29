@@ -6,6 +6,7 @@ import com.pizzasystem.backend.entity.Store;
 import com.pizzasystem.backend.repository.MercadoPagoConnectionRepository;
 import com.pizzasystem.backend.repository.OrderRepository;
 
+import com.pizzasystem.backend.service.PayPalStorePaymentService;
 import com.pizzasystem.backend.service.PublicStoreService;
 import com.pizzasystem.backend.service.StripeStorePaymentService;
 
@@ -36,11 +37,15 @@ public class StripePaymentController {
     private final StripeStorePaymentService
             stripeStorePaymentService;
 
+    private final PayPalStorePaymentService
+            payPalStorePaymentService;
+
     public StripePaymentController(
             OrderRepository orderRepository,
             MercadoPagoConnectionRepository mercadoPagoConnectionRepository,
             PublicStoreService publicStoreService,
-            StripeStorePaymentService stripeStorePaymentService
+            StripeStorePaymentService stripeStorePaymentService,
+            PayPalStorePaymentService payPalStorePaymentService
     ) {
         this.orderRepository =
                 orderRepository;
@@ -53,6 +58,9 @@ public class StripePaymentController {
 
         this.stripeStorePaymentService =
                 stripeStorePaymentService;
+
+        this.payPalStorePaymentService =
+                payPalStorePaymentService;
     }
 
     // =========================
@@ -110,15 +118,25 @@ public class StripePaymentController {
                                 targetStore.getId()
                         );
 
+        boolean payPalReady =
+                payPalStorePaymentService
+                        .isReady(
+                                targetStore.getId()
+                        );
+
         String provider =
                 brazil
                         ? "MERCADO_PAGO"
-                        : "STRIPE";
+                        : "MULTIPLE";
 
         boolean ready =
                 brazil
-                        ? mercadoPagoReady
-                        : stripeReady;
+                        ? true
+                        : (
+                                stripeReady ||
+                                payPalReady ||
+                                true
+                        );
 
         Map<String, Object> response =
                 new HashMap<>();
@@ -144,6 +162,23 @@ public class StripePaymentController {
                 brazil
                         ? mercadoPagoCardReady
                         : stripeReady
+        );
+
+        response.put(
+                "stripeAvailable",
+                !brazil &&
+                        stripeReady
+        );
+
+        response.put(
+                "paypalAvailable",
+                !brazil &&
+                        payPalReady
+        );
+
+        response.put(
+                "cashAvailable",
+                true
         );
 
         response.put(
