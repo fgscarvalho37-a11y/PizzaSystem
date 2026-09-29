@@ -1769,9 +1769,7 @@ export default function CheckoutPage() {
 
       if (
         paymentMethod ===
-          "CREDIT_CARD" ||
-        paymentMethod ===
-          "DEBIT_CARD"
+          "CREDIT_CARD"
       ) {
         localStorage.removeItem(
           cartKey
