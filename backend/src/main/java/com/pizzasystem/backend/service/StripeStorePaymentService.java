@@ -312,6 +312,38 @@ public class StripeStorePaymentService {
     }
 
     @Transactional
+    public Map<String, Object> configurePublishableKey(
+            Store store,
+            String publishableKey
+    ) {
+        StripePaymentConnection connection =
+                connectionRepository
+                        .findByStoreIdAndConnectedTrue(
+                                store.getId()
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Conecte a Stripe antes de ativar Apple Pay e Google Pay."
+                                        )
+                        );
+
+        connection.setPublishableKey(
+                normalizePublishableKey(
+                        publishableKey
+                )
+        );
+
+        connectionRepository.save(
+                connection
+        );
+
+        return getConnectionStatus(
+                store
+        );
+    }
+
+    @Transactional
     public void disconnect(
             Store store
     ) {
