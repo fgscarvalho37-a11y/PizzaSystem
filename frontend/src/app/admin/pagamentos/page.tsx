@@ -751,7 +751,8 @@ export default function AdminPaymentsPage() {
 
             <StatusBadge
               connected={
-                !!stripeStatus?.connected
+                stripeStatus?.connectionMode ===
+                  "CONNECT"
               }
               connectedText={text(
                 "Conta conectada",
@@ -764,7 +765,9 @@ export default function AdminPaymentsPage() {
             />
           </div>
 
-          {stripeStatus?.connected ? (
+          {stripeStatus?.connected &&
+          stripeStatus.connectionMode ===
+            "CONNECT" ? (
             <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
               <p className="text-sm font-bold text-emerald-800">
                 {text(
@@ -856,11 +859,27 @@ export default function AdminPaymentsPage() {
           ) : (
             <div className="mt-6 rounded-2xl border border-border bg-background p-5">
               <p className="text-sm font-bold">
-                {text(
-                  "Conexão automática",
-                  "Automatic connection"
-                )}
+                {stripeStatus?.connectionMode ===
+                "LEGACY"
+                  ? text(
+                      "Migrar para conexão automática",
+                      "Migrate to automatic connection"
+                    )
+                  : text(
+                      "Conexão automática",
+                      "Automatic connection"
+                    )}
               </p>
+
+              {stripeStatus?.connectionMode ===
+                "LEGACY" && (
+                <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                  {text(
+                    "Esta loja ainda está usando a integração antiga por chaves. Ela continua funcionando enquanto você migra, mas novos clientes não precisarão copiar nenhuma chave.",
+                    "This store is still using the legacy API-key integration. It keeps working while you migrate, but new customers won't need to copy any keys."
+                  )}
+                </p>
+              )}
 
               <p className="mt-2 max-w-2xl text-xs leading-6 text-muted-foreground">
                 {text(
@@ -883,6 +902,12 @@ export default function AdminPaymentsPage() {
                   ? text(
                       "Abrindo Stripe...",
                       "Opening Stripe..."
+                    )
+                  : stripeStatus?.connectionMode ===
+                    "LEGACY"
+                  ? text(
+                      "Migrar e conectar com Stripe",
+                      "Migrate and connect with Stripe"
                     )
                   : text(
                       "Conectar com Stripe",
