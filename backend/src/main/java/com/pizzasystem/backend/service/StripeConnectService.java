@@ -25,8 +25,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
-
 import java.net.URI;
 
 import java.security.SecureRandom;
@@ -35,25 +33,15 @@ import java.time.LocalDateTime;
 
 import java.util.Base64;
 import java.util.List;
-import java.util.Locale;
 
 @Service
 public class StripeConnectService {
-
-    private static final String AUTHORIZATION_URL =
-            "https://connect.stripe.com/oauth/authorize";
-
-    private static final String TOKEN_URL =
-            "https://connect.stripe.com/oauth/token";
-
-    private static final String DEAUTHORIZE_URL =
-            "https://connect.stripe.com/oauth/deauthorize";
 
     private static final String API_BASE =
             "https://api.stripe.com/v1";
 
     private static final int STATE_EXPIRATION_MINUTES =
-            10;
+            30;
 
     private final StripePaymentConnectionRepository
             connectionRepository;
@@ -76,23 +64,23 @@ public class StripeConnectService {
             secureRandom =
             new SecureRandom();
 
-    @Value("${stripe.connect.client-id:}")
-    private String clientId;
-
     @Value("${stripe.connect.secret-key:}")
     private String platformSecretKey;
 
     @Value("${stripe.connect.publishable-key:}")
     private String platformPublishableKey;
 
-    @Value("${stripe.connect.redirect-uri:}")
-    private String redirectUri;
-
     @Value("${stripe.connect.webhook-secret:}")
     private String webhookSecret;
 
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
+
+    @Value("${stripe.connect.onboarding-return-uri:https://pizzasystem-api.onrender.com/api/admin/stripe-payment/onboarding/return}")
+    private String onboardingReturnUri;
+
+    @Value("${stripe.connect.onboarding-refresh-uri:https://pizzasystem-api.onrender.com/api/admin/stripe-payment/onboarding/refresh}")
+    private String onboardingRefreshUri;
 
     public StripeConnectService(
             StripePaymentConnectionRepository connectionRepository,
@@ -112,7 +100,7 @@ public class StripeConnectService {
     @Transactional
     public String createAuthorizationUrl() {
 
-        validateOAuthConfiguration();
+        validateHostedOnboardingConfiguration();
 
         Store store =
                 currentStoreService
@@ -121,160 +109,6 @@ public class StripeConnectService {
         invalidatePreviousStates(
                 store
         );
-
-        String state =
-                generateRandomValue(
-                        32
-                );
-
-        StripeConnectOAuthState oauthState =
-                new StripeConnectOAuthState();
-
-        oauthState.setStore(
-                store
-        );
-
-        oauthState.setState(
-                state
-        );
-
-        oauthState.setExpiresAt(
-                LocalDateTime.now()
-                        .plusMinutes(
-                                STATE_EXPIRATION_MINUTES
-                        )
-        );
-
-        oauthStateRepository.save(
-                oauthState
-        );
-
-        UriComponentsBuilder builder =
-                UriComponentsBuilder
-                        .fromUriString(
-                                AUTHORIZATION_URL
-                        )
-                        .queryParam(
-                                "response_type",
-                                "code"
-                        )
-                        .queryParam(
-                                "client_id",
-                                clientId.trim()
-                        )
-                        .queryParam(
-                                "scope",
-                                "read_write"
-                        )
-                        .queryParam(
-                                "redirect_uri",
-                                redirectUri.trim()
-                        )
-                        .queryParam(
-                                "state",
-                                state
-                        );
-
-        if (hasText(store.getCountryCode())) {
-            builder.queryParam(
-                    "stripe_user[country]",
-                    store.getCountryCode()
-                            .trim()
-                            .toUpperCase(Locale.ROOT)
-            );
-        }
-
-        if (hasText(store.getCurrencyCode())) {
-            builder.queryParam(
-                    "stripe_user[currency]",
-                    store.getCurrencyCode()
-                            .trim()
-                            .toLowerCase(Locale.ROOT)
-            );
-        }
-
-        if (hasText(store.getName())) {
-            builder.queryParam(
-                    "stripe_user[business_name]",
-                    store.getName()
-            );
-        }
-
-        return builder
-                .build()
-                .encode()
-                .toUriString();
-    }
-
-    @Transactional
-    public Store processCallback(
-            String code,
-            String state
-    ) {
-
-        validateOAuthConfiguration();
-
-        if (!hasText(code) || !hasText(state)) {
-            throw new IllegalArgumentException(
-                    "Resposta OAuth Stripe inválida."
-            );
-        }
-
-        StripeConnectOAuthState oauthState =
-                oauthStateRepository
-                        .findByStateAndUsedFalse(
-                                state.trim()
-                        )
-                        .orElseThrow(
-                                () ->
-                                        new IllegalArgumentException(
-                                                "State OAuth Stripe inválido ou já utilizado."
-                                        )
-                        );
-
-        if (!oauthState.isValid()) {
-            oauthState.markAsUsed();
-            oauthStateRepository.save(
-                    oauthState
-            );
-
-            throw new IllegalArgumentException(
-                    "Tentativa de conexão com Stripe expirada."
-            );
-        }
-
-        oauthState.markAsUsed();
-        oauthStateRepository.save(
-                oauthState
-        );
-
-        JsonNode tokenResponse =
-                exchangeAuthorizationCode(
-                        code.trim()
-                );
-
-        String accountId =
-                textValue(
-                        tokenResponse,
-                        "stripe_user_id"
-                );
-
-        if (
-                !hasText(accountId) ||
-                !accountId.startsWith("acct_")
-        ) {
-            throw new IllegalStateException(
-                    "A Stripe não retornou a conta conectada."
-            );
-        }
-
-        Store store =
-                oauthState.getStore();
-
-        JsonNode account =
-                getConnectedAccount(
-                        accountId
-                );
 
         StripePaymentConnection connection =
                 connectionRepository
@@ -285,43 +119,294 @@ public class StripeConnectService {
                                 StripePaymentConnection::new
                         );
 
-        connection.setStore(store);
-        connection.setStripeAccountId(accountId);
-        connection.setConnectLivemode(
-                tokenResponse.path("livemode")
-                        .asBoolean(false)
-        );
-        connection.setChargesEnabled(
-                account.path("charges_enabled")
-                        .asBoolean(false)
-        );
-        connection.setDetailsSubmitted(
-                account.path("details_submitted")
-                        .asBoolean(false)
-        );
+        String accountId =
+                connection.getStripeAccountId();
 
-        connection.setRestrictedApiKeyEncrypted(null);
-        connection.setWebhookSecretEncrypted(null);
-        connection.setPublishableKey(null);
-        connection.setKeyLast4(null);
-
-        connection.setConnected(true);
-        connection.setConnectedAt(
-                LocalDateTime.now()
-        );
-        connection.setDisconnectedAt(null);
-
-        connection.setPaymentDomainRegistered(
-                ensurePaymentDomain(
+        if (
+                !hasText(
                         accountId
                 )
+        ) {
+            JsonNode account =
+                    createConnectedAccount(
+                            store
+                    );
+
+            accountId =
+                    textValue(
+                            account,
+                            "id"
+                    );
+
+            if (
+                    !hasText(
+                            accountId
+                    ) ||
+                    !accountId.startsWith(
+                            "acct_"
+                    )
+            ) {
+                throw new IllegalStateException(
+                        "A Stripe não retornou uma conta conectada válida."
+                );
+            }
+
+            connection.setStore(
+                    store
+            );
+
+            connection.setStripeAccountId(
+                    accountId
+            );
+
+            connection.setConnectLivemode(
+                    getPlatformSecretKey()
+                            .startsWith(
+                                    "sk_live_"
+                            )
+            );
+
+            connection.setChargesEnabled(
+                    account.path(
+                            "charges_enabled"
+                    )
+                            .asBoolean(
+                                    false
+                            )
+            );
+
+            connection.setDetailsSubmitted(
+                    account.path(
+                            "details_submitted"
+                    )
+                            .asBoolean(
+                                    false
+                            )
+            );
+
+            connection.setRestrictedApiKeyEncrypted(
+                    null
+            );
+
+            connection.setWebhookSecretEncrypted(
+                    null
+            );
+
+            connection.setPublishableKey(
+                    null
+            );
+
+            connection.setKeyLast4(
+                    null
+            );
+
+            connection.setConnected(
+                    true
+            );
+
+            connection.setConnectedAt(
+                    LocalDateTime.now()
+            );
+
+            connection.setDisconnectedAt(
+                    null
+            );
+
+            connectionRepository.save(
+                    connection
+            );
+
+        } else {
+            connection.setConnected(
+                    true
+            );
+
+            connection.setDisconnectedAt(
+                    null
+            );
+
+            connectionRepository.save(
+                    connection
+            );
+        }
+
+        String state =
+                generateRandomValue(
+                        32
+                );
+
+        StripeConnectOAuthState onboardingState =
+                new StripeConnectOAuthState();
+
+        onboardingState.setStore(
+                store
         );
+
+        onboardingState.setState(
+                state
+        );
+
+        onboardingState.setExpiresAt(
+                LocalDateTime.now()
+                        .plusMinutes(
+                                STATE_EXPIRATION_MINUTES
+                        )
+        );
+
+        oauthStateRepository.save(
+                onboardingState
+        );
+
+        return createAccountLink(
+                accountId,
+                state
+        );
+    }
+
+    @Transactional
+    public Store processOnboardingReturn(
+            String state
+    ) {
+
+        validateHostedOnboardingConfiguration();
+
+        StripeConnectOAuthState onboardingState =
+                getValidOnboardingState(
+                        state
+                );
+
+        Store store =
+                onboardingState
+                        .getStore();
+
+        StripePaymentConnection connection =
+                connectionRepository
+                        .findByStoreId(
+                                store.getId()
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Conta Stripe Connect não encontrada para esta loja."
+                                        )
+                        );
+
+        String accountId =
+                connection.getStripeAccountId();
+
+        if (
+                !hasText(
+                        accountId
+                )
+        ) {
+            throw new IllegalStateException(
+                    "Conta Stripe Connect não encontrada para esta loja."
+            );
+        }
+
+        JsonNode account =
+                getConnectedAccount(
+                        accountId
+                );
+
+        connection.setChargesEnabled(
+                account.path(
+                        "charges_enabled"
+                )
+                        .asBoolean(
+                                false
+                        )
+        );
+
+        connection.setDetailsSubmitted(
+                account.path(
+                        "details_submitted"
+                )
+                        .asBoolean(
+                                false
+                        )
+        );
+
+        connection.setConnected(
+                true
+        );
+
+        if (
+                connection.getConnectedAt() ==
+                null
+        ) {
+            connection.setConnectedAt(
+                    LocalDateTime.now()
+            );
+        }
+
+        connection.setDisconnectedAt(
+                null
+        );
+
+        if (
+                connection.isChargesEnabled()
+        ) {
+            connection.setPaymentDomainRegistered(
+                    ensurePaymentDomain(
+                            accountId
+                    )
+            );
+        }
 
         connectionRepository.save(
                 connection
         );
 
+        onboardingState.markAsUsed();
+
+        oauthStateRepository.save(
+                onboardingState
+        );
+
         return store;
+    }
+
+    @Transactional(readOnly = true)
+    public String refreshOnboardingUrl(
+            String state
+    ) {
+
+        validateHostedOnboardingConfiguration();
+
+        StripeConnectOAuthState onboardingState =
+                getValidOnboardingState(
+                        state
+                );
+
+        StripePaymentConnection connection =
+                connectionRepository
+                        .findByStoreId(
+                                onboardingState
+                                        .getStore()
+                                        .getId()
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Conta Stripe Connect não encontrada para esta loja."
+                                        )
+                        );
+
+        if (
+                !hasText(
+                        connection.getStripeAccountId()
+                )
+        ) {
+            throw new IllegalStateException(
+                    "Conta Stripe Connect não encontrada para esta loja."
+            );
+        }
+
+        return createAccountLink(
+                connection.getStripeAccountId(),
+                state.trim()
+        );
     }
 
     @Transactional
@@ -334,64 +419,32 @@ public class StripeConnectService {
                         .findByStoreId(
                                 store.getId()
                         )
-                        .orElse(null);
+                        .orElse(
+                                null
+                        );
 
-        if (connection == null) {
+        if (
+                connection == null
+        ) {
             return;
         }
 
-        String accountId =
-                connection.getStripeAccountId();
+        connection.setConnected(
+                false
+        );
 
-        if (
-                hasText(accountId) &&
-                hasText(clientId) &&
-                hasText(platformSecretKey)
-        ) {
-            try {
-                HttpHeaders headers =
-                        new HttpHeaders();
+        connection.setChargesEnabled(
+                false
+        );
 
-                headers.setBasicAuth(
-                        platformSecretKey.trim(),
-                        ""
-                );
-                headers.setContentType(
-                        MediaType.APPLICATION_FORM_URLENCODED
-                );
+        connection.setDetailsSubmitted(
+                false
+        );
 
-                MultiValueMap<String, String> form =
-                        new LinkedMultiValueMap<>();
+        connection.setPaymentDomainRegistered(
+                false
+        );
 
-                form.add(
-                        "client_id",
-                        clientId.trim()
-                );
-                form.add(
-                        "stripe_user_id",
-                        accountId
-                );
-
-                restTemplate.exchange(
-                        DEAUTHORIZE_URL,
-                        HttpMethod.POST,
-                        new HttpEntity<>(
-                                form,
-                                headers
-                        ),
-                        JsonNode.class
-                );
-
-            } catch (RuntimeException ignored) {
-            }
-        }
-
-        connection.setStripeAccountId(null);
-        connection.setConnectLivemode(false);
-        connection.setChargesEnabled(false);
-        connection.setDetailsSubmitted(false);
-        connection.setPaymentDomainRegistered(false);
-        connection.setConnected(false);
         connection.setDisconnectedAt(
                 LocalDateTime.now()
         );
@@ -648,37 +701,195 @@ public class StripeConnectService {
                 && hasText(platformPublishableKey);
     }
 
-    private JsonNode exchangeAuthorizationCode(
-            String code
+    private JsonNode createConnectedAccount(
+            Store store
     ) {
-
-        HttpHeaders headers =
-                new HttpHeaders();
-
-        headers.setBasicAuth(
-                getPlatformSecretKey(),
-                ""
-        );
-        headers.setContentType(
-                MediaType.APPLICATION_FORM_URLENCODED
-        );
 
         MultiValueMap<String, String> form =
                 new LinkedMultiValueMap<>();
 
         form.add(
-                "grant_type",
-                "authorization_code"
+                "type",
+                "standard"
         );
+
+        if (
+                hasText(
+                        store.getCountryCode()
+                )
+        ) {
+            form.add(
+                    "country",
+                    store.getCountryCode()
+                            .trim()
+                            .toUpperCase()
+            );
+        }
+
+        if (
+                hasText(
+                        store.getName()
+                )
+        ) {
+            form.add(
+                    "business_profile[name]",
+                    store.getName()
+            );
+        }
+
+        return platformPostForm(
+                "/accounts",
+                form
+        );
+    }
+
+    private String createAccountLink(
+            String accountId,
+            String state
+    ) {
+
+        MultiValueMap<String, String> form =
+                new LinkedMultiValueMap<>();
+
         form.add(
-                "code",
-                code
+                "account",
+                accountId
+        );
+
+        form.add(
+                "type",
+                "account_onboarding"
+        );
+
+        form.add(
+                "return_url",
+                appendState(
+                        onboardingReturnUri,
+                        state
+                )
+        );
+
+        form.add(
+                "refresh_url",
+                appendState(
+                        onboardingRefreshUri,
+                        state
+                )
+        );
+
+        JsonNode response =
+                platformPostForm(
+                        "/account_links",
+                        form
+                );
+
+        String url =
+                textValue(
+                        response,
+                        "url"
+                );
+
+        if (
+                !hasText(
+                        url
+                )
+        ) {
+            throw new IllegalStateException(
+                    "A Stripe não retornou a página de cadastro da conta."
+            );
+        }
+
+        return url;
+    }
+
+    private StripeConnectOAuthState
+    getValidOnboardingState(
+            String state
+    ) {
+
+        if (
+                !hasText(
+                        state
+                )
+        ) {
+            throw new IllegalArgumentException(
+                    "Identificador do onboarding Stripe não informado."
+            );
+        }
+
+        StripeConnectOAuthState onboardingState =
+                oauthStateRepository
+                        .findByStateAndUsedFalse(
+                                state.trim()
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new IllegalArgumentException(
+                                                "Onboarding Stripe inválido ou já utilizado."
+                                        )
+                        );
+
+        if (
+                !onboardingState.isValid()
+        ) {
+            onboardingState.markAsUsed();
+
+            oauthStateRepository.save(
+                    onboardingState
+            );
+
+            throw new IllegalArgumentException(
+                    "Onboarding Stripe expirado."
+            );
+        }
+
+        return onboardingState;
+    }
+
+    private String appendState(
+            String baseUrl,
+            String state
+    ) {
+
+        String separator =
+                baseUrl.contains(
+                        "?"
+                )
+                        ? "&"
+                        : "?";
+
+        return baseUrl
+                + separator
+                + "state="
+                + state;
+    }
+
+    private JsonNode platformPostForm(
+            String path,
+            MultiValueMap<String, String> form
+    ) {
+
+        HttpHeaders headers =
+                new HttpHeaders();
+
+        headers.setBearerAuth(
+                getPlatformSecretKey()
+        );
+
+        headers.setContentType(
+                MediaType.APPLICATION_FORM_URLENCODED
+        );
+
+        headers.setAccept(
+                List.of(
+                        MediaType.APPLICATION_JSON
+                )
         );
 
         try {
             ResponseEntity<JsonNode> response =
                     restTemplate.exchange(
-                            TOKEN_URL,
+                            API_BASE + path,
                             HttpMethod.POST,
                             new HttpEntity<>(
                                     form,
@@ -687,9 +898,60 @@ public class StripeConnectService {
                             JsonNode.class
                     );
 
-            if (response.getBody() == null) {
+            if (
+                    response.getBody() ==
+                    null
+            ) {
                 throw new IllegalStateException(
-                        "A Stripe não retornou a autorização."
+                        "A Stripe retornou uma resposta vazia."
+                );
+            }
+
+            return response.getBody();
+
+        } catch (
+                HttpClientErrorException exception
+        ) {
+            throw stripeException(
+                    exception
+            );
+        }
+    }
+
+    private JsonNode platformGet(
+            String path
+    ) {
+
+        HttpHeaders headers =
+                new HttpHeaders();
+
+        headers.setBearerAuth(
+                getPlatformSecretKey()
+        );
+
+        headers.setAccept(
+                List.of(
+                        MediaType.APPLICATION_JSON
+                )
+        );
+
+        try {
+            ResponseEntity<JsonNode> response =
+                    restTemplate.exchange(
+                            API_BASE + path,
+                            HttpMethod.GET,
+                            new HttpEntity<>(
+                                    headers
+                            ),
+                            JsonNode.class
+                    );
+
+            if (
+                    response.getBody() ==
+                    null
+            ) {
+                throw new IllegalStateException(
+                        "A Stripe retornou uma resposta vazia."
                 );
             }
 
@@ -707,9 +969,9 @@ public class StripeConnectService {
     private JsonNode getConnectedAccount(
             String accountId
     ) {
-        return connectedGet(
-                "/account",
-                accountId
+        return platformGet(
+                "/accounts/"
+                        + accountId
         );
     }
 
@@ -1001,29 +1263,49 @@ public class StripeConnectService {
                 : null;
     }
 
-    private void validateOAuthConfiguration() {
-
-        if (!hasText(clientId)) {
-            throw new IllegalStateException(
-                    "STRIPE_CONNECT_CLIENT_ID não configurado."
-            );
-        }
+    private void validateHostedOnboardingConfiguration() {
 
         getPlatformSecretKey();
         getPlatformPublishableKey();
 
-        if (!hasText(redirectUri)) {
+        validateHttpsUrl(
+                onboardingReturnUri,
+                "STRIPE_CONNECT_ONBOARDING_RETURN_URI"
+        );
+
+        validateHttpsUrl(
+                onboardingRefreshUri,
+                "STRIPE_CONNECT_ONBOARDING_REFRESH_URI"
+        );
+    }
+
+    private void validateHttpsUrl(
+            String value,
+            String name
+    ) {
+
+        if (
+                !hasText(
+                        value
+                )
+        ) {
             throw new IllegalStateException(
-                    "STRIPE_CONNECT_REDIRECT_URI não configurada."
+                    name
+                            + " não configurada."
             );
         }
 
         if (
-                !redirectUri.startsWith("https://") &&
-                !redirectUri.startsWith("http://localhost")
+                !value.startsWith(
+                        "https://"
+                ) &&
+                !value.startsWith(
+                        "http://localhost"
+                )
         ) {
             throw new IllegalStateException(
-                    "STRIPE_CONNECT_REDIRECT_URI precisa usar HTTPS em produção."
+                    name
+                            + " precisa usar HTTPS em produção."
             );
         }
     }

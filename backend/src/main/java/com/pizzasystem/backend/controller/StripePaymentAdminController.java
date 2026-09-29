@@ -78,38 +78,53 @@ public class StripePaymentAdminController {
         );
     }
 
-    @GetMapping("/oauth/callback")
-    public ResponseEntity<Void> callback(
+    @GetMapping("/onboarding/return")
+    public ResponseEntity<Void> onboardingReturn(
             @RequestParam(required = false)
-            String code,
-
-            @RequestParam(required = false)
-            String state,
-
-            @RequestParam(required = false)
-            String error
+            String state
     ) {
-
-        if (
-                error != null &&
-                !error.isBlank()
-        ) {
-            return redirectToFrontend(
-                    false
-            );
-        }
 
         try {
             Store store =
                     stripeConnectService
-                            .processCallback(
-                                    code,
+                            .processOnboardingReturn(
                                     state
                             );
 
             return redirectToFrontend(
                     store != null
             );
+
+        } catch (Exception exception) {
+            return redirectToFrontend(
+                    false
+            );
+        }
+    }
+
+    @GetMapping("/onboarding/refresh")
+    public ResponseEntity<Void> onboardingRefresh(
+            @RequestParam(required = false)
+            String state
+    ) {
+
+        try {
+            String onboardingUrl =
+                    stripeConnectService
+                            .refreshOnboardingUrl(
+                                    state
+                            );
+
+            return ResponseEntity
+                    .status(
+                            HttpStatus.FOUND
+                    )
+                    .location(
+                            URI.create(
+                                    onboardingUrl
+                            )
+                    )
+                    .build();
 
         } catch (Exception exception) {
             return redirectToFrontend(

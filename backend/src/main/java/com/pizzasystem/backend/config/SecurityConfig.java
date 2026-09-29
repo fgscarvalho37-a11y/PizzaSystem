@@ -194,7 +194,8 @@ public class SecurityConfig {
 
                                 .requestMatchers(
                                         HttpMethod.GET,
-                                        "/api/admin/stripe-payment/oauth/callback"
+                                        "/api/admin/stripe-payment/onboarding/return",
+                                        "/api/admin/stripe-payment/onboarding/refresh"
                                 )
                                 .permitAll()
 
