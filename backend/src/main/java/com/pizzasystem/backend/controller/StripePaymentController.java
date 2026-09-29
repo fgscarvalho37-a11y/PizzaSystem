@@ -124,19 +124,28 @@ public class StripePaymentController {
                                 targetStore.getId()
                         );
 
+        boolean stripeWalletReady =
+                !brazil &&
+                stripeStorePaymentService
+                        .isWalletReady(
+                                targetStore.getId()
+                        );
+
+        String stripePublishableKey =
+                stripeWalletReady
+                        ? stripeStorePaymentService
+                                .getPublishableKey(
+                                        targetStore.getId()
+                                )
+                        : null;
+
         String provider =
                 brazil
                         ? "MERCADO_PAGO"
                         : "MULTIPLE";
 
         boolean ready =
-                brazil
-                        ? true
-                        : (
-                                stripeReady ||
-                                payPalReady ||
-                                true
-                        );
+                true;
 
         Map<String, Object> response =
                 new HashMap<>();
@@ -168,6 +177,16 @@ public class StripePaymentController {
                 "stripeAvailable",
                 !brazil &&
                         stripeReady
+        );
+
+        response.put(
+                "stripeWalletAvailable",
+                stripeWalletReady
+        );
+
+        response.put(
+                "stripePublishableKey",
+                stripePublishableKey
         );
 
         response.put(
@@ -247,6 +266,70 @@ public class StripePaymentController {
                         session.paymentStatus() == null
                                 ? ""
                                 : session.paymentStatus()
+                )
+        );
+    }
+
+    @PostMapping("/{orderId}/stripe/wallet-intent")
+    public ResponseEntity<?> createStripeWalletIntent(
+            @PathVariable Long orderId,
+            @RequestParam String token
+    ) {
+        Order order =
+                getOrderForToken(
+                        orderId,
+                        token
+                );
+
+        StripeStorePaymentService.StripeWalletIntent intent =
+                stripeStorePaymentService
+                        .createWalletPaymentIntent(
+                                order
+                        );
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "id",
+                        intent.id(),
+                        "clientSecret",
+                        intent.clientSecret(),
+                        "status",
+                        intent.status() == null
+                                ? ""
+                                : intent.status()
+                )
+        );
+    }
+
+    @PostMapping("/{orderId}/stripe/wallet-sync")
+    public ResponseEntity<?> syncStripeWalletIntent(
+            @PathVariable Long orderId,
+            @RequestParam String token,
+            @RequestParam String paymentIntentId
+    ) {
+        Order order =
+                getOrderForToken(
+                        orderId,
+                        token
+                );
+
+        Order synced =
+                stripeStorePaymentService
+                        .syncWalletPaymentIntent(
+                                order,
+                                paymentIntentId
+                        );
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "orderId",
+                        synced.getId(),
+                        "paymentStatus",
+                        synced.getPaymentStatus()
+                                .name(),
+                        "orderStatus",
+                        synced.getStatus()
+                                .name()
                 )
         );
     }
