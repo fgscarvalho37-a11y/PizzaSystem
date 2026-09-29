@@ -103,7 +103,20 @@ export default function PaymentSuccessPage() {
     params.id as string;
 
   const tokenFromUrl =
+    searchParams.get("access") ??
     searchParams.get("token");
+
+  const paypalSuccess =
+    searchParams.get(
+      "paypal"
+    ) === "success";
+
+  const paypalOrderId =
+    paypalSuccess
+      ? searchParams.get(
+          "token"
+        )
+      : null;
 
   const storeSlug =
     searchParams.get("store");
@@ -216,6 +229,31 @@ export default function PaymentSuccessPage() {
           );
 
         if (
+          paypalSuccess &&
+          paypalOrderId
+        ) {
+          const paypalResponse =
+            await fetch(
+              `${API_URL}/api/payments/${id}/paypal/capture?token=${encodedToken}&paypalOrderId=${encodeURIComponent(
+                paypalOrderId
+              )}`,
+              {
+                method:
+                  "POST",
+              }
+            );
+
+          if (
+            !paypalResponse.ok
+          ) {
+            console.warn(
+              "PayPal capture pending:",
+              await paypalResponse.text()
+            );
+          }
+        }
+
+        if (
           stripeSuccess &&
           stripeSessionId
         ) {
@@ -278,6 +316,8 @@ export default function PaymentSuccessPage() {
     tokenReady,
     stripeSuccess,
     stripeSessionId,
+    paypalSuccess,
+    paypalOrderId,
   ]);
 
   if (
