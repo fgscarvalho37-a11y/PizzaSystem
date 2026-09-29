@@ -31,6 +31,8 @@ type StripeStatus = {
   currencyCode: string;
   recommended: boolean;
   keyLast4?: string | null;
+  walletsReady: boolean;
+  publishableKeyLast4?: string | null;
   connectedAt?: string | null;
   webhookPath: string;
   webhookUrl: string;
@@ -93,6 +95,11 @@ export default function AdminPaymentsPage() {
   ] = useState("");
 
   const [
+    publishableKey,
+    setPublishableKey,
+  ] = useState("");
+
+  const [
     payPalClientId,
     setPayPalClientId,
   ] = useState("");
@@ -112,6 +119,11 @@ export default function AdminPaymentsPage() {
 
   const [saving, setSaving] =
     useState(false);
+
+  const [
+    savingWallets,
+    setSavingWallets,
+  ] = useState(false);
 
   const [
     savingPayPal,
@@ -240,12 +252,13 @@ export default function AdminPaymentsPage() {
 
     if (
       !restrictedApiKey.trim() ||
-      !webhookSecret.trim()
+      !webhookSecret.trim() ||
+      !publishableKey.trim()
     ) {
       setError(
         text(
-          "Informe a Restricted API Key e o webhook secret.",
-          "Enter the Restricted API Key and webhook signing secret."
+          "Informe a Restricted API Key, a Publishable Key e o webhook secret.",
+          "Enter the Restricted API Key, Publishable Key, and webhook signing secret."
         )
       );
       return;
@@ -268,6 +281,8 @@ export default function AdminPaymentsPage() {
                 restrictedApiKey.trim(),
               webhookSecret:
                 webhookSecret.trim(),
+              publishableKey:
+                publishableKey.trim(),
             }),
           }
         );
@@ -304,6 +319,7 @@ export default function AdminPaymentsPage() {
       setStripeStatus(data);
       setRestrictedApiKey("");
       setWebhookSecret("");
+      setPublishableKey("");
 
       setMessage(
         text(
@@ -322,6 +338,89 @@ export default function AdminPaymentsPage() {
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function configureStripeWallets(
+    event: FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    if (!publishableKey.trim()) {
+      setError(
+        text(
+          "Informe a Publishable Key da Stripe.",
+          "Enter the Stripe Publishable Key."
+        )
+      );
+      return;
+    }
+
+    try {
+      setSavingWallets(true);
+      setError("");
+      setMessage("");
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/admin/stripe-payment/wallets`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              publishableKey:
+                publishableKey.trim(),
+            }),
+          }
+        );
+
+      if (!response.ok) {
+        let detail =
+          text(
+            "Não foi possível ativar Apple Pay e Google Pay.",
+            "Could not enable Apple Pay and Google Pay."
+          );
+
+        try {
+          const data =
+            await response.json();
+
+          detail =
+            data.message ??
+            data.detail ??
+            data.error ??
+            detail;
+        } catch {
+        }
+
+        throw new Error(detail);
+      }
+
+      setStripeStatus(
+        await response.json()
+      );
+      setPublishableKey("");
+
+      setMessage(
+        text(
+          "Apple Pay e Google Pay foram habilitados para a integração Stripe desta loja.",
+          "Apple Pay and Google Pay were enabled for this store's Stripe integration."
+        )
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : text(
+              "Não foi possível ativar as carteiras.",
+              "Could not enable wallets."
+            )
+      );
+    } finally {
+      setSavingWallets(false);
     }
   }
 
@@ -747,6 +846,71 @@ export default function AdminPaymentsPage() {
                 )}
               </p>
 
+              {stripeStatus.walletsReady ? (
+                <p className="mt-3 rounded-xl border border-emerald-200 bg-white/70 px-3 py-2 text-xs font-medium text-emerald-800">
+                  {text(
+                    `Apple Pay e Google Pay habilitados · pk_•••• ${stripeStatus.publishableKeyLast4 ?? "----"}`,
+                    `Apple Pay and Google Pay enabled · pk_•••• ${stripeStatus.publishableKeyLast4 ?? "----"}`
+                  )}
+                </p>
+              ) : (
+                <form
+                  onSubmit={
+                    configureStripeWallets
+                  }
+                  className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4"
+                >
+                  <p className="text-xs font-bold text-amber-900">
+                    {text(
+                      "Ativar Apple Pay e Google Pay",
+                      "Enable Apple Pay and Google Pay"
+                    )}
+                  </p>
+
+                  <p className="mt-1 text-[11px] leading-5 text-amber-800">
+                    {text(
+                      "Informe a Publishable Key da mesma conta Stripe. A Restricted API Key também precisa ter Payment Intents em leitura/escrita.",
+                      "Enter the Publishable Key from the same Stripe account. The Restricted API Key must also have Payment Intents read/write access."
+                    )}
+                  </p>
+
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    value={
+                      publishableKey
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setPublishableKey(
+                        event.target.value
+                      )
+                    }
+                    placeholder="pk_live_..."
+                    className="mt-3 h-11 w-full rounded-xl border border-amber-300 bg-white px-4 text-sm outline-none focus:border-primary"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={
+                      savingWallets
+                    }
+                    className="mt-3 h-10 rounded-xl bg-foreground px-4 text-xs font-bold text-background disabled:opacity-50"
+                  >
+                    {savingWallets
+                      ? text(
+                          "Ativando...",
+                          "Enabling..."
+                        )
+                      : text(
+                          "Ativar carteiras",
+                          "Enable wallets"
+                        )}
+                  </button>
+                </form>
+              )}
+
               <button
                 type="button"
                 onClick={
@@ -778,8 +942,8 @@ export default function AdminPaymentsPage() {
 
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
                     {text(
-                      "Na conta Stripe da pizzaria, crie uma chave restrita com Checkout Sessions em escrita. Use rk_live_... em produção.",
-                      "In the restaurant's Stripe account, create a restricted key with Checkout Sessions write access. Use rk_live_... in production."
+                      "Na conta Stripe da pizzaria, crie uma chave restrita com Checkout Sessions e Payment Intents em leitura/escrita. Use rk_live_... em produção.",
+                      "In the restaurant's Stripe account, create a restricted key with Checkout Sessions and Payment Intents read/write access. Use rk_live_... in production."
                     )}
                   </p>
                 </div>
@@ -791,8 +955,8 @@ export default function AdminPaymentsPage() {
 
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
                     {text(
-                      "Cadastre a URL abaixo na Stripe e assine os eventos de Checkout Session.",
-                      "Add the URL below to Stripe and subscribe to Checkout Session events."
+                      "Cadastre a URL abaixo na Stripe e assine os eventos de Checkout Session e Payment Intent.",
+                      "Add the URL below to Stripe and subscribe to Checkout Session and Payment Intent events."
                     )}
                   </p>
 
@@ -825,7 +989,10 @@ export default function AdminPaymentsPage() {
                     checkout.session.completed<br />
                     checkout.session.async_payment_succeeded<br />
                     checkout.session.async_payment_failed<br />
-                    checkout.session.expired
+                    checkout.session.expired<br />
+                    payment_intent.succeeded<br />
+                    payment_intent.payment_failed<br />
+                    payment_intent.canceled
                   </p>
                 </div>
               </div>
@@ -857,6 +1024,36 @@ export default function AdminPaymentsPage() {
                     placeholder="rk_live_..."
                     className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
                   />
+                </label>
+
+                <label>
+                  <span className="text-xs font-bold">
+                    Publishable Key
+                  </span>
+
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    value={
+                      publishableKey
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setPublishableKey(
+                        event.target.value
+                      )
+                    }
+                    placeholder="pk_live_..."
+                    className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
+                  />
+
+                  <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+                    {text(
+                      "Usada somente no navegador para Stripe.js, Apple Pay e Google Pay. Registre também o domínio público da loja em Payment method domains na Stripe.",
+                      "Used only in the browser for Stripe.js, Apple Pay, and Google Pay. Also register the store's public domain under Payment method domains in Stripe."
+                    )}
+                  </p>
                 </label>
 
                 <label>

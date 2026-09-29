@@ -118,6 +118,12 @@ public class StripePaymentController {
                                 targetStore.getId()
                         );
 
+        boolean stripeWalletsReady =
+                stripeStorePaymentService
+                        .isWalletReady(
+                                targetStore.getId()
+                        );
+
         boolean payPalReady =
                 payPalStorePaymentService
                         .isReady(
@@ -171,6 +177,12 @@ public class StripePaymentController {
         );
 
         response.put(
+                "walletsAvailable",
+                !brazil &&
+                        stripeWalletsReady
+        );
+
+        response.put(
                 "paypalAvailable",
                 !brazil &&
                         payPalReady
@@ -199,6 +211,106 @@ public class StripePaymentController {
 
         return ResponseEntity.ok(
                 response
+        );
+    }
+
+    // =========================
+    // APPLE PAY / GOOGLE PAY
+    // =========================
+
+    @GetMapping("/{orderId}/stripe/wallet-config")
+    public ResponseEntity<?> stripeWalletConfig(
+            @PathVariable Long orderId,
+            @RequestParam String token
+    ) {
+
+        Order order =
+                getOrderForToken(
+                        orderId,
+                        token
+                );
+
+        StripeStorePaymentService.StripeWalletConfig config =
+                stripeStorePaymentService
+                        .getWalletPublicConfig(
+                                order
+                        );
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "publishableKey",
+                        config.publishableKey(),
+                        "amount",
+                        config.amount(),
+                        "currency",
+                        config.currency()
+                )
+        );
+    }
+
+    @PostMapping("/{orderId}/stripe/wallet-intent")
+    public ResponseEntity<?> createStripeWalletIntent(
+            @PathVariable Long orderId,
+            @RequestParam String token
+    ) {
+
+        Order order =
+                getOrderForToken(
+                        orderId,
+                        token
+                );
+
+        StripeStorePaymentService.StripePaymentIntentSession intent =
+                stripeStorePaymentService
+                        .createWalletPaymentIntent(
+                                order
+                        );
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "intentId",
+                        intent.id(),
+                        "clientSecret",
+                        intent.clientSecret(),
+                        "status",
+                        intent.status() == null
+                                ? ""
+                                : intent.status()
+                )
+        );
+    }
+
+    @PostMapping("/{orderId}/stripe/wallet-sync")
+    public ResponseEntity<?> syncStripeWalletIntent(
+            @PathVariable Long orderId,
+            @RequestParam String token,
+            @RequestParam String paymentIntent
+    ) {
+
+        Order order =
+                getOrderForToken(
+                        orderId,
+                        token
+                );
+
+        Order synced =
+                stripeStorePaymentService
+                        .syncPaymentIntent(
+                                order,
+                                paymentIntent
+                        );
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "orderId",
+                        synced.getId(),
+                        "paymentStatus",
+                        synced.getPaymentStatus()
+                                .name(),
+                        "orderStatus",
+                        synced.getStatus()
+                                .name()
+                )
         );
     }
 

@@ -175,6 +175,32 @@ public class StripeStorePaymentService {
                         : null
         );
 
+        boolean walletsReady =
+                connected &&
+                connection != null &&
+                hasText(
+                        connection.getPublishableKey()
+                );
+
+        response.put(
+                "walletsReady",
+                walletsReady
+        );
+
+        response.put(
+                "publishableKeyLast4",
+                walletsReady
+                        ? connection.getPublishableKey()
+                                .substring(
+                                        Math.max(
+                                                0,
+                                                connection.getPublishableKey()
+                                                        .length() - 4
+                                        )
+                                )
+                        : null
+        );
+
         response.put(
                 "connectedAt",
                 connection != null
@@ -206,7 +232,8 @@ public class StripeStorePaymentService {
     public Map<String, Object> connect(
             Store store,
             String restrictedApiKey,
-            String webhookSecret
+            String webhookSecret,
+            String publishableKey
     ) {
 
         String apiKey =
@@ -218,6 +245,16 @@ public class StripeStorePaymentService {
                 normalizeWebhookSecret(
                         webhookSecret
                 );
+
+        String publicKey =
+                normalizePublishableKey(
+                        publishableKey
+                );
+
+        validateKeyModeMatch(
+                apiKey,
+                publicKey
+        );
 
         validateRestrictedApiKey(
                 apiKey
@@ -248,6 +285,10 @@ public class StripeStorePaymentService {
                 )
         );
 
+        connection.setPublishableKey(
+                publicKey
+        );
+
         connection.setKeyLast4(
                 apiKey.substring(
                         apiKey.length() - 4
@@ -264,6 +305,49 @@ public class StripeStorePaymentService {
 
         connection.setDisconnectedAt(
                 null
+        );
+
+        connectionRepository.save(
+                connection
+        );
+
+        return getConnectionStatus(
+                store
+        );
+    }
+
+    @Transactional
+    public Map<String, Object> configureWallets(
+            Store store,
+            String publishableKey
+    ) {
+
+        StripePaymentConnection connection =
+                getConnectedConnection(
+                        store.getId()
+                );
+
+        String publicKey =
+                normalizePublishableKey(
+                        publishableKey
+                );
+
+        String apiKey =
+                getRestrictedApiKey(
+                        store.getId()
+                );
+
+        validateKeyModeMatch(
+                apiKey,
+                publicKey
+        );
+
+        validateRestrictedApiKey(
+                apiKey
+        );
+
+        connection.setPublishableKey(
+                publicKey
         );
 
         connectionRepository.save(
@@ -298,6 +382,10 @@ public class StripeStorePaymentService {
         );
 
         connection.setWebhookSecretEncrypted(
+                null
+        );
+
+        connection.setPublishableKey(
                 null
         );
 
@@ -339,9 +427,357 @@ public class StripeStorePaymentService {
                 .isPresent();
     }
 
+    @Transactional(readOnly = true)
+    public boolean isWalletReady(
+            Long storeId
+    ) {
+
+        return connectionRepository
+                .findByStoreIdAndConnectedTrue(
+                        storeId
+                )
+                .filter(
+                        connection ->
+                                hasText(
+                                        connection.getRestrictedApiKeyEncrypted()
+                                ) &&
+                                hasText(
+                                        connection.getWebhookSecretEncrypted()
+                                ) &&
+                                hasText(
+                                        connection.getPublishableKey()
+                                )
+                )
+                .isPresent();
+    }
+
+    @Transactional(readOnly = true)
+    public StripeWalletConfig getWalletPublicConfig(
+            Order order
+    ) {
+
+        validateOrderForStripe(
+                order
+        );
+
+        StripePaymentConnection connection =
+                getConnectedConnection(
+                        order.getStore()
+                                .getId()
+                );
+
+        if (
+                !hasText(
+                        connection.getPublishableKey()
+                )
+        ) {
+            throw new IllegalStateException(
+                    "Apple Pay e Google Pay ainda não foram configurados para esta loja."
+            );
+        }
+
+        String currency =
+                normalizeCurrency(
+                        hasText(
+                                order.getPaymentCurrencyCode()
+                        )
+                                ? order.getPaymentCurrencyCode()
+                                : order.getStore()
+                                        .getCurrencyCode()
+                );
+
+        return new StripeWalletConfig(
+                connection.getPublishableKey(),
+                toMinorUnits(
+                        order.getTotal(),
+                        currency
+                ),
+                currency.toLowerCase(
+                        Locale.ROOT
+                )
+        );
+    }
+
     // =========================
     // CHECKOUT
     // =========================
+
+    @Transactional
+    public StripePaymentIntentSession createWalletPaymentIntent(
+            Order order
+    ) {
+
+        validateOrderForStripe(
+                order
+        );
+
+        if (
+                !isWalletReady(
+                        order.getStore()
+                                .getId()
+                )
+        ) {
+            throw new IllegalStateException(
+                    "Apple Pay e Google Pay ainda não foram configurados para esta loja."
+            );
+        }
+
+        if (
+                order.getPaymentStatus()
+                        == PaymentStatus.APPROVED
+        ) {
+            throw new IllegalStateException(
+                    "Este pedido já foi pago."
+            );
+        }
+
+        Store store =
+                order.getStore();
+
+        String apiKey =
+                getRestrictedApiKey(
+                        store.getId()
+                );
+
+        String currency =
+                normalizeCurrency(
+                        hasText(
+                                order.getPaymentCurrencyCode()
+                        )
+                                ? order.getPaymentCurrencyCode()
+                                : store.getCurrencyCode()
+                );
+
+        String existingExternalId =
+                order.getPaymentExternalId();
+
+        if (
+                hasText(
+                        existingExternalId
+                ) &&
+                existingExternalId.startsWith(
+                        "pi_"
+                )
+        ) {
+            try {
+                JsonNode existing =
+                        getPaymentIntent(
+                                store.getId(),
+                                existingExternalId
+                        );
+
+                validatePaymentIntentOwnership(
+                        order,
+                        existing
+                );
+
+                String existingStatus =
+                        existing.path(
+                                "status"
+                        )
+                                .asText();
+
+                if (
+                        "succeeded".equalsIgnoreCase(
+                                existingStatus
+                        )
+                ) {
+                    approveOrder(
+                            order
+                    );
+                }
+
+                String existingClientSecret =
+                        existing.path(
+                                "client_secret"
+                        )
+                                .asText();
+
+                if (
+                        !"canceled".equalsIgnoreCase(
+                                existingStatus
+                        ) &&
+                        hasText(
+                                existingClientSecret
+                        )
+                ) {
+                    return new StripePaymentIntentSession(
+                            existingExternalId,
+                            existingClientSecret,
+                            existingStatus
+                    );
+                }
+
+            } catch (
+                    RuntimeException ignored
+            ) {
+                // Cria outro PaymentIntent se o anterior não puder ser reutilizado.
+            }
+        }
+
+        MultiValueMap<String, String> form =
+                new LinkedMultiValueMap<>();
+
+        form.add(
+                "amount",
+                String.valueOf(
+                        toMinorUnits(
+                                order.getTotal(),
+                                currency
+                        )
+                )
+        );
+
+        form.add(
+                "currency",
+                currency.toLowerCase(
+                        Locale.ROOT
+                )
+        );
+
+        form.add(
+                "payment_method_types[]",
+                "card"
+        );
+
+        form.add(
+                "metadata[order_id]",
+                String.valueOf(
+                        order.getId()
+                )
+        );
+
+        form.add(
+                "metadata[store_id]",
+                String.valueOf(
+                        store.getId()
+                )
+        );
+
+        JsonNode response =
+                postForm(
+                        "/payment_intents",
+                        form,
+                        apiKey
+                );
+
+        String intentId =
+                response.path(
+                        "id"
+                )
+                        .asText();
+
+        String clientSecret =
+                response.path(
+                        "client_secret"
+                )
+                        .asText();
+
+        if (
+                !hasText(
+                        intentId
+                ) ||
+                !hasText(
+                        clientSecret
+                )
+        ) {
+            throw new IllegalStateException(
+                    "A Stripe não retornou um PaymentIntent válido."
+            );
+        }
+
+        order.setPaymentExternalId(
+                intentId
+        );
+
+        order.setPaymentProvider(
+                "STRIPE"
+        );
+
+        order.setPaymentCurrencyCode(
+                currency
+        );
+
+        orderRepository.save(
+                order
+        );
+
+        return new StripePaymentIntentSession(
+                intentId,
+                clientSecret,
+                response.path(
+                        "status"
+                )
+                        .asText()
+        );
+    }
+
+    @Transactional
+    public Order syncPaymentIntent(
+            Order order,
+            String intentId
+    ) {
+
+        validateOrderForStripe(
+                order
+        );
+
+        if (
+                intentId == null ||
+                !intentId.matches(
+                        "^pi_[A-Za-z0-9_]+$"
+                )
+        ) {
+            throw new IllegalArgumentException(
+                    "PaymentIntent Stripe inválido."
+            );
+        }
+
+        JsonNode intent =
+                getPaymentIntent(
+                        order.getStore()
+                                .getId(),
+                        intentId
+                );
+
+        validatePaymentIntentOwnership(
+                order,
+                intent
+        );
+
+        String status =
+                intent.path(
+                        "status"
+                )
+                        .asText();
+
+        if (
+                "succeeded".equalsIgnoreCase(
+                        status
+                )
+        ) {
+            approveOrder(
+                    order
+            );
+
+        } else if (
+                "canceled".equalsIgnoreCase(
+                        status
+                ) &&
+                order.getPaymentStatus()
+                        != PaymentStatus.APPROVED
+        ) {
+            order.setPaymentStatus(
+                    PaymentStatus.REJECTED
+            );
+
+            orderRepository.save(
+                    order
+            );
+        }
+
+        return order;
+    }
 
     @Transactional
     public StripeCheckoutSession createCheckoutSession(
@@ -770,7 +1206,7 @@ public class StripeStorePaymentService {
                 )
                         .asText();
 
-        JsonNode session =
+        JsonNode eventObject =
                 event.path(
                         "data"
                 )
@@ -779,12 +1215,29 @@ public class StripeStorePaymentService {
                         );
 
         if (
+                type.startsWith(
+                        "payment_intent."
+                )
+        ) {
+            handlePaymentIntentWebhook(
+                    storeId,
+                    type,
+                    eventObject
+            );
+
+            return;
+        }
+
+        if (
                 !type.startsWith(
                         "checkout.session."
                 )
         ) {
             return;
         }
+
+        JsonNode session =
+                eventObject;
 
         Long orderId =
                 parseLong(
@@ -933,6 +1386,141 @@ public class StripeStorePaymentService {
         }
     }
 
+    private void handlePaymentIntentWebhook(
+            Long storeId,
+            String type,
+            JsonNode intent
+    ) {
+
+        Long orderId =
+                parseLong(
+                        intent.path(
+                                "metadata"
+                        )
+                                .path(
+                                        "order_id"
+                                )
+                                .asText()
+                );
+
+        Long metadataStoreId =
+                parseLong(
+                        intent.path(
+                                "metadata"
+                        )
+                                .path(
+                                        "store_id"
+                                )
+                                .asText()
+                );
+
+        if (
+                orderId == null ||
+                metadataStoreId == null ||
+                !storeId.equals(
+                        metadataStoreId
+                )
+        ) {
+            return;
+        }
+
+        Order order =
+                orderRepository
+                        .findById(
+                                orderId
+                        )
+                        .orElse(
+                                null
+                        );
+
+        if (
+                order == null ||
+                order.getStore() == null ||
+                !storeId.equals(
+                        order.getStore()
+                                .getId()
+                )
+        ) {
+            return;
+        }
+
+        validatePaymentIntentOwnership(
+                order,
+                intent
+        );
+
+        String intentId =
+                intent.path(
+                        "id"
+                )
+                        .asText();
+
+        if (
+                hasText(
+                        intentId
+                )
+        ) {
+            order.setPaymentExternalId(
+                    intentId
+            );
+        }
+
+        order.setPaymentProvider(
+                "STRIPE"
+        );
+
+        String currency =
+                intent.path(
+                        "currency"
+                )
+                        .asText();
+
+        if (
+                hasText(
+                        currency
+                )
+        ) {
+            order.setPaymentCurrencyCode(
+                    currency.toUpperCase(
+                            Locale.ROOT
+                    )
+            );
+        }
+
+        if (
+                "payment_intent.succeeded".equals(
+                        type
+                )
+        ) {
+            approveOrder(
+                    order
+            );
+
+            return;
+        }
+
+        if (
+                (
+                        "payment_intent.payment_failed".equals(
+                                type
+                        ) ||
+                        "payment_intent.canceled".equals(
+                                type
+                        )
+                ) &&
+                order.getPaymentStatus()
+                        != PaymentStatus.APPROVED
+        ) {
+            order.setPaymentStatus(
+                    PaymentStatus.REJECTED
+            );
+
+            orderRepository.save(
+                    order
+            );
+        }
+    }
+
     // =========================
     // STRIPE HTTP
     // =========================
@@ -944,6 +1532,25 @@ public class StripeStorePaymentService {
         get(
                 "/checkout/sessions?limit=1",
                 apiKey
+        );
+
+        get(
+                "/payment_intents?limit=1",
+                apiKey
+        );
+    }
+
+    private JsonNode getPaymentIntent(
+            Long storeId,
+            String intentId
+    ) {
+
+        return get(
+                "/payment_intents/"
+                        + intentId,
+                getRestrictedApiKey(
+                        storeId
+                )
         );
     }
 
@@ -1250,6 +1857,50 @@ public class StripeStorePaymentService {
         }
     }
 
+    private void validatePaymentIntentOwnership(
+            Order order,
+            JsonNode intent
+    ) {
+
+        String metadataOrderId =
+                intent.path(
+                        "metadata"
+                )
+                        .path(
+                                "order_id"
+                        )
+                        .asText();
+
+        String metadataStoreId =
+                intent.path(
+                        "metadata"
+                )
+                        .path(
+                                "store_id"
+                        )
+                        .asText();
+
+        if (
+                !String.valueOf(
+                        order.getId()
+                )
+                        .equals(
+                                metadataOrderId
+                        ) ||
+                !String.valueOf(
+                        order.getStore()
+                                .getId()
+                )
+                        .equals(
+                                metadataStoreId
+                        )
+        ) {
+            throw new SecurityException(
+                    "PaymentIntent Stripe não pertence a este pedido."
+            );
+        }
+    }
+
     private void validateSessionOwnership(
             Order order,
             JsonNode session
@@ -1546,6 +2197,63 @@ public class StripeStorePaymentService {
         return normalized;
     }
 
+    private String normalizePublishableKey(
+            String value
+    ) {
+
+        if (
+                value == null ||
+                value.isBlank()
+        ) {
+            throw new IllegalArgumentException(
+                    "Informe a Publishable Key da Stripe."
+            );
+        }
+
+        String normalized =
+                value.trim();
+
+        if (
+                !normalized.startsWith(
+                        "pk_live_"
+                ) &&
+                !normalized.startsWith(
+                        "pk_test_"
+                )
+        ) {
+            throw new IllegalArgumentException(
+                    "Use uma Publishable Key da Stripe (pk_live_... ou pk_test_...)."
+            );
+        }
+
+        return normalized;
+    }
+
+    private void validateKeyModeMatch(
+            String restrictedApiKey,
+            String publishableKey
+    ) {
+
+        boolean restrictedLive =
+                restrictedApiKey.startsWith(
+                        "rk_live_"
+                );
+
+        boolean publishableLive =
+                publishableKey.startsWith(
+                        "pk_live_"
+                );
+
+        if (
+                restrictedLive !=
+                        publishableLive
+        ) {
+            throw new IllegalArgumentException(
+                    "A Restricted API Key e a Publishable Key precisam pertencer ao mesmo modo Stripe (live ou test)."
+            );
+        }
+    }
+
     private String normalizeWebhookSecret(
             String value
     ) {
@@ -1787,6 +2495,20 @@ public class StripeStorePaymentService {
         ) {
             return null;
         }
+    }
+
+    public record StripeWalletConfig(
+            String publishableKey,
+            long amount,
+            String currency
+    ) {
+    }
+
+    public record StripePaymentIntentSession(
+            String id,
+            String clientSecret,
+            String status
+    ) {
     }
 
     public record StripeCheckoutSession(

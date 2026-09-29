@@ -65,7 +65,35 @@ public class StripePaymentAdminController {
                         .connect(
                                 store,
                                 request.restrictedApiKey(),
-                                request.webhookSecret()
+                                request.webhookSecret(),
+                                request.publishableKey()
+                        )
+        );
+    }
+
+    @PutMapping("/wallets")
+    public ResponseEntity<Map<String, Object>> configureWallets(
+            @RequestBody StripeWalletRequest request
+    ) {
+
+        if (
+                request == null ||
+                request.publishableKey() == null
+        ) {
+            throw new IllegalArgumentException(
+                    "Publishable Key Stripe não informada."
+            );
+        }
+
+        Store store =
+                currentStoreService
+                        .getCurrentStore();
+
+        return ResponseEntity.ok(
+                stripeStorePaymentService
+                        .configureWallets(
+                                store,
+                                request.publishableKey()
                         )
         );
     }
@@ -92,7 +120,13 @@ public class StripePaymentAdminController {
 
     public record StripeConnectRequest(
             String restrictedApiKey,
-            String webhookSecret
+            String webhookSecret,
+            String publishableKey
+    ) {
+    }
+
+    public record StripeWalletRequest(
+            String publishableKey
     ) {
     }
 }

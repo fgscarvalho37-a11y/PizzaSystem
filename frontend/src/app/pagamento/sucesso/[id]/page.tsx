@@ -131,6 +131,18 @@ export default function PaymentSuccessPage() {
       "session_id"
     );
 
+  const stripeIntentSuccess =
+    searchParams.get(
+      "stripe_intent"
+    ) === "success";
+
+  const stripePaymentIntentId =
+    stripeIntentSuccess
+      ? searchParams.get(
+          "payment_intent"
+        )
+      : null;
+
   const menuUrl =
     storeSlug
       ? `/cardapio/${encodeURIComponent(storeSlug)}`
@@ -254,6 +266,31 @@ export default function PaymentSuccessPage() {
         }
 
         if (
+          stripeIntentSuccess &&
+          stripePaymentIntentId
+        ) {
+          const walletSyncResponse =
+            await fetch(
+              `${API_URL}/api/payments/${id}/stripe/wallet-sync?token=${encodedToken}&paymentIntent=${encodeURIComponent(
+                stripePaymentIntentId
+              )}`,
+              {
+                method:
+                  "POST",
+              }
+            );
+
+          if (
+            !walletSyncResponse.ok
+          ) {
+            console.warn(
+              "Stripe wallet sync pending:",
+              await walletSyncResponse.text()
+            );
+          }
+        }
+
+        if (
           stripeSuccess &&
           stripeSessionId
         ) {
@@ -316,6 +353,8 @@ export default function PaymentSuccessPage() {
     tokenReady,
     stripeSuccess,
     stripeSessionId,
+    stripeIntentSuccess,
+    stripePaymentIntentId,
     paypalSuccess,
     paypalOrderId,
   ]);

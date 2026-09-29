@@ -89,6 +89,7 @@ type PaymentConfig = {
   pixAvailable: boolean;
   cardAvailable: boolean;
   stripeAvailable: boolean;
+  walletsAvailable: boolean;
   paypalAvailable: boolean;
   cashAvailable: boolean;
   hostedCheckout: boolean;
@@ -2788,8 +2789,8 @@ export default function CheckoutPage() {
                           "Credit card"
                         )
                       : text(
-                          "Cartão / carteira",
-                          "Card / wallet"
+                          "Cartão / Apple Pay / Google Pay",
+                          "Card / Apple Pay / Google Pay"
                         )}
                   </button>
                 )}
