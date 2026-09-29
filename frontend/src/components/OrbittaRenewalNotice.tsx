@@ -1,11 +1,32 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  BellRing,
-  CalendarClock,
-  ExternalLink,
-} from "lucide-react";
+function BellIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 21h4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M16 3v4M8 3v4M3 10h18M12 14v3l2 1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ExternalIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M14 3h7v7M10 14 21 3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 import { useLanguage } from "@/i18n/LanguageProvider";
 
@@ -259,9 +280,9 @@ export default function OrbittaRenewalNotice() {
           )}
         >
           {pinned ? (
-            <BellRing className="h-5 w-5" />
+            <BellIcon />
           ) : (
-            <CalendarClock className="h-5 w-5" />
+            <CalendarIcon />
           )}
         </div>
 
@@ -304,7 +325,7 @@ export default function OrbittaRenewalNotice() {
             "Open Orbitta"
           )}
 
-          <ExternalLink className="h-3.5 w-3.5" />
+          <ExternalIcon />
         </a>
       </div>
     </aside>
