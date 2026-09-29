@@ -3,6 +3,7 @@ package com.pizzasystem.backend.entity;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -292,6 +293,11 @@ public class Store {
             "TRIAL";
 
     private LocalDateTime trialEndsAt;
+
+    @Column(
+            name = "orbitta_renewal_date"
+    )
+    private LocalDate orbittaRenewalDate;
 
     // =========================
     // DATAS
@@ -794,6 +800,17 @@ public class Store {
     ) {
         this.trialEndsAt =
                 trialEndsAt;
+    }
+
+    public LocalDate getOrbittaRenewalDate() {
+        return orbittaRenewalDate;
+    }
+
+    public void setOrbittaRenewalDate(
+            LocalDate orbittaRenewalDate
+    ) {
+        this.orbittaRenewalDate =
+                orbittaRenewalDate;
     }
 
     public LocalDateTime getCreatedAt() {

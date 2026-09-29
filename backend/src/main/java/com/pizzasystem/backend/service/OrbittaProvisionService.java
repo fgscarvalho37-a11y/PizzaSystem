@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Normalizer;
+import java.time.LocalDate;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -56,7 +57,8 @@ public class OrbittaProvisionService {
             String email,
             String name,
             String planName,
-            String passwordHash
+            String passwordHash,
+            LocalDate renewalDate
     ) {
 
         validateIds(
@@ -126,6 +128,10 @@ public class OrbittaProvisionService {
                     normalizedPlan
             );
 
+            store.setOrbittaRenewalDate(
+                    renewalDate
+            );
+
             store =
                     storeRepository.save(
                             store
@@ -187,6 +193,10 @@ public class OrbittaProvisionService {
 
             existingStore.setPlan(
                     normalizedPlan
+            );
+
+            existingStore.setOrbittaRenewalDate(
+                    renewalDate
             );
 
             store =
@@ -272,6 +282,10 @@ public class OrbittaProvisionService {
 
         store.setPlan(
                 normalizedPlan
+        );
+
+        store.setOrbittaRenewalDate(
+                renewalDate
         );
 
         store.setSubscriptionStatus(

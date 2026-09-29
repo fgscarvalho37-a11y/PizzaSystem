@@ -13,6 +13,7 @@ import {
 } from "next/navigation";
 
 import AdminOnboarding from "@/components/AdminOnboarding";
+import OrbittaRenewalNotice from "@/components/OrbittaRenewalNotice";
 
 type AdminLayoutProps = {
   children: ReactNode;
@@ -354,6 +355,8 @@ export default function AdminLayout({
       <div className="min-h-screen bg-background lg:pl-20">
         {children}
       </div>
+
+      <OrbittaRenewalNotice />
 
       <AdminOnboarding
         open={

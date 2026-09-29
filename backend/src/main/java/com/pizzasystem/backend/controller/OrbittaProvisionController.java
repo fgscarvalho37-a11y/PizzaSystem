@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.security.MessageDigest;
 import java.util.Map;
 
@@ -61,7 +62,8 @@ public class OrbittaProvisionController {
                                     request.email(),
                                     request.name(),
                                     request.planName(),
-                                    request.passwordHash()
+                                    request.passwordHash(),
+                                    request.renewalDate()
                             );
 
             return ResponseEntity.ok(
@@ -288,7 +290,8 @@ public class OrbittaProvisionController {
             String email,
             String name,
             String planName,
-            String passwordHash
+            String passwordHash,
+            LocalDate renewalDate
     ) {
     }
 
