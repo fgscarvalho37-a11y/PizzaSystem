@@ -89,6 +89,8 @@ type PaymentConfig = {
   pixAvailable: boolean;
   cardAvailable: boolean;
   stripeAvailable: boolean;
+  stripeWalletAvailable: boolean;
+  stripePublishableKey?: string | null;
   paypalAvailable: boolean;
   cashAvailable: boolean;
   hostedCheckout: boolean;
@@ -1777,7 +1779,7 @@ export default function CheckoutPage() {
 
         if (!isBrazil) {
           router.push(
-            `/pagamento/stripe/${order.id}?token=${encodedToken}&store=${encodeURIComponent(
+            `/pagamento/stripe-wallet/${order.id}?token=${encodedToken}&store=${encodeURIComponent(
               storeSlug
             )}`
           );
