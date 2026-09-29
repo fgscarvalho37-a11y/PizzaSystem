@@ -354,7 +354,6 @@ public class PayPalStorePaymentService {
     }
 
     @Transactional
-    public PayPalCheckoutOrder createCheckoutOrder(    @Transactional
     public PayPalCheckoutOrder createCheckoutOrder(
             Order order,
             String publicAccessToken,
