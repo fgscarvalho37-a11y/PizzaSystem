@@ -65,7 +65,8 @@ public class StripePaymentAdminController {
                         .connect(
                                 store,
                                 request.restrictedApiKey(),
-                                request.webhookSecret()
+                                request.webhookSecret(),
+                                request.publishableKey()
                         )
         );
     }
@@ -92,7 +93,8 @@ public class StripePaymentAdminController {
 
     public record StripeConnectRequest(
             String restrictedApiKey,
-            String webhookSecret
+            String webhookSecret,
+            String publishableKey
     ) {
     }
 }
