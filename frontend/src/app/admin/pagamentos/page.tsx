@@ -31,6 +31,8 @@ type StripeStatus = {
   currencyCode: string;
   recommended: boolean;
   keyLast4?: string | null;
+  publishableKeyLast4?: string | null;
+  walletsReady: boolean;
   connectedAt?: string | null;
   webhookPath: string;
   webhookUrl: string;
@@ -91,6 +93,16 @@ export default function AdminPaymentsPage() {
     webhookSecret,
     setWebhookSecret,
   ] = useState("");
+
+  const [
+    stripePublishableKey,
+    setStripePublishableKey,
+  ] = useState("");
+
+  const [
+    savingWallets,
+    setSavingWallets,
+  ] = useState(false);
 
   const [
     payPalClientId,
@@ -240,12 +252,13 @@ export default function AdminPaymentsPage() {
 
     if (
       !restrictedApiKey.trim() ||
-      !webhookSecret.trim()
+      !webhookSecret.trim() ||
+      !stripePublishableKey.trim()
     ) {
       setError(
         text(
-          "Informe a Restricted API Key e o webhook secret.",
-          "Enter the Restricted API Key and webhook signing secret."
+          "Informe a Restricted API Key, a Publishable Key e o webhook secret.",
+          "Enter the Restricted API Key, Publishable Key, and webhook signing secret."
         )
       );
       return;
@@ -268,6 +281,8 @@ export default function AdminPaymentsPage() {
                 restrictedApiKey.trim(),
               webhookSecret:
                 webhookSecret.trim(),
+              publishableKey:
+                stripePublishableKey.trim(),
             }),
           }
         );
@@ -304,6 +319,7 @@ export default function AdminPaymentsPage() {
       setStripeStatus(data);
       setRestrictedApiKey("");
       setWebhookSecret("");
+      setStripePublishableKey("");
 
       setMessage(
         text(
@@ -322,6 +338,88 @@ export default function AdminPaymentsPage() {
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function configureStripeWallets() {
+    if (
+      !stripePublishableKey.trim()
+    ) {
+      setError(
+        text(
+          "Informe a Publishable Key da Stripe.",
+          "Enter the Stripe Publishable Key."
+        )
+      );
+      return;
+    }
+
+    try {
+      setSavingWallets(true);
+      setError("");
+      setMessage("");
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/admin/stripe-payment/publishable-key`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              publishableKey:
+                stripePublishableKey.trim(),
+            }),
+          }
+        );
+
+      if (!response.ok) {
+        let detail =
+          text(
+            "Não foi possível ativar Apple Pay e Google Pay.",
+            "Could not enable Apple Pay and Google Pay."
+          );
+
+        try {
+          const data =
+            await response.json();
+
+          detail =
+            data.message ??
+            data.detail ??
+            data.error ??
+            detail;
+        } catch {
+        }
+
+        throw new Error(detail);
+      }
+
+      setStripeStatus(
+        await response.json()
+      );
+      setStripePublishableKey("");
+
+      setMessage(
+        text(
+          "Publishable Key salva. As carteiras aparecem automaticamente quando o dispositivo e o domínio forem elegíveis na Stripe.",
+          "Publishable Key saved. Wallets appear automatically when the device and domain are eligible in Stripe."
+        )
+      );
+
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : text(
+              "Não foi possível ativar as carteiras.",
+              "Could not enable wallets."
+            )
+      );
+    } finally {
+      setSavingWallets(false);
     }
   }
 
@@ -747,6 +845,66 @@ export default function AdminPaymentsPage() {
                 )}
               </p>
 
+              <p className="mt-1 text-xs leading-5 text-emerald-700">
+                {stripeStatus.walletsReady
+                  ? text(
+                      `Apple Pay / Google Pay configurados · pk_••••${stripeStatus.publishableKeyLast4 ?? "----"}.`,
+                      `Apple Pay / Google Pay configured · pk_••••${stripeStatus.publishableKeyLast4 ?? "----"}.`
+                    )
+                  : text(
+                      "Apple Pay / Google Pay ainda precisam da Publishable Key.",
+                      "Apple Pay / Google Pay still need the Publishable Key."
+                    )}
+              </p>
+
+              {!stripeStatus.walletsReady && (
+                <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-4">
+                  <label>
+                    <span className="text-xs font-bold text-foreground">
+                      Publishable Key
+                    </span>
+
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      value={
+                        stripePublishableKey
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setStripePublishableKey(
+                          event.target.value
+                        )
+                      }
+                      placeholder="pk_live_..."
+                      className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm text-foreground outline-none focus:border-primary"
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void configureStripeWallets()
+                    }
+                    disabled={
+                      savingWallets
+                    }
+                    className="mt-3 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-50"
+                  >
+                    {savingWallets
+                      ? text(
+                          "Ativando...",
+                          "Enabling..."
+                        )
+                      : text(
+                          "Ativar Apple Pay / Google Pay",
+                          "Enable Apple Pay / Google Pay"
+                        )}
+                  </button>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={
@@ -770,7 +928,7 @@ export default function AdminPaymentsPage() {
             </div>
           ) : (
             <>
-              <div className="mt-6 grid gap-4 lg:grid-cols-2">
+              <div className="mt-6 grid gap-4 lg:grid-cols-3">
                 <div className="rounded-2xl border border-border bg-background p-5">
                   <p className="text-sm font-bold">
                     1. Restricted API Key
@@ -786,13 +944,26 @@ export default function AdminPaymentsPage() {
 
                 <div className="rounded-2xl border border-border bg-background p-5">
                   <p className="text-sm font-bold">
-                    2. Webhook
+                    2. Publishable Key
                   </p>
 
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
                     {text(
-                      "Cadastre a URL abaixo na Stripe e assine os eventos de Checkout Session.",
-                      "Add the URL below to Stripe and subscribe to Checkout Session events."
+                      "Copie a chave pública pk_live_... da mesma conta Stripe. Ela inicializa os botões reais de Apple Pay e Google Pay no navegador.",
+                      "Copy the pk_live_... publishable key from the same Stripe account. It initializes the real Apple Pay and Google Pay buttons in the browser."
+                    )}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-border bg-background p-5">
+                  <p className="text-sm font-bold">
+                    3. Webhook
+                  </p>
+
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    {text(
+                      "Cadastre a URL abaixo na Stripe e assine eventos de Checkout Session e PaymentIntent.",
+                      "Add the URL below to Stripe and subscribe to Checkout Session and PaymentIntent events."
                     )}
                   </p>
 
@@ -825,7 +996,10 @@ export default function AdminPaymentsPage() {
                     checkout.session.completed<br />
                     checkout.session.async_payment_succeeded<br />
                     checkout.session.async_payment_failed<br />
-                    checkout.session.expired
+                    checkout.session.expired<br />
+                    payment_intent.succeeded<br />
+                    payment_intent.payment_failed<br />
+                    payment_intent.canceled
                   </p>
                 </div>
               </div>
@@ -855,6 +1029,29 @@ export default function AdminPaymentsPage() {
                       )
                     }
                     placeholder="rk_live_..."
+                    className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
+                  />
+                </label>
+
+                <label>
+                  <span className="text-xs font-bold">
+                    Publishable Key
+                  </span>
+
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    value={
+                      stripePublishableKey
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setStripePublishableKey(
+                        event.target.value
+                      )
+                    }
+                    placeholder="pk_live_..."
                     className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
                   />
                 </label>
@@ -1115,8 +1312,8 @@ export default function AdminPaymentsPage() {
 
           <p className="mt-3 text-xs leading-6 text-muted-foreground">
             {text(
-              "O PizzaSystem cria uma página de pagamento hospedada pela Stripe usando a conta do próprio estabelecimento. Após a confirmação, o webhook marca o pedido como pago e ele entra automaticamente em Recebidos/Cozinha. O PizzaSystem não recebe o valor da venda.",
-              "PizzaSystem creates a Stripe-hosted payment page using the store's own Stripe account. After confirmation, the webhook marks the order as paid and it automatically enters the Received/Kitchen flow. PizzaSystem does not receive the sale proceeds."
+              "No cartão, o PizzaSystem pode usar o checkout hospedado da Stripe. Para Apple Pay e Google Pay, os botões são renderizados pela Stripe dentro do PizzaSystem e só aparecem em dispositivos elegíveis. Em todos os casos o dinheiro vai para a conta Stripe do próprio estabelecimento.",
+              "For cards, PizzaSystem can use Stripe-hosted Checkout. For Apple Pay and Google Pay, Stripe renders the wallet buttons inside PizzaSystem and only shows them on eligible devices. In every case, funds go to the store's own Stripe account."
             )}
           </p>
         </section>
