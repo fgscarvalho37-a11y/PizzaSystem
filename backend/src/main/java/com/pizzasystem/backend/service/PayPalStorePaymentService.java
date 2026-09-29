@@ -53,6 +53,7 @@ public class PayPalStorePaymentService {
     private final CredentialEncryptionService encryptionService;
     private final CouponService couponService;
     private final LoyaltyService loyaltyService;
+    private final PayPalPartnerService payPalPartnerService;
 
     private final RestTemplate restTemplate =
             new RestTemplate();
@@ -65,29 +66,63 @@ public class PayPalStorePaymentService {
             OrderRepository orderRepository,
             CredentialEncryptionService encryptionService,
             CouponService couponService,
-            LoyaltyService loyaltyService
+            LoyaltyService loyaltyService,
+            PayPalPartnerService payPalPartnerService
     ) {
         this.connectionRepository = connectionRepository;
         this.orderRepository = orderRepository;
         this.encryptionService = encryptionService;
         this.couponService = couponService;
         this.loyaltyService = loyaltyService;
+        this.payPalPartnerService = payPalPartnerService;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public Map<String, Object> getConnectionStatus(
             Store store
     ) {
         PayPalPaymentConnection connection =
                 connectionRepository
-                        .findByStoreId(store.getId())
-                        .orElse(null);
+                        .findByStoreId(
+                                store.getId()
+                        )
+                        .orElse(
+                                null
+                        );
 
-        boolean connected =
+        if (
                 connection != null &&
                 connection.isConnected() &&
-                hasText(connection.getClientId()) &&
-                hasText(connection.getClientSecretEncrypted());
+                hasText(
+                        connection.getPartnerMerchantId()
+                )
+        ) {
+            payPalPartnerService
+                    .refreshMerchantStatus(
+                            connection
+                    );
+        }
+
+        boolean partnerConnected =
+                connection != null &&
+                connection.isConnected() &&
+                hasText(
+                        connection.getPartnerMerchantId()
+                );
+
+        boolean legacyConnected =
+                connection != null &&
+                connection.isConnected() &&
+                hasText(
+                        connection.getClientId()
+                ) &&
+                hasText(
+                        connection.getClientSecretEncrypted()
+                );
+
+        boolean connected =
+                partnerConnected ||
+                legacyConnected;
 
         Map<String, Object> response =
                 new HashMap<>();
@@ -96,25 +131,84 @@ public class PayPalStorePaymentService {
         response.put("provider", "PAYPAL");
         response.put("countryCode", store.getCountryCode());
         response.put("currencyCode", store.getCurrencyCode());
+
         response.put(
                 "recommended",
-                !"BR".equalsIgnoreCase(store.getCountryCode())
+                !"BR".equalsIgnoreCase(
+                        store.getCountryCode()
+                )
         );
+
+        response.put(
+                "automaticConnection",
+                partnerConnected
+        );
+
+        response.put(
+                "connectionMode",
+                partnerConnected
+                        ? "PARTNER"
+                        : (
+                                legacyConnected
+                                        ? "LEGACY"
+                                        : "NONE"
+                        )
+        );
+
+        response.put(
+                "merchantId",
+                partnerConnected
+                        ? connection.getPartnerMerchantId()
+                        : null
+        );
+
+        response.put(
+                "paymentsReceivable",
+                partnerConnected
+                        ? connection.isPaymentsReceivable()
+                        : legacyConnected
+        );
+
+        response.put(
+                "primaryEmailConfirmed",
+                partnerConnected
+                        ? connection.isPrimaryEmailConfirmed()
+                        : legacyConnected
+        );
+
+        response.put(
+                "permissionsGranted",
+                partnerConnected
+                        ? connection.isPermissionsGranted()
+                        : legacyConnected
+        );
+
+        response.put(
+                "accountStatus",
+                partnerConnected
+                        ? connection.getAccountStatus()
+                        : null
+        );
+
         response.put(
                 "clientIdLast4",
-                connection != null
+                legacyConnected
                         ? connection.getClientIdLast4()
                         : null
         );
+
         response.put(
                 "connectedAt",
                 connection != null
                         ? connection.getConnectedAt()
                         : null
         );
+
         response.put(
                 "sandbox",
-                connection != null &&
+                partnerConnected
+                        ? payPalPartnerService.isSandbox()
+                        : connection != null &&
                         connection.isSandbox()
         );
 
@@ -181,10 +275,29 @@ public class PayPalStorePaymentService {
     ) {
         PayPalPaymentConnection connection =
                 connectionRepository
-                        .findByStoreId(store.getId())
-                        .orElse(null);
+                        .findByStoreId(
+                                store.getId()
+                        )
+                        .orElse(
+                                null
+                        );
 
-        if (connection == null) {
+        if (
+                connection == null
+        ) {
+            return;
+        }
+
+        if (
+                hasText(
+                        connection.getPartnerMerchantId()
+                )
+        ) {
+            payPalPartnerService
+                    .disconnect(
+                            store
+                    );
+
             return;
         }
 
@@ -201,17 +314,47 @@ public class PayPalStorePaymentService {
     public boolean isReady(
             Long storeId
     ) {
-        return connectionRepository
-                .findByStoreIdAndConnectedTrue(storeId)
-                .filter(
-                        connection ->
-                                hasText(connection.getClientId()) &&
-                                hasText(connection.getClientSecretEncrypted())
+        PayPalPaymentConnection connection =
+                connectionRepository
+                        .findByStoreIdAndConnectedTrue(
+                                storeId
+                        )
+                        .orElse(
+                                null
+                        );
+
+        if (
+                connection == null
+        ) {
+            return false;
+        }
+
+        if (
+                hasText(
+                        connection.getPartnerMerchantId()
                 )
-                .isPresent();
+        ) {
+            return payPalPartnerService
+                    .isConfigured()
+                    &&
+                    connection.isPermissionsGranted()
+                    &&
+                    connection.isPaymentsReceivable()
+                    &&
+                    connection.isPrimaryEmailConfirmed();
+        }
+
+        return hasText(
+                connection.getClientId()
+        )
+                &&
+                hasText(
+                        connection.getClientSecretEncrypted()
+                );
     }
 
     @Transactional
+    public PayPalCheckoutOrder createCheckoutOrder(    @Transactional
     public PayPalCheckoutOrder createCheckoutOrder(
             Order order,
             String publicAccessToken,
@@ -233,17 +376,13 @@ public class PayPalStorePaymentService {
                         order.getStore().getId()
                 );
 
-        String secret =
-                encryptionService.decrypt(
-                        connection.getClientSecretEncrypted()
+        PayPalRequestContext requestContext =
+                getRequestContext(
+                        connection
                 );
 
         String accessToken =
-                getAccessToken(
-                        connection.getClientId(),
-                        secret,
-                        connection.isSandbox()
-                );
+                requestContext.accessToken();
 
         String origin =
                 normalizeReturnOrigin(returnOrigin);
@@ -318,6 +457,20 @@ public class PayPalStorePaymentService {
         );
         purchaseUnit.put("amount", amount);
 
+        if (
+                hasText(
+                        requestContext.partnerMerchantId()
+                )
+        ) {
+            purchaseUnit.put(
+                    "payee",
+                    Map.of(
+                            "merchant_id",
+                            requestContext.partnerMerchantId()
+                    )
+            );
+        }
+
         Map<String, Object> applicationContext =
                 new HashMap<>();
 
@@ -358,13 +511,32 @@ public class PayPalStorePaymentService {
         HttpHeaders headers =
                 bearerHeaders(accessToken);
 
+        if (
+                hasText(
+                        requestContext.partnerMerchantId()
+                )
+        ) {
+            payPalPartnerService
+                    .applyMerchantHeaders(
+                            headers,
+                            requestContext.partnerMerchantId()
+                    );
+        }
+
+        headers.set(
+                "PayPal-Request-Id",
+                "pizzasystem-order-"
+                        + order.getId()
+                        + "-create"
+        );
+
         headers.setContentType(
                 MediaType.APPLICATION_JSON
         );
 
         JsonNode response =
                 exchangeJson(
-                        apiBase(connection.isSandbox())
+                        apiBase(requestContext.sandbox())
                                 + "/v2/checkout/orders",
                         HttpMethod.POST,
                         new HttpEntity<>(
@@ -442,20 +614,35 @@ public class PayPalStorePaymentService {
                         order.getStore().getId()
                 );
 
-        String secret =
-                encryptionService.decrypt(
-                        connection.getClientSecretEncrypted()
+        PayPalRequestContext requestContext =
+                getRequestContext(
+                        connection
                 );
 
         String accessToken =
-                getAccessToken(
-                        connection.getClientId(),
-                        secret,
-                        connection.isSandbox()
-                );
+                requestContext.accessToken();
 
         HttpHeaders headers =
                 bearerHeaders(accessToken);
+
+        if (
+                hasText(
+                        requestContext.partnerMerchantId()
+                )
+        ) {
+            payPalPartnerService
+                    .applyMerchantHeaders(
+                            headers,
+                            requestContext.partnerMerchantId()
+                    );
+        }
+
+        headers.set(
+                "PayPal-Request-Id",
+                "pizzasystem-order-"
+                        + order.getId()
+                        + "-capture"
+        );
 
         headers.setContentType(
                 MediaType.APPLICATION_JSON
@@ -463,7 +650,7 @@ public class PayPalStorePaymentService {
 
         JsonNode response =
                 exchangeJson(
-                        apiBase(connection.isSandbox())
+                        apiBase(requestContext.sandbox())
                                 + "/v2/checkout/orders/"
                                 + payPalOrderId
                                 + "/capture",
@@ -589,6 +776,40 @@ public class PayPalStorePaymentService {
             couponService.registerUsageForOrder(order);
             loyaltyService.registerForOrder(order);
         }
+    }
+
+    private PayPalRequestContext getRequestContext(
+            PayPalPaymentConnection connection
+    ) {
+
+        if (
+                hasText(
+                        connection.getPartnerMerchantId()
+                )
+        ) {
+            return new PayPalRequestContext(
+                    payPalPartnerService
+                            .getPlatformAccessToken(),
+                    payPalPartnerService
+                            .isSandbox(),
+                    connection.getPartnerMerchantId()
+            );
+        }
+
+        String secret =
+                encryptionService.decrypt(
+                        connection.getClientSecretEncrypted()
+                );
+
+        return new PayPalRequestContext(
+                getAccessToken(
+                        connection.getClientId(),
+                        secret,
+                        connection.isSandbox()
+                ),
+                connection.isSandbox(),
+                null
+        );
     }
 
     private String getAccessToken(
@@ -883,6 +1104,13 @@ public class PayPalStorePaymentService {
     ) {
         return value != null &&
                 !value.isBlank();
+    }
+
+    private record PayPalRequestContext(
+            String accessToken,
+            boolean sandbox,
+            String partnerMerchantId
+    ) {
     }
 
     public record PayPalCheckoutOrder(

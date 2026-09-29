@@ -200,6 +200,12 @@ public class SecurityConfig {
 
                                 .requestMatchers(
                                         HttpMethod.GET,
+                                        "/api/admin/paypal-payment/onboarding/return"
+                                )
+                                .permitAll()
+
+                                .requestMatchers(
+                                        HttpMethod.GET,
                                         "/api/customer/orders"
                                 )
                                 .permitAll()

@@ -58,3 +58,22 @@ stripe.connect.webhook-secret=${STRIPE_CONNECT_WEBHOOK_SECRET:}
 PIZZASYSTEM_CREDENTIAL_ENCRYPTION_KEY=
 
 PIZZASYSTEM_PUBLIC_API_URL=https://pizzasystem-api.onrender.com
+
+# ===============================
+# PAYPAL PLATFORM - PAGAMENTOS DAS LOJAS INTERNACIONAIS
+# ===============================
+# Configuração única da Orbitta/PizzaSystem. As pizzarias usam
+# "Conectar com PayPal" e nunca informam Client ID ou Client Secret.
+PAYPAL_PLATFORM_CLIENT_ID=
+PAYPAL_PLATFORM_CLIENT_SECRET=
+PAYPAL_PARTNER_MERCHANT_ID=
+PAYPAL_PARTNER_ATTRIBUTION_ID=
+PAYPAL_PLATFORM_SANDBOX=true
+PAYPAL_ONBOARDING_RETURN_URL=https://pizzasystem-api.onrender.com/api/admin/paypal-payment/onboarding/return
+
+paypal.platform.client-id=${PAYPAL_PLATFORM_CLIENT_ID:}
+paypal.platform.client-secret=${PAYPAL_PLATFORM_CLIENT_SECRET:}
+paypal.platform.partner-merchant-id=${PAYPAL_PARTNER_MERCHANT_ID:}
+paypal.platform.partner-attribution-id=${PAYPAL_PARTNER_ATTRIBUTION_ID:}
+paypal.platform.sandbox=${PAYPAL_PLATFORM_SANDBOX:true}
+paypal.platform.return-url=${PAYPAL_ONBOARDING_RETURN_URL:https://pizzasystem-api.onrender.com/api/admin/paypal-payment/onboarding/return}

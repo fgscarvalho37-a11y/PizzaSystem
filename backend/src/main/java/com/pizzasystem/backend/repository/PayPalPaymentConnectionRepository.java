@@ -13,4 +13,9 @@ public interface PayPalPaymentConnectionRepository
 
     Optional<PayPalPaymentConnection>
     findByStoreIdAndConnectedTrue(Long storeId);
+
+    Optional<PayPalPaymentConnection>
+    findByPartnerMerchantIdAndConnectedTrue(
+            String partnerMerchantId
+    );
 }

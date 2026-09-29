@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  FormEvent,
   useEffect,
   useState,
 } from "react";
@@ -52,6 +51,13 @@ type PayPalStatus = {
   countryCode: string;
   currencyCode: string;
   recommended: boolean;
+  automaticConnection: boolean;
+  connectionMode: "PARTNER" | "LEGACY" | "NONE";
+  merchantId?: string | null;
+  paymentsReceivable: boolean;
+  primaryEmailConfirmed: boolean;
+  permissionsGranted: boolean;
+  accountStatus?: string | null;
   clientIdLast4?: string | null;
   connectedAt?: string | null;
   sandbox: boolean;
@@ -109,21 +115,6 @@ export default function AdminPaymentsPage() {
     publishableKey,
     setPublishableKey,
   ] = useState("");
-
-  const [
-    payPalClientId,
-    setPayPalClientId,
-  ] = useState("");
-
-  const [
-    payPalClientSecret,
-    setPayPalClientSecret,
-  ] = useState("");
-
-  const [
-    payPalSandbox,
-    setPayPalSandbox,
-  ] = useState(false);
 
   const [loading, setLoading] =
     useState(true);
@@ -284,6 +275,36 @@ export default function AdminPaymentsPage() {
         )
       );
     }
+    const payPalResult =
+      searchParams.get(
+        "paypal"
+      );
+
+    if (
+      payPalResult ===
+      "connected"
+    ) {
+      setMessage(
+        text(
+          "Conta PayPal conectada com sucesso. Os pagamentos PayPal passam a usar automaticamente a conta da própria loja.",
+          "PayPal account connected successfully. PayPal payments now automatically use the store's own account."
+        )
+      );
+
+      void load();
+    }
+
+    if (
+      payPalResult ===
+      "error"
+    ) {
+      setError(
+        text(
+          "A conexão com o PayPal não foi concluída. Tente novamente.",
+          "PayPal connection was not completed. Try again."
+        )
+      );
+    }
   }, [
     searchParams,
   ]);
@@ -414,26 +435,9 @@ export default function AdminPaymentsPage() {
     }
   }
 
-  async function connectPayPal(
-    event: FormEvent<HTMLFormElement>
-  ) {
-    event.preventDefault();
-
+  async function connectPayPal() {
     setError("");
     setMessage("");
-
-    if (
-      !payPalClientId.trim() ||
-      !payPalClientSecret.trim()
-    ) {
-      setError(
-        text(
-          "Informe o Client ID e o Client Secret do PayPal.",
-          "Enter the PayPal Client ID and Client Secret."
-        )
-      );
-      return;
-    }
 
     try {
       setSavingPayPal(true);
@@ -442,27 +446,15 @@ export default function AdminPaymentsPage() {
         await adminFetch(
           `${API_URL}/api/admin/paypal-payment/connect`,
           {
-            method: "PUT",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              clientId:
-                payPalClientId.trim(),
-              clientSecret:
-                payPalClientSecret.trim(),
-              sandbox:
-                payPalSandbox,
-            }),
+            method: "POST",
           }
         );
 
       if (!response.ok) {
         let detail =
           text(
-            "Não foi possível conectar o PayPal.",
-            "Could not connect PayPal."
+            "Não foi possível iniciar a conexão com o PayPal.",
+            "Could not start PayPal connection."
           );
 
         try {
@@ -477,20 +469,27 @@ export default function AdminPaymentsPage() {
         } catch {
         }
 
-        throw new Error(detail);
+        throw new Error(
+          detail
+        );
       }
 
-      setPayPalStatus(
-        await response.json()
-      );
-      setPayPalClientId("");
-      setPayPalClientSecret("");
+      const data: {
+        onboardingUrl?: string;
+      } =
+        await response.json();
 
-      setMessage(
-        text(
-          "PayPal conectado. Os pagamentos vão para a conta PayPal da própria loja.",
-          "PayPal connected. Payments go to the store's own PayPal account."
-        )
+      if (!data.onboardingUrl) {
+        throw new Error(
+          text(
+            "O PayPal não retornou a página de conexão.",
+            "PayPal did not return the connection page."
+          )
+        );
+      }
+
+      window.location.assign(
+        data.onboardingUrl
       );
 
     } catch (caught) {
@@ -502,7 +501,6 @@ export default function AdminPaymentsPage() {
               "Could not connect PayPal."
             )
       );
-    } finally {
       setSavingPayPal(false);
     }
   }
@@ -788,7 +786,7 @@ export default function AdminPaymentsPage() {
                     )}
               </p>
 
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 <ConnectionCheck
                   ok={
                     stripeStatus.chargesEnabled
@@ -813,7 +811,14 @@ export default function AdminPaymentsPage() {
                   ok={
                     stripeStatus.walletsReady
                   }
-                  label="Apple Pay / Google Pay"
+                  label="Apple Pay"
+                />
+
+                <ConnectionCheck
+                  ok={
+                    stripeStatus.walletsReady
+                  }
+                  label="Google Pay"
                 />
               </div>
 
@@ -938,42 +943,91 @@ export default function AdminPaymentsPage() {
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                 {text(
-                  "Alternativa à Stripe. A loja usa as credenciais da própria conta PayPal Business e recebe diretamente nela.",
-                  "An alternative to Stripe. The store uses credentials from its own PayPal Business account and receives payments directly."
+                  "Conecte a conta PayPal da própria pizzaria. O dono entra ou cria a conta no PayPal, concede permissão ao PizzaSystem e volta sem copiar Client ID ou Client Secret.",
+                  "Connect the restaurant's own PayPal account. The owner signs in or creates the account on PayPal, grants PizzaSystem permission, and returns without copying a Client ID or Client Secret."
                 )}
               </p>
             </div>
 
             <StatusBadge
               connected={
-                !!payPalStatus?.connected
+                payPalStatus?.connectionMode ===
+                  "PARTNER"
               }
               connectedText={text(
-                "Pronto para receber",
-                "Ready to accept payments"
+                "Conta conectada",
+                "Account connected"
               )}
               disconnectedText={text(
-                "Configuração pendente",
-                "Setup required"
+                "Não conectada",
+                "Not connected"
               )}
             />
           </div>
 
-          {payPalStatus?.connected ? (
+          {payPalStatus?.connected &&
+          payPalStatus.connectionMode ===
+            "PARTNER" ? (
             <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
               <p className="text-sm font-bold text-emerald-800">
                 {text(
-                  "PayPal conectado",
-                  "PayPal connected"
+                  "PayPal conectado automaticamente",
+                  "PayPal automatically connected"
                 )}
               </p>
 
               <p className="mt-1 text-xs leading-5 text-emerald-700">
-                {text(
-                  `Client ID terminando em •••• ${payPalStatus.clientIdLast4 ?? "----"} · ${payPalStatus.sandbox ? "Sandbox" : "Live"}.`,
-                  `Client ID ending in •••• ${payPalStatus.clientIdLast4 ?? "----"} · ${payPalStatus.sandbox ? "Sandbox" : "Live"}.`
-                )}
+                {payPalStatus.merchantId
+                  ? text(
+                      `Merchant ${payPalStatus.merchantId} · ${payPalStatus.sandbox ? "Sandbox" : "Live"}.`,
+                      `Merchant ${payPalStatus.merchantId} · ${payPalStatus.sandbox ? "Sandbox" : "Live"}.`
+                    )
+                  : text(
+                      "A conta PayPal desta loja está vinculada à plataforma.",
+                      "This store's PayPal account is linked to the platform."
+                    )}
               </p>
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <ConnectionCheck
+                  ok={
+                    payPalStatus.permissionsGranted
+                  }
+                  label={text(
+                    "Permissões",
+                    "Permissions"
+                  )}
+                />
+
+                <ConnectionCheck
+                  ok={
+                    payPalStatus.primaryEmailConfirmed
+                  }
+                  label={text(
+                    "E-mail confirmado",
+                    "Email confirmed"
+                  )}
+                />
+
+                <ConnectionCheck
+                  ok={
+                    payPalStatus.paymentsReceivable
+                  }
+                  label={text(
+                    "Recebimentos",
+                    "Payments"
+                  )}
+                />
+              </div>
+
+              {!payPalStatus.paymentsReceivable && (
+                <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
+                  {text(
+                    "A conta foi vinculada, mas o PayPal ainda não liberou recebimentos. O dono deve concluir as pendências mostradas pelo próprio PayPal.",
+                    "The account is linked, but PayPal has not enabled payments yet. The owner must complete any requirements shown by PayPal."
+                  )}
+                </p>
+              )}
 
               <button
                 type="button"
@@ -997,96 +1051,71 @@ export default function AdminPaymentsPage() {
               </button>
             </div>
           ) : (
-            <form
-              onSubmit={
-                connectPayPal
-              }
-              className="mt-6 grid gap-4"
-            >
-              <label>
-                <span className="text-xs font-bold">
-                  Client ID
-                </span>
-
-                <input
-                  type="text"
-                  autoComplete="off"
-                  value={
-                    payPalClientId
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setPayPalClientId(
-                      event.target.value
+            <div className="mt-6 rounded-2xl border border-border bg-background p-5">
+              <p className="text-sm font-bold">
+                {payPalStatus?.connectionMode ===
+                "LEGACY"
+                  ? text(
+                      "Migrar para conexão automática",
+                      "Migrate to automatic connection"
                     )
-                  }
-                  placeholder="PayPal Client ID"
-                  className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
-                />
-              </label>
+                  : text(
+                      "Conexão automática",
+                      "Automatic connection"
+                    )}
+              </p>
 
-              <label>
-                <span className="text-xs font-bold">
-                  Client Secret
-                </span>
+              {payPalStatus?.connectionMode ===
+                "LEGACY" && (
+                <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                  {text(
+                    "Esta loja ainda usa Client ID e Client Secret próprios. Ela continua funcionando até a migração, mas a nova conexão não pede nenhuma credencial da pizzaria.",
+                    "This store still uses its own Client ID and Client Secret. It keeps working until migration, but the new connection asks for no restaurant credentials."
+                  )}
+                </p>
+              )}
 
-                <input
-                  type="password"
-                  autoComplete="off"
-                  value={
-                    payPalClientSecret
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setPayPalClientSecret(
-                      event.target.value
-                    )
-                  }
-                  placeholder="PayPal Client Secret"
-                  className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary"
-                />
-              </label>
-
-              <label className="flex items-center gap-3 text-sm">
-                <input
-                  type="checkbox"
-                  checked={
-                    payPalSandbox
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setPayPalSandbox(
-                      event.target.checked
-                    )
-                  }
-                />
+              <p className="mt-2 max-w-2xl text-xs leading-6 text-muted-foreground">
                 {text(
-                  "Usar Sandbox para testes",
-                  "Use Sandbox for testing"
+                  "Ao clicar abaixo, o PayPal abre a tela oficial para entrar em uma conta existente ou criar uma nova e autorizar o PizzaSystem.",
+                  "Click below to open PayPal's official flow to sign in to an existing account or create a new one and authorize PizzaSystem."
                 )}
-              </label>
+              </p>
 
               <button
-                type="submit"
+                type="button"
+                onClick={() =>
+                  void connectPayPal()
+                }
                 disabled={
                   savingPayPal
                 }
-                className="h-11 w-fit rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                className="mt-5 h-11 rounded-xl bg-[#0070BA] px-6 text-sm font-bold text-white disabled:opacity-50"
               >
                 {savingPayPal
                   ? text(
-                      "Validando...",
-                      "Validating..."
+                      "Abrindo PayPal...",
+                      "Opening PayPal..."
+                    )
+                  : payPalStatus?.connectionMode ===
+                    "LEGACY"
+                  ? text(
+                      "Migrar e conectar com PayPal",
+                      "Migrate and connect with PayPal"
                     )
                   : text(
-                      "Conectar PayPal",
-                      "Connect PayPal"
+                      "Conectar com PayPal",
+                      "Connect with PayPal"
                     )}
               </button>
-            </form>
+
+              <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
+                {text(
+                  "Depois da autorização, o PizzaSystem usa as credenciais da plataforma para processar pagamentos em nome da conta PayPal conectada.",
+                  "After authorization, PizzaSystem uses platform credentials to process payments on behalf of the connected PayPal account."
+                )}
+              </p>
+            </div>
           )}
         </section>
 
