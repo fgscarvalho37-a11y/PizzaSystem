@@ -52,6 +52,12 @@ public class StripePaymentConnection {
     private String webhookSecretEncrypted;
 
     @Column(
+            name = "publishable_key",
+            length = 300
+    )
+    private String publishableKey;
+
+    @Column(
             name = "key_last4",
             length = 4
     )
@@ -116,6 +122,17 @@ public class StripePaymentConnection {
     ) {
         this.webhookSecretEncrypted =
                 webhookSecretEncrypted;
+    }
+
+    public String getPublishableKey() {
+        return publishableKey;
+    }
+
+    public void setPublishableKey(
+            String publishableKey
+    ) {
+        this.publishableKey =
+                publishableKey;
     }
 
     public String getKeyLast4() {
