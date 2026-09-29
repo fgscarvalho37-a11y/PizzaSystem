@@ -71,6 +71,32 @@ public class StripePaymentAdminController {
         );
     }
 
+    @PutMapping("/publishable-key")
+    public ResponseEntity<Map<String, Object>> configurePublishableKey(
+            @RequestBody PublishableKeyRequest request
+    ) {
+        if (
+                request == null ||
+                request.publishableKey() == null
+        ) {
+            throw new IllegalArgumentException(
+                    "Publishable Key não informada."
+            );
+        }
+
+        Store store =
+                currentStoreService
+                        .getCurrentStore();
+
+        return ResponseEntity.ok(
+                stripeStorePaymentService
+                        .configurePublishableKey(
+                                store,
+                                request.publishableKey()
+                        )
+        );
+    }
+
     @PostMapping("/disconnect")
     public ResponseEntity<Map<String, Object>> disconnect() {
 
@@ -94,6 +120,11 @@ public class StripePaymentAdminController {
     public record StripeConnectRequest(
             String restrictedApiKey,
             String webhookSecret,
+            String publishableKey
+    ) {
+    }
+
+    public record PublishableKeyRequest(
             String publishableKey
     ) {
     }
