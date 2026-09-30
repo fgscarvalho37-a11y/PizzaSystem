@@ -27,7 +27,8 @@ public class OrbittaProvisionService {
                     "mail",
                     "cdn",
                     "suporte",
-                    "support"
+                    "support",
+                    "pizzasystem"
             );
 
     private final StoreRepository storeRepository;
@@ -35,6 +36,9 @@ public class OrbittaProvisionService {
 
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
+
+    @Value("${PIZZASYSTEM_PUBLIC_APP_URL:https://pizzasystem.orbitta.space}")
+    private String publicAppUrl;
 
     @Value("${PIZZASYSTEM_STOREFRONT_BASE_DOMAIN:orbitta.space}")
     private String storefrontBaseDomain;
@@ -613,17 +617,14 @@ public class OrbittaProvisionService {
     ) {
 
         String baseUrl =
-                frontendUrl == null
-                        ? ""
-                        : frontendUrl.trim();
+                normalizedBaseUrl(
+                        publicAppUrl
+                );
 
-        while (
-                baseUrl.endsWith("/")
-        ) {
+        if (baseUrl.isBlank()) {
             baseUrl =
-                    baseUrl.substring(
-                            0,
-                            baseUrl.length() - 1
+                    normalizedBaseUrl(
+                            frontendUrl
                     );
         }
 
@@ -637,6 +638,28 @@ public class OrbittaProvisionService {
                         baseUrl
                 )
         );
+    }
+
+    private String normalizedBaseUrl(
+            String value
+    ) {
+
+        String normalized =
+                value == null
+                        ? ""
+                        : value.trim();
+
+        while (
+                normalized.endsWith("/")
+        ) {
+            normalized =
+                    normalized.substring(
+                            0,
+                            normalized.length() - 1
+                    );
+        }
+
+        return normalized;
     }
 
     private String buildStorefrontUrl(

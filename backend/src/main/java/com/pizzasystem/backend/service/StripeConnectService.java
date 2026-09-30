@@ -79,7 +79,7 @@ public class StripeConnectService {
     @Value("${stripe.connect.webhook-secret:}")
     private String webhookSecret;
 
-    @Value("${app.frontend-url:http://localhost:3000}")
+    @Value("${PIZZASYSTEM_PUBLIC_APP_URL:https://pizzasystem.orbitta.space}")
     private String frontendUrl;
 
     @Value("${stripe.connect.onboarding-return-uri:https://pizzasystem-api.onrender.com/api/admin/stripe-payment/onboarding/return}")
@@ -712,6 +712,19 @@ public class StripeConnectService {
             identity.put(
                     "country",
                     store.getCountryCode()
+                            .trim()
+                            .toUpperCase()
+            );
+        }
+
+        if (
+                hasText(
+                        store.getEmail()
+                )
+        ) {
+            payload.put(
+                    "contact_email",
+                    store.getEmail()
                             .trim()
                             .toLowerCase()
             );

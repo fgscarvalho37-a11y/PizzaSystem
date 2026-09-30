@@ -71,23 +71,23 @@ public class PayPalPartnerService {
             secureRandom =
             new SecureRandom();
 
-    @Value("${paypal.platform.client-id:}")
+    @Value("${PAYPAL_PLATFORM_CLIENT_ID:}")
     private String platformClientId;
 
-    @Value("${paypal.platform.client-secret:}")
+    @Value("${PAYPAL_PLATFORM_CLIENT_SECRET:}")
     private String platformClientSecret;
 
-    @Value("${paypal.platform.partner-merchant-id:}")
+    @Value("${PAYPAL_PARTNER_MERCHANT_ID:}")
     private String partnerMerchantId;
 
-    @Value("${paypal.platform.partner-attribution-id:}")
+    @Value("${PAYPAL_PARTNER_ATTRIBUTION_ID:}")
     private String partnerAttributionId;
 
-    @Value("${paypal.platform.sandbox:true}")
+    @Value("${PAYPAL_PLATFORM_SANDBOX:true}")
     private boolean sandbox;
 
     @Value(
-            "${paypal.platform.return-url:https://pizzasystem-api.onrender.com/api/admin/paypal-payment/onboarding/return}"
+            "${PAYPAL_ONBOARDING_RETURN_URL:https://pizzasystem-api.onrender.com/api/admin/paypal-payment/onboarding/return}"
     )
     private String returnUrl;
 

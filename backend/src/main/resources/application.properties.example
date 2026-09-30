@@ -58,6 +58,7 @@ stripe.connect.onboarding-refresh-uri=${STRIPE_CONNECT_ONBOARDING_REFRESH_URI:ht
 PIZZASYSTEM_CREDENTIAL_ENCRYPTION_KEY=
 
 PIZZASYSTEM_PUBLIC_API_URL=https://pizzasystem-api.onrender.com
+PIZZASYSTEM_PUBLIC_APP_URL=https://pizzasystem.orbitta.space
 
 # ===============================
 # PAYPAL PLATFORM - PAGAMENTOS DAS LOJAS INTERNACIONAIS

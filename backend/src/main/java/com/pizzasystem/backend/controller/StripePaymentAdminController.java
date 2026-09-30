@@ -30,7 +30,7 @@ public class StripePaymentAdminController {
     private final StripeConnectService
             stripeConnectService;
 
-    @Value("${app.frontend-url:http://localhost:3000}")
+    @Value("${PIZZASYSTEM_PUBLIC_APP_URL:https://pizzasystem.orbitta.space}")
     private String frontendUrl;
 
     public StripePaymentAdminController(
