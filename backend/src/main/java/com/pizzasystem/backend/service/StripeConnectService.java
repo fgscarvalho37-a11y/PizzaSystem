@@ -44,7 +44,7 @@ public class StripeConnectService {
             "https://api.stripe.com/v2";
 
     private static final String STRIPE_V2_VERSION =
-            "2026-08-26.preview";
+            "2026-08-26.dahlia";
 
     private static final int STATE_EXPIRATION_MINUTES =
             30;
@@ -919,12 +919,15 @@ public class StripeConnectService {
         );
 
         try {
+            String requestBody =
+                    payload.toString();
+
             ResponseEntity<String> response =
                     restTemplate.exchange(
                             API_BASE_V2 + path,
                             HttpMethod.POST,
                             new HttpEntity<>(
-                                    payload,
+                                    requestBody,
                                     headers
                             ),
                             String.class
@@ -1006,8 +1009,8 @@ public class StripeConnectService {
         return platformV2Get(
                 "/core/accounts/"
                         + accountId
-                        + "?include=configuration.merchant"
-                        + "&include=requirements"
+                        + "?include%5B0%5D=configuration.merchant"
+                        + "&include%5B1%5D=requirements"
         );
     }
 
