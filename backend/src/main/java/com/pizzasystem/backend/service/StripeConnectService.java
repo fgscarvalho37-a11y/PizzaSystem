@@ -44,7 +44,7 @@ public class StripeConnectService {
             "https://api.stripe.com/v2";
 
     private static final String STRIPE_V2_VERSION =
-            "2026-08-26.dahlia";
+            "2026-08-26.preview";
 
     private static final int STATE_EXPIRATION_MINUTES =
             30;
@@ -702,7 +702,7 @@ public class StripeConnectService {
                     "country",
                     store.getCountryCode()
                             .trim()
-                            .toUpperCase()
+                            .toLowerCase()
             );
         }
 
