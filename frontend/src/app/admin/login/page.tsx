@@ -313,13 +313,8 @@ export default function AdminLoginPage() {
 
         <div className="mb-5 flex justify-center">
 
-          <button
-            type="button"
-            onClick={() =>
-              router.push(
-                "/"
-              )
-            }
+          <a
+            href="https://orbitta.space/produtos/pizzasystem"
             className="
               inline-flex items-center gap-2
               rounded-full border border-border
@@ -336,8 +331,8 @@ export default function AdminLoginPage() {
           >
             <ArrowLeftIcon />
 
-            Voltar ao cardápio
-          </button>
+            Voltar para Orbitta
+          </a>
 
         </div>
 
