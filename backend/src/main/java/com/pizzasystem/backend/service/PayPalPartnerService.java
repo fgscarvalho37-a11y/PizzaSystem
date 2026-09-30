@@ -892,24 +892,36 @@ public class PayPalPartnerService {
     ) {
 
         try {
-            ResponseEntity<JsonNode> response =
+            ResponseEntity<String> response =
                     restTemplate.exchange(
                             url,
                             method,
                             entity,
-                            JsonNode.class
+                            String.class
                     );
 
+            String body =
+                    response.getBody();
+
             if (
-                    response.getBody() ==
-                    null
+                    body == null ||
+                    body.isBlank()
             ) {
                 throw new IllegalStateException(
                         "O PayPal retornou uma resposta vazia."
                 );
             }
 
-            return response.getBody();
+            try {
+                return objectMapper.readTree(
+                        body
+                );
+            } catch (Exception exception) {
+                throw new IllegalStateException(
+                        "O PayPal retornou uma resposta inválida.",
+                        exception
+                );
+            }
 
         } catch (
                 HttpClientErrorException exception

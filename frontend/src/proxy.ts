@@ -13,6 +13,19 @@ const STOREFRONT_BASE_DOMAIN =
     .replace(/^https?:\/\//, "")
     .replace(/\/$/, "");
 
+const PIZZASYSTEM_PUBLIC_HOST =
+  (
+    process.env.PIZZASYSTEM_PUBLIC_HOST ??
+    "pizzasystem.orbitta.space"
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "");
+
+const LEGACY_PRODUCTION_HOST =
+  "pizza-system-nine.vercel.app";
+
 export function proxy(
   request: NextRequest
 ) {
@@ -25,6 +38,31 @@ export function proxy(
     )
       .split(":")[0]
       .toLowerCase();
+
+  if (
+    host ===
+      LEGACY_PRODUCTION_HOST &&
+    PIZZASYSTEM_PUBLIC_HOST
+  ) {
+    const canonicalUrl =
+      new URL(
+        request.nextUrl.pathname +
+          request.nextUrl.search,
+        `https://${PIZZASYSTEM_PUBLIC_HOST}`
+      );
+
+    return NextResponse.redirect(
+      canonicalUrl,
+      308
+    );
+  }
+
+  if (
+    host ===
+      PIZZASYSTEM_PUBLIC_HOST
+  ) {
+    return NextResponse.next();
+  }
 
   const suffix =
     `.${STOREFRONT_BASE_DOMAIN}`;

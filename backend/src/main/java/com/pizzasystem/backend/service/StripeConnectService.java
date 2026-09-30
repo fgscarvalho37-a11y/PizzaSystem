@@ -957,7 +957,7 @@ public class StripeConnectService {
         );
 
         try {
-            ResponseEntity<JsonNode> response =
+            ResponseEntity<String> response =
                     restTemplate.exchange(
                             API_BASE_V2 + path,
                             HttpMethod.POST,
@@ -965,19 +965,13 @@ public class StripeConnectService {
                                     payload,
                                     headers
                             ),
-                            JsonNode.class
+                            String.class
                     );
 
-            if (
-                    response.getBody() ==
-                    null
-            ) {
-                throw new IllegalStateException(
-                        "A Stripe retornou uma resposta vazia."
-                );
-            }
-
-            return response.getBody();
+            return parseJsonResponse(
+                    response,
+                    "A Stripe retornou uma resposta vazia."
+            );
 
         } catch (
                 HttpClientErrorException exception
@@ -996,26 +990,20 @@ public class StripeConnectService {
                 platformV2Headers();
 
         try {
-            ResponseEntity<JsonNode> response =
+            ResponseEntity<String> response =
                     restTemplate.exchange(
                             API_BASE_V2 + path,
                             HttpMethod.GET,
                             new HttpEntity<>(
                                     headers
                             ),
-                            JsonNode.class
+                            String.class
                     );
 
-            if (
-                    response.getBody() ==
-                    null
-            ) {
-                throw new IllegalStateException(
-                        "A Stripe retornou uma resposta vazia."
-                );
-            }
-
-            return response.getBody();
+            return parseJsonResponse(
+                    response,
+                    "A Stripe retornou uma resposta vazia."
+            );
 
         } catch (
                 HttpClientErrorException exception
@@ -1234,23 +1222,20 @@ public class StripeConnectService {
                 );
 
         try {
-            ResponseEntity<JsonNode> response =
+            ResponseEntity<String> response =
                     restTemplate.exchange(
                             API_BASE_V1 + path,
                             HttpMethod.GET,
                             new HttpEntity<>(
                                     headers
                             ),
-                            JsonNode.class
+                            String.class
                     );
 
-            if (response.getBody() == null) {
-                throw new IllegalStateException(
-                        "A Stripe retornou uma resposta vazia."
-                );
-            }
-
-            return response.getBody();
+            return parseJsonResponse(
+                    response,
+                    "A Stripe retornou uma resposta vazia."
+            );
 
         } catch (
                 HttpClientErrorException exception
@@ -1277,7 +1262,7 @@ public class StripeConnectService {
         );
 
         try {
-            ResponseEntity<JsonNode> response =
+            ResponseEntity<String> response =
                     restTemplate.exchange(
                             API_BASE_V1 + path,
                             HttpMethod.POST,
@@ -1285,21 +1270,47 @@ public class StripeConnectService {
                                     form,
                                     headers
                             ),
-                            JsonNode.class
+                            String.class
                     );
 
-            if (response.getBody() == null) {
-                throw new IllegalStateException(
-                        "A Stripe não retornou uma resposta vazia."
-                );
-            }
-
-            return response.getBody();
+            return parseJsonResponse(
+                    response,
+                    "A Stripe retornou uma resposta vazia."
+            );
 
         } catch (
                 HttpClientErrorException exception
         ) {
             throw stripeException(
+                    exception
+            );
+        }
+    }
+
+    private JsonNode parseJsonResponse(
+            ResponseEntity<String> response,
+            String emptyMessage
+    ) {
+
+        String body =
+                response.getBody();
+
+        if (
+                body == null ||
+                body.isBlank()
+        ) {
+            throw new IllegalStateException(
+                    emptyMessage
+            );
+        }
+
+        try {
+            return objectMapper.readTree(
+                    body
+            );
+        } catch (Exception exception) {
+            throw new IllegalStateException(
+                    "A Stripe retornou uma resposta inválida.",
                     exception
             );
         }
@@ -1342,14 +1353,46 @@ public class StripeConnectService {
                                     .getResponseBodyAsString()
                     );
 
+            JsonNode error =
+                    payload.path(
+                            "error"
+                    );
+
             String stripeMessage =
-                    payload.path("error")
-                            .path("message")
+                    error.path(
+                            "message"
+                    )
+                            .asText();
+
+            String stripeCode =
+                    error.path(
+                            "code"
+                    )
+                            .asText();
+
+            String stripeParam =
+                    error.path(
+                            "param"
+                    )
                             .asText();
 
             if (hasText(stripeMessage)) {
                 message =
                         stripeMessage;
+
+                if (hasText(stripeCode)) {
+                    message +=
+                            " ["
+                                    + stripeCode
+                                    + "]";
+                }
+
+                if (hasText(stripeParam)) {
+                    message +=
+                            " ("
+                                    + stripeParam
+                                    + ")";
+                }
             }
 
         } catch (Exception ignored) {
