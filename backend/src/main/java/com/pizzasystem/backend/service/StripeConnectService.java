@@ -688,17 +688,6 @@ public class StripeConnectService {
         var payload =
                 objectMapper.createObjectNode();
 
-        if (
-                hasText(
-                        store.getName()
-                )
-        ) {
-            payload.put(
-                    "display_name",
-                    store.getName()
-            );
-        }
-
         var identity =
                 payload.putObject(
                         "identity"
@@ -772,24 +761,6 @@ public class StripeConnectService {
                 "full"
         );
 
-        var include =
-                payload.putArray(
-                        "include"
-                );
-
-        include.add(
-                "configuration.merchant"
-        );
-        include.add(
-                "requirements"
-        );
-        include.add(
-                "identity"
-        );
-        include.add(
-                "defaults"
-        );
-
         return platformV2PostJson(
                 "/core/accounts",
                 payload
@@ -847,15 +818,6 @@ public class StripeConnectService {
                         state
                 )
         );
-
-        onboarding
-                .putObject(
-                        "collection_options"
-                )
-                .put(
-                        "fields",
-                        "eventually_due"
-                );
 
         JsonNode response =
                 platformV2PostJson(
@@ -1044,10 +1006,8 @@ public class StripeConnectService {
         return platformV2Get(
                 "/core/accounts/"
                         + accountId
-                        + "?include%5B0%5D=configuration.merchant"
-                        + "&include%5B1%5D=requirements"
-                        + "&include%5B2%5D=identity"
-                        + "&include%5B3%5D=defaults"
+                        + "?include=configuration.merchant"
+                        + "&include=requirements"
         );
     }
 
