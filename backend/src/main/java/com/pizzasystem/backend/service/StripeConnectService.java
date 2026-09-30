@@ -702,7 +702,7 @@ public class StripeConnectService {
                     "country",
                     store.getCountryCode()
                             .trim()
-                            .toLowerCase()
+                            .toUpperCase()
             );
         }
 
