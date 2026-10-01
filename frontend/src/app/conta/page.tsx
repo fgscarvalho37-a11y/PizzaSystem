@@ -609,12 +609,17 @@ function ContaContent() {
     setRedeemError("");
 
     try {
+      const csrf = await getCsrfToken();
+
       const response =
         await fetch(
           `${API_URL}/api/customer/loyalty/${account.storeId}/redeem`,
           {
             method: "POST",
             credentials: "include",
+            headers: {
+              [csrf.headerName]: csrf.token,
+            },
           }
         );
 
