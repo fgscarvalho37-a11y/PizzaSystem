@@ -124,138 +124,12 @@ public class CustomerAuthService {
                             )
                             .build();
 
-            // =========================
-            // DIAGNÓSTICO GOOGLE
-            // Não imprime o JWT.
-            // =========================
-
-            GoogleIdToken debugToken =
-                    GoogleIdToken.parse(
-                            GsonFactory.getDefaultInstance(),
-                            credential
-                    );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] ========================"
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] CLIENT ID ESPERADO: "
-                            + googleClientId
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] AUD RECEBIDO: "
-                            + debugToken.getPayload().getAudience()
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] ISS RECEBIDO: "
-                            + debugToken.getPayload().getIssuer()
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] EXP RECEBIDO: "
-                            + debugToken.getPayload().getExpirationTimeSeconds()
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] EMAIL: "
-                            + debugToken.getPayload().getEmail()
-            );
-
-            long nowMillis =
-                    System.currentTimeMillis();
-
-            long clockSkewSeconds =
-                    verifier.getAcceptableTimeSkewSeconds();
-
-            boolean audienceOk =
-                    debugToken.verifyAudience(
-                            Collections.singletonList(
-                                    googleClientId
-                            )
-                    );
-
-            boolean issuerOk =
-                    debugToken.verifyIssuer(
-                            java.util.Arrays.asList(
-                                    "accounts.google.com",
-                                    "https://accounts.google.com"
-                            )
-                    );
-
-            boolean timeOk =
-                    debugToken.verifyTime(
-                            nowMillis,
-                            clockSkewSeconds
-                    );
-
-            boolean expirationOk =
-                    debugToken.verifyExpirationTime(
-                            nowMillis,
-                            clockSkewSeconds
-                    );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] IAT RECEBIDO: "
-                            + debugToken.getPayload().getIssuedAtTimeSeconds()
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] NBF RECEBIDO: "
-                            + debugToken.getPayload().getNotBeforeTimeSeconds()
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] AGORA EPOCH MS: "
-                            + nowMillis
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] AGORA ISO: "
-                            + java.time.Instant.ofEpochMilli(nowMillis)
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] CLOCK SKEW SEGUNDOS: "
-                            + clockSkewSeconds
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] AUDIENCE OK: "
-                            + audienceOk
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] ISSUER OK: "
-                            + issuerOk
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] TIME OK: "
-                            + timeOk
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] EXPIRATION OK: "
-                            + expirationOk
-            );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] ========================"
-            );
-
             GoogleIdToken idToken =
                     verifier.verify(
                             credential
                     );
 
             if (idToken == null) {
-                System.out.println(
-                        "[GOOGLE LOGIN] verifier.verify retornou NULL"
-                );
-
                 throw new RuntimeException(
                         "Login com Google inválido ou expirado"
                 );
@@ -378,31 +252,14 @@ public class CustomerAuthService {
                     LocalDateTime.now()
             );
 
-            Customer saved =
-                    customerRepository.save(
-                            customer
-                    );
-
-            System.out.println(
-                    "[GOOGLE LOGIN] SUCESSO | customerId="
-                            + saved.getId()
-                            + " | email="
-                            + saved.getEmail()
+            return customerRepository.save(
+                    customer
             );
-
-            return saved;
 
         } catch (RuntimeException e) {
             throw e;
 
         } catch (Exception e) {
-            System.out.println(
-                    "[GOOGLE LOGIN] ERRO: "
-                            + e.getClass().getName()
-                            + " | "
-                            + e.getMessage()
-            );
-
             throw new RuntimeException(
                     "Não foi possível validar o login com Google"
             );
