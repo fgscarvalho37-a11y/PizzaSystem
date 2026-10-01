@@ -35,22 +35,9 @@ public class MercadoPagoWebhookSignatureService {
             return true;
 
         } catch (MPInvalidWebhookSignatureException e) {
-
-            System.out.println(
-                    "Assinatura Mercado Pago inválida"
-            );
-
             return false;
 
         } catch (Exception e) {
-
-            System.out.println(
-                    "Erro ao validar assinatura Mercado Pago: "
-                            + e.getMessage()
-            );
-
-            e.printStackTrace();
-
             return false;
         }
     }
