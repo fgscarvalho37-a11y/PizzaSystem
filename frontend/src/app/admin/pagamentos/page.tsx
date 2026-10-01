@@ -65,6 +65,10 @@ type PayPalStatus = {
 
 const API_URL = "";
 
+const PAYPAL_PARTNER_ENABLED =
+  process.env.NEXT_PUBLIC_PAYPAL_PARTNER_ENABLED ===
+  "true";
+
 export default function AdminPaymentsPage() {
   const { text } =
     useLanguage();
@@ -668,7 +672,9 @@ export default function AdminPaymentsPage() {
             <span className="inline-flex w-fit rounded-full border border-border bg-background px-4 py-2 text-xs font-bold">
               {isBrazil
                 ? "Mercado Pago + Dinheiro"
-                : "Stripe + PayPal + Dinheiro"}
+                : PAYPAL_PARTNER_ENABLED
+                ? "Stripe + PayPal + Dinheiro"
+                : "Stripe + Dinheiro"}
             </span>
           </div>
 
@@ -678,9 +684,14 @@ export default function AdminPaymentsPage() {
                   "Lojas brasileiras continuam usando Mercado Pago e Pix. A Stripe fica disponível para a operação internacional.",
                   "Brazilian stores continue using Mercado Pago and Pix. Stripe is available for international operations."
                 )
-              : text(
+              : PAYPAL_PARTNER_ENABLED
+              ? text(
                   "A loja pode conectar Stripe para cartões e carteiras, PayPal como alternativa e também aceitar dinheiro. Cada gateway usa a conta do próprio estabelecimento.",
                   "The store can connect Stripe for cards and wallets, use PayPal as an alternative, and also accept cash. Each gateway uses the store's own account."
+                )
+              : text(
+                  "A loja pode conectar Stripe para cartões e carteiras e também aceitar dinheiro. PayPal será liberado depois da ativação da conta de plataforma.",
+                  "The store can connect Stripe for cards and wallets and also accept cash. PayPal will be enabled after the platform account is activated."
                 )}
           </p>
         </section>
@@ -756,10 +767,17 @@ export default function AdminPaymentsPage() {
                 "Conta conectada",
                 "Account connected"
               )}
-              disconnectedText={text(
-                "Não conectada",
-                "Not connected"
-              )}
+              disconnectedText={
+                PAYPAL_PARTNER_ENABLED
+                  ? text(
+                      "Não conectada",
+                      "Not connected"
+                    )
+                  : text(
+                      "Em breve",
+                      "Coming soon"
+                    )
+              }
             />
           </div>
 
@@ -1048,6 +1066,33 @@ export default function AdminPaymentsPage() {
                       "Desconectar PayPal",
                       "Disconnect PayPal"
                     )}
+              </button>
+            </div>
+          ) : !PAYPAL_PARTNER_ENABLED ? (
+            <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <p className="text-sm font-bold text-amber-900">
+                {text(
+                  "PayPal em breve",
+                  "PayPal coming soon"
+                )}
+              </p>
+
+              <p className="mt-2 max-w-2xl text-xs leading-6 text-amber-800">
+                {text(
+                  "A conexão automática com PayPal está temporariamente desativada enquanto a conta de plataforma da Orbitta não é habilitada para produção. Stripe continua disponível normalmente.",
+                  "Automatic PayPal connection is temporarily disabled until Orbitta's platform account is enabled for production. Stripe remains available normally."
+                )}
+              </p>
+
+              <button
+                type="button"
+                disabled
+                className="mt-5 h-11 rounded-xl bg-[#0070BA] px-6 text-sm font-bold text-white opacity-50"
+              >
+                {text(
+                  "Conectar com PayPal — em breve",
+                  "Connect with PayPal — coming soon"
+                )}
               </button>
             </div>
           ) : (
