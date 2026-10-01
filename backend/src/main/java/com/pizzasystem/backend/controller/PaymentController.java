@@ -19,6 +19,8 @@ import com.pizzasystem.backend.service.LoyaltyService;
 import com.pizzasystem.backend.service.MercadoPagoService;
 import com.pizzasystem.backend.service.MercadoPagoService.MercadoPagoResult;
 
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -245,7 +247,7 @@ public class PaymentController {
     public ResponseEntity<?> createCardPayment(
             @PathVariable Long orderId,
             @RequestParam(required = false) String token,
-            @RequestBody CardPaymentRequest request
+            @Valid @RequestBody CardPaymentRequest request
     ) throws Exception {
 
         Order order =
