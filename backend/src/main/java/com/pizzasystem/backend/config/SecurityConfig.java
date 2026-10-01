@@ -124,10 +124,6 @@ public class SecurityConfig {
                                 )
 
                                 .ignoringRequestMatchers(
-                                        "/api/customer/loyalty/*/redeem"
-                                )
-
-                                .ignoringRequestMatchers(
                                         "/api/orders",
                                         "/api/orders/*/cancel"
                                 )
