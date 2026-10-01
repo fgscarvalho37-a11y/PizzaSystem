@@ -243,25 +243,6 @@ public class MercadoPagoWebhookController {
                         order
                 );
 
-                if (order.getCouponCode() != null
-                        && !order.getCouponCode().isBlank()) {
-
-                    System.out.println(
-                            "Cupom do pedido #"
-                                    + order.getId()
-                                    + ": "
-                                    + order.getCouponCode()
-                                    + " | uso registrado: "
-                                    + order.isCouponUsageRegistered()
-                    );
-                }
-
-                System.out.println(
-                        "Fidelidade do pedido #"
-                                + order.getId()
-                                + " | registrada: "
-                                + order.isLoyaltyRegistered()
-                );
             }
 
             return ResponseEntity
