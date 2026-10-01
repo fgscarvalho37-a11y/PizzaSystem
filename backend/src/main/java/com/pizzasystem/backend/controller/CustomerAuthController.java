@@ -8,6 +8,7 @@ import com.pizzasystem.backend.service.EmailVerificationService;
 import com.pizzasystem.backend.service.PasswordResetService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.http.HttpStatus;
@@ -47,7 +48,7 @@ public class CustomerAuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(
-            @RequestBody CustomerRegisterRequest request,
+            @Valid @RequestBody CustomerRegisterRequest request,
             HttpServletRequest servletRequest
     ) {
         try {
@@ -97,7 +98,7 @@ public class CustomerAuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(
-            @RequestBody CustomerLoginRequest request,
+            @Valid @RequestBody CustomerLoginRequest request,
             HttpServletRequest servletRequest
     ) {
         try {
