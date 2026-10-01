@@ -47,13 +47,6 @@ public class AdminSessionAuthenticationFilter
     ) throws ServletException, IOException {
 
         System.out.println(
-                "[ADMIN FILTER] "
-                        + request.getMethod()
-                        + " "
-                        + request.getRequestURI()
-        );
-
-        System.out.println(
                 "[ADMIN FILTER] Session ID: "
                         + request.getSession(false)
         );
@@ -77,16 +70,6 @@ public class AdminSessionAuthenticationFilter
                                 SESSION_ADMIN_EMAIL
                         );
 
-                System.out.println(
-                        "[ADMIN FILTER] ADMIN_USER_ID: "
-                                + adminIdValue
-                );
-
-                System.out.println(
-                        "[ADMIN FILTER] ADMIN_USER_EMAIL: "
-                                + adminEmailValue
-                );
-
                 if (adminIdValue != null
                         && adminEmailValue != null) {
 
@@ -96,10 +79,6 @@ public class AdminSessionAuthenticationFilter
                             );
 
                     if (adminId == null) {
-
-                        System.out.println(
-                                "[ADMIN FILTER] ID inválido"
-                        );
 
                         invalidateSession(
                                 session
@@ -115,10 +94,6 @@ public class AdminSessionAuthenticationFilter
 
                         if (optionalAdmin.isEmpty()) {
 
-                            System.out.println(
-                                    "[ADMIN FILTER] Admin não encontrado"
-                            );
-
                             invalidateSession(
                                     session
                             );
@@ -129,10 +104,6 @@ public class AdminSessionAuthenticationFilter
                                     optionalAdmin.get();
 
                             if (!admin.isActive()) {
-
-                                System.out.println(
-                                        "[ADMIN FILTER] Admin inativo"
-                                );
 
                                 invalidateSession(
                                         session
