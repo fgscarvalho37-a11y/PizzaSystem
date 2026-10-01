@@ -155,6 +155,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         if (
                 "POST".equalsIgnoreCase(method) &&
+                "/api/delivery-areas/quote".equals(path)
+        ) {
+            return new Limit(
+                    "delivery-quote",
+                    60,
+                    10 * 60
+            );
+        }
+
+        if (
+                "POST".equalsIgnoreCase(method) &&
                 "/api/orders".equals(path)
         ) {
             return new Limit(
