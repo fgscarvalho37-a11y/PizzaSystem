@@ -71,6 +71,9 @@ public class PayPalPartnerService {
             secureRandom =
             new SecureRandom();
 
+    @Value("${PAYPAL_PLATFORM_ENABLED:false}")
+    private boolean platformEnabled;
+
     @Value("${PAYPAL_PLATFORM_CLIENT_ID:}")
     private String platformClientId;
 
@@ -626,7 +629,9 @@ public class PayPalPartnerService {
     }
 
     public boolean isConfigured() {
-        return hasText(
+        return platformEnabled
+                &&
+                hasText(
                 platformClientId
         )
                 &&
