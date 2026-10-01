@@ -87,7 +87,7 @@ public class SecurityConfig {
 
                 .addFilterBefore(
                         rateLimitFilter,
-                        AdminSessionAuthenticationFilter.class
+                        UsernamePasswordAuthenticationFilter.class
                 )
 
                 .addFilterBefore(
