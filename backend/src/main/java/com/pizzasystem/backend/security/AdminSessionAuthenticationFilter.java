@@ -46,14 +46,11 @@ public class AdminSessionAuthenticationFilter
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        System.out.println(
-                "[ADMIN FILTER] Session ID: "
-                        + request.getSession(false)
-        );
-
-        if (SecurityContextHolder
-                .getContext()
-                .getAuthentication() == null) {
+        if (
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication() == null
+        ) {
 
             HttpSession session =
                     request.getSession(false);
@@ -70,8 +67,10 @@ public class AdminSessionAuthenticationFilter
                                 SESSION_ADMIN_EMAIL
                         );
 
-                if (adminIdValue != null
-                        && adminEmailValue != null) {
+                if (
+                        adminIdValue != null &&
+                        adminEmailValue != null
+                ) {
 
                     Long adminId =
                             convertToLong(
@@ -79,11 +78,9 @@ public class AdminSessionAuthenticationFilter
                             );
 
                     if (adminId == null) {
-
                         invalidateSession(
                                 session
                         );
-
                     } else {
 
                         Optional<AdminUser> optionalAdmin =
@@ -93,22 +90,18 @@ public class AdminSessionAuthenticationFilter
                                         );
 
                         if (optionalAdmin.isEmpty()) {
-
                             invalidateSession(
                                     session
                             );
-
                         } else {
 
                             AdminUser admin =
                                     optionalAdmin.get();
 
                             if (!admin.isActive()) {
-
                                 invalidateSession(
                                         session
                                 );
-
                             } else {
 
                                 session.setAttribute(
@@ -136,48 +129,16 @@ public class AdminSessionAuthenticationFilter
                                         .setAuthentication(
                                                 authentication
                                         );
-
-                                System.out.println(
-                                        "[ADMIN FILTER] AUTH OK - "
-                                                + admin.getEmail()
-                                                + " - ROLE_ADMIN"
-                                );
                             }
                         }
                     }
                 }
-            } else {
-
-                System.out.println(
-                        "[ADMIN FILTER] SEM SESSÃO"
-                );
             }
-
-        } else {
-
-            System.out.println(
-                    "[ADMIN FILTER] Já autenticado: "
-                            + SecurityContextHolder
-                            .getContext()
-                            .getAuthentication()
-            );
         }
-
-        System.out.println(
-                "[ADMIN FILTER] Antes do próximo filtro: "
-                        + SecurityContextHolder
-                        .getContext()
-                        .getAuthentication()
-        );
 
         filterChain.doFilter(
                 request,
                 response
-        );
-
-        System.out.println(
-                "[ADMIN FILTER] Resposta: "
-                        + response.getStatus()
         );
     }
 
@@ -194,13 +155,10 @@ public class AdminSessionAuthenticationFilter
         }
 
         try {
-
             return Long.valueOf(
                     value.toString()
             );
-
-        } catch (NumberFormatException e) {
-
+        } catch (NumberFormatException exception) {
             return null;
         }
     }
