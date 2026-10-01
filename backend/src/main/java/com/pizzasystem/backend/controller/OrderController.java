@@ -35,6 +35,7 @@ import com.pizzasystem.backend.service.StoreStatusService;
 import com.pizzasystem.backend.service.StripeStorePaymentService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.http.HttpStatus;
@@ -226,7 +227,7 @@ public class OrderController {
     )
     @Transactional
     public Order create(
-            @RequestBody OrderRequest request,
+            @Valid @RequestBody OrderRequest request,
             HttpServletRequest servletRequest
     ) {
 
