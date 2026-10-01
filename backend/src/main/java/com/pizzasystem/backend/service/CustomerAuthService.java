@@ -317,11 +317,31 @@ public class CustomerAuthService {
             throw new RuntimeException("Nome não informado");
         }
 
+        if (name.trim().length() > 120) {
+            throw new RuntimeException("Nome muito longo");
+        }
+
         if (email == null || email.isBlank()) {
             throw new RuntimeException("E-mail não informado");
         }
 
+        if (email.trim().length() > 255) {
+            throw new RuntimeException("E-mail inválido");
+        }
+
         String normalizedEmail = email.trim().toLowerCase();
+
+        if (!normalizedEmail.contains("@")) {
+            throw new RuntimeException("E-mail inválido");
+        }
+
+        if (phone != null && phone.trim().length() > 40) {
+            throw new RuntimeException("Telefone inválido");
+        }
+
+        if (currentPassword != null && currentPassword.length() > 72) {
+            throw new RuntimeException("Senha atual inválida");
+        }
 
         customerRepository
                 .findByEmailIgnoreCase(normalizedEmail)
@@ -347,8 +367,8 @@ public class CustomerAuthService {
                 newPassword != null && !newPassword.isBlank();
 
         if (wantsNewPassword) {
-            if (newPassword.length() < 8) {
-                throw new RuntimeException("A nova senha deve ter pelo menos 8 caracteres");
+            if (newPassword.length() < 8 || newPassword.length() > 72) {
+                throw new RuntimeException("A nova senha deve ter entre 8 e 72 caracteres");
             }
 
             String currentHash = customer.getPasswordHash();
