@@ -1,6 +1,7 @@
 package com.pizzasystem.backend.config;
 
 import com.pizzasystem.backend.security.AdminSessionAuthenticationFilter;
+import com.pizzasystem.backend.security.RateLimitFilter;
 
 import org.springframework.beans.factory.annotation.Value;
 
@@ -43,6 +44,9 @@ public class SecurityConfig {
     private final AdminSessionAuthenticationFilter
             adminSessionAuthenticationFilter;
 
+    private final RateLimitFilter
+            rateLimitFilter;
+
     @Value(
             "${pizzasystem.cors.allowed-origin:http://localhost:3000}"
     )
@@ -50,11 +54,15 @@ public class SecurityConfig {
 
     public SecurityConfig(
             AdminSessionAuthenticationFilter
-                    adminSessionAuthenticationFilter
+                    adminSessionAuthenticationFilter,
+            RateLimitFilter rateLimitFilter
     ) {
 
         this.adminSessionAuthenticationFilter =
                 adminSessionAuthenticationFilter;
+
+        this.rateLimitFilter =
+                rateLimitFilter;
     }
 
     @Bean
@@ -75,6 +83,11 @@ public class SecurityConfig {
 
                 .cors(
                         Customizer.withDefaults()
+                )
+
+                .addFilterBefore(
+                        rateLimitFilter,
+                        AdminSessionAuthenticationFilter.class
                 )
 
                 .addFilterBefore(
