@@ -250,7 +250,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                     forwarded.split(",");
 
             String candidate =
-                    values[values.length - 1]
+                    values[0]
                             .trim();
 
             if (!candidate.isBlank()) {
