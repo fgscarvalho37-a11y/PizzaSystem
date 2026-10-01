@@ -58,6 +58,8 @@ public class CustomerAuthController {
             HttpSession session =
                     servletRequest.getSession(true);
 
+            servletRequest.changeSessionId();
+
             session.setAttribute(
                     SESSION_CUSTOMER_ID,
                     customer.getId()
@@ -107,6 +109,8 @@ public class CustomerAuthController {
 
             HttpSession session =
                     servletRequest.getSession(true);
+
+            servletRequest.changeSessionId();
 
             session.setAttribute(
                     SESSION_CUSTOMER_ID,
@@ -163,6 +167,8 @@ public class CustomerAuthController {
 
             HttpSession session =
                     servletRequest.getSession(true);
+
+            servletRequest.changeSessionId();
 
             session.setAttribute(
                     SESSION_CUSTOMER_ID,
