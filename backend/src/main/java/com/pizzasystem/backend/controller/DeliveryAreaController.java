@@ -13,6 +13,8 @@ import com.pizzasystem.backend.service.CurrentStoreService;
 import com.pizzasystem.backend.service.DeliveryQuoteService;
 import com.pizzasystem.backend.service.PublicStoreService;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -348,7 +350,7 @@ public class DeliveryAreaController {
     @Transactional(readOnly = true)
     public DeliveryQuoteResponse quote(
             @RequestParam String store,
-            @RequestBody DeliveryQuoteRequest request
+            @Valid @RequestBody DeliveryQuoteRequest request
     ) {
 
         Store publicStore =
