@@ -359,10 +359,11 @@ public class PasswordResetService {
         if (
                 password == null ||
                 password.length() <
-                        MIN_PASSWORD_LENGTH
+                        MIN_PASSWORD_LENGTH ||
+                password.length() > 72
         ) {
             throw new IllegalArgumentException(
-                    "A nova senha deve ter pelo menos 8 caracteres."
+                    "A nova senha deve ter entre 8 e 72 caracteres."
             );
         }
     }
