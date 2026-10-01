@@ -105,10 +105,6 @@ public class MercadoPagoWebhookController {
             if (mercadoPagoOrderId == null
                     || mercadoPagoOrderId.isBlank()) {
 
-                System.out.println(
-                        "Webhook sem data.id"
-                );
-
                 return ResponseEntity
                         .badRequest()
                         .build();
@@ -127,19 +123,10 @@ public class MercadoPagoWebhookController {
 
             if (!validSignature) {
 
-                System.out.println(
-                        "Webhook Mercado Pago com assinatura inválida"
-                );
-
                 return ResponseEntity
                         .status(401)
                         .build();
             }
-
-            System.out.println(
-                    "Webhook Mercado Pago validado: "
-                            + mercadoPagoOrderId
-            );
 
             // =========================
             // LOCALIZAR PEDIDO
@@ -153,11 +140,6 @@ public class MercadoPagoWebhookController {
                             .orElse(null);
 
             if (order == null) {
-
-                System.out.println(
-                        "Nenhum pedido local encontrado para: "
-                                + mercadoPagoOrderId
-                );
 
                 return ResponseEntity
                         .ok()
@@ -210,18 +192,6 @@ public class MercadoPagoWebhookController {
                                 .asText();
             }
 
-            System.out.println(
-                    "Mercado Pago Order: "
-                            + orderStatus
-            );
-
-            System.out.println(
-                    "Mercado Pago Payment: "
-                            + paymentStatus
-                            + " / "
-                            + paymentStatusDetail
-            );
-
             // =========================
             // VERIFICAR APROVAÇÃO
             // =========================
@@ -273,12 +243,6 @@ public class MercadoPagoWebhookController {
                         order
                 );
 
-                System.out.println(
-                        "Pedido #"
-                                + order.getId()
-                                + " PAGO -> RECEIVED"
-                );
-
                 if (order.getCouponCode() != null
                         && !order.getCouponCode().isBlank()) {
 
@@ -305,9 +269,6 @@ public class MercadoPagoWebhookController {
                     .build();
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
             return ResponseEntity
                     .internalServerError()
                     .build();
