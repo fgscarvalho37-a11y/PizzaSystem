@@ -13,6 +13,7 @@ import com.pizzasystem.backend.entity.Store;
 import com.pizzasystem.backend.repository.OrderRepository;
 import com.pizzasystem.backend.repository.PayPalPaymentConnectionRepository;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -54,6 +55,9 @@ public class PayPalStorePaymentService {
     private final CouponService couponService;
     private final LoyaltyService loyaltyService;
     private final PayPalPartnerService payPalPartnerService;
+
+    @Value("${PAYPAL_PLATFORM_ENABLED:false}")
+    private boolean payPalEnabled;
 
     private final RestTemplate restTemplate =
             new RestTemplate();
@@ -121,8 +125,11 @@ public class PayPalStorePaymentService {
                 );
 
         boolean connected =
-                partnerConnected ||
-                legacyConnected;
+                payPalEnabled &&
+                (
+                        partnerConnected ||
+                        legacyConnected
+                );
 
         Map<String, Object> response =
                 new HashMap<>();
@@ -222,6 +229,12 @@ public class PayPalStorePaymentService {
             String clientSecret,
             boolean sandbox
     ) {
+        if (!payPalEnabled) {
+            throw new IllegalStateException(
+                    "PayPal ainda não está disponível."
+            );
+        }
+
         String normalizedClientId =
                 requireText(
                         clientId,
@@ -314,6 +327,10 @@ public class PayPalStorePaymentService {
     public boolean isReady(
             Long storeId
     ) {
+        if (!payPalEnabled) {
+            return false;
+        }
+
         PayPalPaymentConnection connection =
                 connectionRepository
                         .findByStoreIdAndConnectedTrue(
