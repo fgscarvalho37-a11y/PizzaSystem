@@ -1,14 +1,26 @@
 package com.pizzasystem.backend.dto;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class OrderItemRequest {
 
+    @NotNull(message = "Produto é obrigatório.")
+    @Positive(message = "Produto inválido.")
     private Long productId;
 
+    @NotNull(message = "Quantidade é obrigatória.")
+    @Min(value = 1, message = "Quantidade inválida.")
+    @Max(value = 100, message = "Quantidade acima do limite permitido.")
     private Integer quantity;
 
+    @Size(max = 500, message = "Observação muito longa.")
     private String observation;
 
     // =========================
@@ -38,6 +50,7 @@ public class OrderItemRequest {
      * O frontend nunca informa
      * o preço do adicional.
      */
+    @Size(max = 100, message = "Quantidade de adicionais acima do limite permitido.")
     private List<Long> addonIds =
             new ArrayList<>();
 
@@ -53,6 +66,7 @@ public class OrderItemRequest {
      * concluída, bordas serão apenas
      * grupos de adicionais.
      */
+    @Positive(message = "Borda inválida.")
     private Long crustId;
 
     public Long getProductId() {
