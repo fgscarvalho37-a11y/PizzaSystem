@@ -4,6 +4,10 @@ import com.pizzasystem.backend.entity.AdminUser;
 import com.pizzasystem.backend.service.AdminAuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.http.HttpStatus;
@@ -38,7 +42,7 @@ public class AdminAuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(
-            @RequestBody LoginRequest request,
+            @Valid @RequestBody LoginRequest request,
             HttpServletRequest servletRequest
     ) {
 
@@ -357,7 +361,14 @@ public class AdminAuthController {
     // =========================
 
     public record LoginRequest(
+
+            @NotBlank(message = "E-mail é obrigatório.")
+            @Email(message = "E-mail inválido.")
+            @Size(max = 150, message = "E-mail inválido.")
             String email,
+
+            @NotBlank(message = "Senha é obrigatória.")
+            @Size(max = 72, message = "Senha inválida.")
             String password
     ) {
     }
