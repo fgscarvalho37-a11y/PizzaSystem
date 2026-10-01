@@ -564,6 +564,102 @@ public class StoreImageStorageService {
                     "Formato inválido. Use JPG, PNG ou WebP."
             );
         }
+
+        if (!hasValidImageSignature(
+                file,
+                contentType
+        )) {
+            throw new IllegalArgumentException(
+                    "O arquivo enviado não corresponde a uma imagem JPG, PNG ou WebP válida."
+            );
+        }
+    }
+
+    private boolean hasValidImageSignature(
+            MultipartFile file,
+            String contentType
+    ) {
+
+        try (
+                var inputStream =
+                        file.getInputStream()
+        ) {
+            byte[] header =
+                    inputStream.readNBytes(
+                            12
+                    );
+
+            if (
+                    MediaType.IMAGE_JPEG_VALUE
+                            .equals(
+                                    contentType
+                            )
+            ) {
+                return header.length >= 3 &&
+                        (header[0] & 0xFF) == 0xFF &&
+                        (header[1] & 0xFF) == 0xD8 &&
+                        (header[2] & 0xFF) == 0xFF;
+            }
+
+            if (
+                    MediaType.IMAGE_PNG_VALUE
+                            .equals(
+                                    contentType
+                            )
+            ) {
+                int[] png =
+                        {
+                                0x89,
+                                0x50,
+                                0x4E,
+                                0x47,
+                                0x0D,
+                                0x0A,
+                                0x1A,
+                                0x0A
+                        };
+
+                if (header.length < png.length) {
+                    return false;
+                }
+
+                for (
+                        int index = 0;
+                        index < png.length;
+                        index++
+                ) {
+                    if (
+                            (header[index] & 0xFF)
+                                    != png[index]
+                    ) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            if (
+                    "image/webp".equals(
+                            contentType
+                    )
+            ) {
+                return header.length >= 12 &&
+                        header[0] == 'R' &&
+                        header[1] == 'I' &&
+                        header[2] == 'F' &&
+                        header[3] == 'F' &&
+                        header[8] == 'W' &&
+                        header[9] == 'E' &&
+                        header[10] == 'B' &&
+                        header[11] == 'P';
+            }
+
+            return false;
+
+        } catch (IOException exception) {
+            return false;
+        }
     }
 
     private String extensionFor(
