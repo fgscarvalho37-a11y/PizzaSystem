@@ -19,6 +19,7 @@ import com.pizzasystem.backend.service.LoyaltyService;
 import com.pizzasystem.backend.service.MercadoPagoService;
 import com.pizzasystem.backend.service.MercadoPagoService.MercadoPagoResult;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -54,6 +55,9 @@ public class PaymentController {
 
     private final ObjectMapper
             objectMapper;
+
+    @Value("${PIZZASYSTEM_DEV_PAYMENT_ENDPOINTS:false}")
+    private boolean devPaymentEndpointsEnabled;
 
     public PaymentController(
             OrderRepository orderRepository,
@@ -542,6 +546,13 @@ public class PaymentController {
             @PathVariable Long orderId
     ) throws Exception {
 
+        if (!devPaymentEndpointsEnabled) {
+            return errorResponse(
+                    HttpStatus.NOT_FOUND,
+                    "Recurso não disponível."
+            );
+        }
+
         if (!isAdminAuthenticated()) {
 
             return errorResponse(
@@ -661,6 +672,13 @@ public class PaymentController {
             @PathVariable Long orderId
     ) {
 
+        if (!devPaymentEndpointsEnabled) {
+            return errorResponse(
+                    HttpStatus.NOT_FOUND,
+                    "Recurso não disponível."
+            );
+        }
+
         if (!isAdminAuthenticated()) {
             return errorResponse(
                     HttpStatus.UNAUTHORIZED,
@@ -742,6 +760,13 @@ public class PaymentController {
     public ResponseEntity<?> reprocessLoyaltyDev(
             @PathVariable Long orderId
     ) {
+
+        if (!devPaymentEndpointsEnabled) {
+            return errorResponse(
+                    HttpStatus.NOT_FOUND,
+                    "Recurso não disponível."
+            );
+        }
 
         if (!isAdminAuthenticated()) {
             return errorResponse(
