@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
+import { formatStoreMoney } from "@/lib/storeIntl";
 
 /* =========================
    TIPOS
@@ -169,12 +170,8 @@ const paymentStatuses: {
 function currency(
   value: number
 ) {
-  return Number(value).toLocaleString(
-    "pt-BR",
-    {
-      style: "currency",
-      currency: "BRL",
-    }
+  return formatStoreMoney(
+    value
   );
 }
 
