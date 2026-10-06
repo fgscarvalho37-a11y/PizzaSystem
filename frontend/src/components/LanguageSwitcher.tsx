@@ -59,14 +59,16 @@ export default function LanguageSwitcher({
           )
         }
         className={`rounded-full px-2.5 py-1 transition ${
-          locale ===
-          "en-US"
+          locale.startsWith(
+            "en"
+          )
             ? active
             : ""
         }`}
         aria-pressed={
-          locale ===
-          "en-US"
+          locale.startsWith(
+            "en"
+          )
         }
       >
         EN
