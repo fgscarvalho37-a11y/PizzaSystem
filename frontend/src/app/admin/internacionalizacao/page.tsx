@@ -20,13 +20,14 @@ type StoreSettings = {
   whatsapp: string | null;
   dailyOrderLimit: number;
   countryCode: string;
-  defaultLocale: "pt-BR" | "en-US";
+  defaultLocale: "pt-BR" | "en-US" | "en-GB" | "en-AU";
   currencyCode:
     | "BRL"
     | "USD"
     | "EUR"
     | "GBP"
-    | "CAD";
+    | "CAD"
+    | "AUD";
 };
 
 const COUNTRY_OPTIONS = [
@@ -37,8 +38,9 @@ const COUNTRY_OPTIONS = [
   { code: "FR", pt: "França", en: "France", currency: "EUR", locale: "en-US" },
   { code: "DE", pt: "Alemanha", en: "Germany", currency: "EUR", locale: "en-US" },
   { code: "IT", pt: "Itália", en: "Italy", currency: "EUR", locale: "en-US" },
-  { code: "GB", pt: "Reino Unido", en: "United Kingdom", currency: "GBP", locale: "en-US" },
+  { code: "GB", pt: "Reino Unido", en: "United Kingdom", currency: "GBP", locale: "en-GB" },
   { code: "CA", pt: "Canadá", en: "Canada", currency: "CAD", locale: "en-US" },
+  { code: "AU", pt: "Austrália", en: "Australia", currency: "AUD", locale: "en-AU" },
 ] as const;
 
 export default function InternacionalizacaoPage() {
@@ -60,13 +62,13 @@ export default function InternacionalizacaoPage() {
   const [
     defaultLocale,
     setDefaultLocale,
-  ] = useState<"pt-BR" | "en-US">("pt-BR");
+  ] = useState<"pt-BR" | "en-US" | "en-GB" | "en-AU">("pt-BR");
 
   const [
     currencyCode,
     setCurrencyCode,
   ] = useState<
-    "BRL" | "USD" | "EUR" | "GBP" | "CAD"
+    "BRL" | "USD" | "EUR" | "GBP" | "CAD" | "AUD"
   >("BRL");
 
   const [
@@ -126,13 +128,17 @@ export default function InternacionalizacaoPage() {
           data.countryCode || "BR"
         );
         setDefaultLocale(
-          data.defaultLocale === "en-US"
-            ? "en-US"
-            : "pt-BR"
+          (
+            ["pt-BR", "en-US", "en-GB", "en-AU"].includes(
+              data.defaultLocale
+            )
+              ? data.defaultLocale
+              : "pt-BR"
+          ) as "pt-BR" | "en-US" | "en-GB" | "en-AU"
         );
         setCurrencyCode(
           (
-            ["BRL", "USD", "EUR", "GBP", "CAD"].includes(
+            ["BRL", "USD", "EUR", "GBP", "CAD", "AUD"].includes(
               data.currencyCode
             )
               ? data.currencyCode
@@ -143,6 +149,7 @@ export default function InternacionalizacaoPage() {
             | "EUR"
             | "GBP"
             | "CAD"
+            | "AUD"
         );
       } catch (error) {
         if (!mounted) {
@@ -420,6 +427,8 @@ export default function InternacionalizacaoPage() {
                     event.target.value as
                       | "pt-BR"
                       | "en-US"
+                      | "en-GB"
+                      | "en-AU"
                   )
                 }
                 className="h-12 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none"
@@ -429,6 +438,12 @@ export default function InternacionalizacaoPage() {
                 </option>
                 <option value="en-US">
                   English (US)
+                </option>
+                <option value="en-GB">
+                  English (UK)
+                </option>
+                <option value="en-AU">
+                  English (Australia)
                 </option>
               </select>
             </label>
@@ -451,6 +466,7 @@ export default function InternacionalizacaoPage() {
                       | "EUR"
                       | "GBP"
                       | "CAD"
+                      | "AUD"
                   )
                 }
                 className="h-12 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none"
@@ -460,6 +476,7 @@ export default function InternacionalizacaoPage() {
                 <option value="EUR">EUR — €</option>
                 <option value="GBP">GBP — £</option>
                 <option value="CAD">CAD — C$</option>
+                <option value="AUD">AUD — A$</option>
               </select>
             </label>
           </div>
@@ -486,8 +503,8 @@ export default function InternacionalizacaoPage() {
 
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
             {text(
-              "Pagamentos e endereços ainda seguem as regras brasileiras atuais. Este checkpoint prepara idioma e moeda; na próxima etapa entram endereço internacional e meios de pagamento para fora do Brasil.",
-              "Payments and addresses still follow the current Brazilian rules. This checkpoint prepares language and currency; international addresses and payment methods come next."
+              "Endereços internacionais usam Mapbox e as regras do país selecionado. Os meios de pagamento disponíveis continuam dependendo da integração configurada para a loja.",
+              "International addresses use Mapbox and the selected country's rules. Available payment methods still depend on the payment integration configured for the store."
             )}
           </div>
 
