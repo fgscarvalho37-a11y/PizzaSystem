@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
+import { formatStoreMoney, getStoreCurrencySymbol } from "@/lib/storeIntl";
 
 const API_URL = "";
 
@@ -58,9 +59,9 @@ function money(value: number | null) {
     return "-";
   }
 
-  return `R$ ${Number(value)
-    .toFixed(2)
-    .replace(".", ",")}`;
+  return formatStoreMoney(
+    value
+  );
 }
 
 function formatDateTime(
@@ -588,7 +589,7 @@ export default function CouponsAdminPage() {
                   </option>
 
                   <option value="FIXED_AMOUNT">
-                    Valor fixo (R$)
+                    Valor fixo (${getStoreCurrencySymbol()})
                   </option>
                 </select>
               </div>
