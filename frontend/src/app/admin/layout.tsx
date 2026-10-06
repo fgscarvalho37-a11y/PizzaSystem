@@ -14,6 +14,8 @@ import {
 
 import AdminOnboarding from "@/components/AdminOnboarding";
 import OrbittaRenewalNotice from "@/components/OrbittaRenewalNotice";
+import { adminFetch } from "@/lib/adminFetch";
+import { saveStoreIntlSnapshot } from "@/lib/storeIntl";
 
 type AdminLayoutProps = {
   children: ReactNode;
@@ -261,6 +263,27 @@ export default function AdminLayout({
           );
 
           return;
+        }
+
+        try {
+          const storeResponse =
+            await adminFetch(
+              `${API_URL}/api/store`,
+              {
+                cache:
+                  "no-store",
+                signal:
+                  controller.signal,
+              }
+            );
+
+          if (storeResponse.ok) {
+            saveStoreIntlSnapshot(
+              await storeResponse.json()
+            );
+          }
+        } catch {
+          // O painel continua funcional com o fallback BRL.
         }
 
         sessionVerifiedRef.current =
