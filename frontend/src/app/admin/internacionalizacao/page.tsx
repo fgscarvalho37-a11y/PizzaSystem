@@ -403,7 +403,7 @@ export default function InternacionalizacaoPage() {
                       key={country.code}
                       value={country.code}
                     >
-                      {locale === "en-US"
+                      {locale.startsWith("en")
                         ? country.en
                         : country.pt}
                     </option>
