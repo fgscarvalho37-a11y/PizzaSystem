@@ -5,6 +5,7 @@ import com.pizzasystem.backend.repository.StoreRepository;
 import com.pizzasystem.backend.service.CurrentStoreService;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -87,20 +88,20 @@ public class StorefrontController {
                         request.slug()
                 );
 
-        Store existing =
-                storeRepository
-                        .findBySlug(
-                                slug
-                        )
-                        .orElse(
-                                null
-                        );
+        if (
+                slug.equals(
+                        store.getSlug()
+                )
+        ) {
+            return toResponse(
+                    store
+            );
+        }
 
         if (
-                existing != null &&
-                !existing
-                        .getId()
-                        .equals(
+                storeRepository
+                        .existsBySlugAndIdNot(
+                                slug,
                                 store.getId()
                         )
         ) {
@@ -113,10 +114,19 @@ public class StorefrontController {
                 slug
         );
 
-        store =
-                storeRepository.save(
-                        store
-                );
+        try {
+            store =
+                    storeRepository
+                            .saveAndFlush(
+                                    store
+                            );
+        } catch (
+                DataIntegrityViolationException exception
+        ) {
+            throw new IllegalArgumentException(
+                    "Este endereço não pôde ser salvo. Escolha outro endereço."
+            );
+        }
 
         return toResponse(
                 store
