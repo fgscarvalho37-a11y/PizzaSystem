@@ -8,9 +8,13 @@ import {
 
 import AdminHeader from "@/components/AdminHeader";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import CountrySwitcher from "@/components/CountrySwitcher";
 import { adminFetch } from "@/lib/adminFetch";
 import { saveStoreIntlSnapshot } from "@/lib/storeIntl";
 import { useLanguage } from "@/i18n/LanguageProvider";
+import {
+  STORE_COUNTRIES,
+} from "@/i18n/countries";
 
 const API_URL = "";
 
@@ -31,23 +35,11 @@ type StoreSettings = {
     | "AUD";
 };
 
-const COUNTRY_OPTIONS = [
-  { code: "BR", pt: "Brasil", en: "Brazil", currency: "BRL", locale: "pt-BR" },
-  { code: "US", pt: "Estados Unidos", en: "United States", currency: "USD", locale: "en-US" },
-  { code: "PT", pt: "Portugal", en: "Portugal", currency: "EUR", locale: "en-US" },
-  { code: "ES", pt: "Espanha", en: "Spain", currency: "EUR", locale: "en-US" },
-  { code: "FR", pt: "França", en: "France", currency: "EUR", locale: "en-US" },
-  { code: "DE", pt: "Alemanha", en: "Germany", currency: "EUR", locale: "en-US" },
-  { code: "IT", pt: "Itália", en: "Italy", currency: "EUR", locale: "en-US" },
-  { code: "GB", pt: "Reino Unido", en: "United Kingdom", currency: "GBP", locale: "en-GB" },
-  { code: "CA", pt: "Canadá", en: "Canada", currency: "CAD", locale: "en-US" },
-  { code: "AU", pt: "Austrália", en: "Australia", currency: "AUD", locale: "en-AU" },
-] as const;
-
 export default function InternacionalizacaoPage() {
   const {
     locale,
     text,
+    setCountry,
   } = useLanguage();
 
   const [
@@ -187,7 +179,7 @@ export default function InternacionalizacaoPage() {
     );
 
     const preset =
-      COUNTRY_OPTIONS.find(
+      STORE_COUNTRIES.find(
         (country) =>
           country.code ===
           nextCountry
@@ -198,11 +190,21 @@ export default function InternacionalizacaoPage() {
     }
 
     setCurrencyCode(
-      preset.currency
+      preset.currency as
+        | "BRL"
+        | "USD"
+        | "EUR"
+        | "GBP"
+        | "CAD"
+        | "AUD"
     );
 
     setDefaultLocale(
       preset.locale
+    );
+
+    setCountry(
+      preset.code
     );
   }
 
@@ -365,7 +367,10 @@ export default function InternacionalizacaoPage() {
             </p>
           </div>
 
-          <LanguageSwitcher />
+          <div className="flex flex-wrap items-center gap-2">
+            <CountrySwitcher compact />
+            <LanguageSwitcher />
+          </div>
         </div>
 
         {errorMessage && (
@@ -402,7 +407,7 @@ export default function InternacionalizacaoPage() {
                 }
                 className="h-12 w-full rounded-xl border border-input bg-background px-4 text-sm outline-none"
               >
-                {COUNTRY_OPTIONS.map(
+                {STORE_COUNTRIES.map(
                   (country) => (
                     <option
                       key={country.code}
