@@ -497,11 +497,13 @@ export default function CardapioPage() {
     }
 
     applyDefaultLocale(
-      storeProfile.defaultLocale
-        ?.toLowerCase()
-        .startsWith("en")
-        ? "en-US"
-        : "pt-BR"
+      storeProfile.defaultLocale === "en-AU"
+        ? "en-AU"
+        : storeProfile.defaultLocale === "en-GB"
+          ? "en-GB"
+          : storeProfile.defaultLocale === "en-US"
+            ? "en-US"
+            : "pt-BR"
     );
 
     setBrowserIcon(
