@@ -9,6 +9,7 @@ import {
 import AdminHeader from "@/components/AdminHeader";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { adminFetch } from "@/lib/adminFetch";
+import { saveStoreIntlSnapshot } from "@/lib/storeIntl";
 import { useLanguage } from "@/i18n/LanguageProvider";
 
 const API_URL = "";
@@ -281,6 +282,10 @@ export default function InternacionalizacaoPage() {
         await response.json();
 
       setSettings(
+        updated
+      );
+
+      saveStoreIntlSnapshot(
         updated
       );
 
