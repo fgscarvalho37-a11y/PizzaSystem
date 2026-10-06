@@ -9,6 +9,7 @@ import {
 
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
+import { formatStoreMoney } from "@/lib/storeIntl";
 
 const API_URL = "";
 
@@ -694,15 +695,7 @@ function DashboardCard({
 function money(
   value: number
 ) {
-  return new Intl.NumberFormat(
-    "pt-BR",
-    {
-      style:
-        "currency",
-      currency:
-        "BRL",
-    }
-  ).format(
+  return formatStoreMoney(
     value
   );
 }
