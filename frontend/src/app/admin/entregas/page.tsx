@@ -87,20 +87,6 @@ function formatCep(value: string) {
     : digits;
 }
 
-function formatMoney(
-  value: number
-) {
-  return Number(
-    value || 0
-  ).toLocaleString(
-    "pt-BR",
-    {
-      style: "currency",
-      currency: "BRL",
-    }
-  );
-}
-
 export default function AdminEntregasPage() {
   const [
     countryCode,
@@ -137,6 +123,24 @@ export default function AdminEntregasPage() {
       }
     );
   }
+
+  const currencySymbol =
+    new Intl.NumberFormat(
+      defaultLocale,
+      {
+        style: "currency",
+        currency:
+          currencyCode,
+        currencyDisplay:
+          "narrowSymbol",
+      }
+    )
+      .formatToParts(0)
+      .find(
+        (part) =>
+          part.type === "currency"
+      )?.value ??
+    currencyCode;
 
   const [
     config,
@@ -1520,7 +1524,7 @@ export default function AdminEntregasPage() {
                     <div className="relative">
 
                       <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
-                        R$
+                        {currencySymbol}
                       </span>
 
                       <input
@@ -1641,8 +1645,8 @@ export default function AdminEntregasPage() {
                   <div className="relative">
 
                     <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
-                      R$
-                    </span>
+                        {currencySymbol}
+                      </span>
 
                     <input
                       type="number"
@@ -1743,7 +1747,7 @@ export default function AdminEntregasPage() {
                     Valor fixo por faixa de km
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Exemplo: até 4 km grátis; de 4 a 5 km R$ 5; de 5 a 7 km R$ 8. O Mapbox calcula a distância e o sistema escolhe a faixa automaticamente.
+                    Exemplo: até 4 km grátis; de 4 a 5 km {formatMoney(5)}; de 5 a 7 km {formatMoney(8)}. O Mapbox calcula a distância e o sistema escolhe a faixa automaticamente.
                   </p>
                 </div>
 
@@ -1803,7 +1807,7 @@ export default function AdminEntregasPage() {
                     </label>
                     <div className="relative">
                       <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
-                        R$
+                        {currencySymbol}
                       </span>
                       <input
                         className={`${fieldClass} pl-10`}
@@ -1884,7 +1888,7 @@ export default function AdminEntregasPage() {
                 <form onSubmit={saveArea} className="mt-4 grid gap-3 sm:grid-cols-4">
                   <input className={fieldClass} placeholder="Cidade" value={areaCity} onChange={e => setAreaCity(e.target.value)} required />
                   <input className={fieldClass} placeholder="Bairro" value={areaNeighborhood} onChange={e => setAreaNeighborhood(e.target.value)} required />
-                  <input className={fieldClass} type="number" min="0" step="0.01" placeholder="Taxa em R$" value={areaFee} onChange={e => setAreaFee(e.target.value)} required />
+                  <input className={fieldClass} type="number" min="0" step="0.01" placeholder={`Taxa em ${currencySymbol}`} value={areaFee} onChange={e => setAreaFee(e.target.value)} required />
                   <button disabled={areaSaving} className="rounded-xl bg-foreground px-4 text-sm font-bold text-background disabled:opacity-50">Adicionar taxa</button>
                 </form>
                 <ul className="mt-5 divide-y divide-border">
