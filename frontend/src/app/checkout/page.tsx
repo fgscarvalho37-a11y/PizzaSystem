@@ -77,7 +77,7 @@ type StoreStatus = {
 
 type StoreProfileIntl = {
   countryCode: string;
-  defaultLocale: "pt-BR" | "en-US";
+  defaultLocale: string;
   currencyCode: string;
 };
 
@@ -275,8 +275,11 @@ export default function CheckoutPage() {
   const isBrazil =
     countryCode === "BR";
 
+  const isAustralia =
+    countryCode === "AU";
+
   const regionRequired =
-    ["BR", "US", "CA"].includes(
+    ["BR", "US", "CA", "AU"].includes(
       countryCode
     );
 
@@ -311,7 +314,7 @@ export default function CheckoutPage() {
   ] = useState("");
 
   const normalizedPostalCode =
-    isBrazil
+    isBrazil || isAustralia
       ? postalCode.replace(
           /\D/g,
           ""
@@ -323,7 +326,9 @@ export default function CheckoutPage() {
   const postalCodeValid =
     isBrazil
       ? normalizedPostalCode.length === 8
-      : normalizedPostalCode.length >= 3;
+      : isAustralia
+        ? normalizedPostalCode.length === 4
+        : normalizedPostalCode.length >= 3;
 
   const [
     state,
@@ -665,8 +670,9 @@ export default function CheckoutPage() {
           profileData?.defaultLocale
         ) {
           applyDefaultLocale(
-            profileData.defaultLocale ===
-              "en-US"
+            profileData.defaultLocale
+              ?.toLowerCase()
+              .startsWith("en")
               ? "en-US"
               : "pt-BR"
           );
@@ -2408,19 +2414,23 @@ export default function CheckoutPage() {
                     inputClass
                   }
                   inputMode={
-                    isBrazil
+                    isBrazil || isAustralia
                       ? "numeric"
                       : "text"
                   }
                   maxLength={
                     isBrazil
                       ? 9
-                      : 16
+                      : isAustralia
+                        ? 4
+                        : 16
                   }
                   placeholder={
                     isBrazil
                       ? text("CEP", "Postal code")
-                      : text("Código postal", "Postal code")
+                      : isAustralia
+                        ? "Postcode"
+                        : text("Código postal", "Postal code")
                   }
                   required
                   value={
@@ -2434,9 +2444,13 @@ export default function CheckoutPage() {
                         ? formatCep(
                             event.target.value
                           )
-                        : event.target.value
-                            .toUpperCase()
-                            .slice(0, 16);
+                        : isAustralia
+                          ? event.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 4)
+                          : event.target.value
+                              .toUpperCase()
+                              .slice(0, 16);
 
                     setPostalCode(
                       nextValue
@@ -2533,14 +2547,16 @@ export default function CheckoutPage() {
                     inputClass
                   }
                   maxLength={
-                    isBrazil
-                      ? 2
+                    isBrazil || isAustralia
+                      ? 3
                       : 50
                   }
                   placeholder={
                     isBrazil
                       ? text("UF", "State")
-                      : text("Estado / região", "State / region")
+                      : isAustralia
+                        ? "State / Territory"
+                        : text("Estado / região", "State / region")
                   }
                   required={
                     regionRequired
@@ -2557,8 +2573,13 @@ export default function CheckoutPage() {
                             .replace(/[^a-zA-Z]/g, "")
                             .slice(0, 2)
                             .toUpperCase()
-                        : event.target.value
-                            .slice(0, 50)
+                        : isAustralia
+                          ? event.target.value
+                              .replace(/[^a-zA-Z]/g, "")
+                              .slice(0, 3)
+                              .toUpperCase()
+                          : event.target.value
+                              .slice(0, 50)
                     )
                   }
                 />
