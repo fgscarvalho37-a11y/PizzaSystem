@@ -12,6 +12,7 @@ import {
 } from "next/navigation";
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import CountrySwitcher from "@/components/CountrySwitcher";
 import { useLanguage } from "@/i18n/LanguageProvider";
 
 type Order = {
@@ -368,6 +369,7 @@ export default function PaymentSuccessPage() {
         <header className="border-b border-border bg-background/85 backdrop-blur-md">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
             <div className="skeleton h-9 w-40 rounded-xl" />
+            <CountrySwitcher compact />
             <LanguageSwitcher />
           </div>
         </header>
