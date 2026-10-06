@@ -9,10 +9,7 @@ import {
 } from "react";
 
 import Script from "next/script";
-import { useR{text("ou", "or")}ter, useSearchParams } from "next/navigation";
-import C{text("ou", "or")}ntrySwitcher from "@/components/C{text("ou", "or")}ntrySwitcher";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { useLanguage } from "@/i18n/LanguageProvider";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const API_URL = "";
 
@@ -66,7 +63,7 @@ type LoyaltyTransaction = {
   orderId: number | null;
 };
 
-type LoyaltyAcc{text("ou", "or")}nt = {
+type LoyaltyAccount = {
   id: number;
   storeId: number;
   storeName: string | null;
@@ -100,17 +97,12 @@ type LoyaltyResponse = {
   totalPoints: number;
   totalLifetimePoints: number;
   totalRewardsRedeemed: number;
-  acc{text("ou", "or")}nts: LoyaltyAcc{text("ou", "or")}nt[];
+  accounts: LoyaltyAccount[];
   redemptions?: LoyaltyRedemption[];
 };
 
 function ContaContent() {
-  const {
-    text,
-  } =
-    useLanguage();
-
-  const r{text("ou", "or")}ter = useR{text("ou", "or")}ter();
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const rawStoreSlug =
@@ -121,7 +113,7 @@ function ContaContent() {
 
   function goBackToStore() {
     if (storeSlug) {
-      r{text("ou", "or")}ter.push(
+      router.push(
         `/cardapio/${encodeURIComponent(
           storeSlug
         )}`
@@ -129,7 +121,7 @@ function ContaContent() {
       return;
     }
 
-    r{text("ou", "or")}ter.push("/");
+    router.push("/");
   }
 
   const [mode, setMode] =
@@ -621,13 +613,13 @@ function ContaContent() {
   }
 
   async function redeemReward(
-    acc{text("ou", "or")}nt: LoyaltyAcc{text("ou", "or")}nt
+    account: LoyaltyAccount
   ) {
     if (redeemingStoreId !== null) {
       return;
     }
 
-    setRedeemingStoreId(acc{text("ou", "or")}nt.storeId);
+    setRedeemingStoreId(account.storeId);
     setRedeemMessage("");
     setRedeemError("");
 
@@ -636,7 +628,7 @@ function ContaContent() {
 
       const response =
         await fetch(
-          `${API_URL}/api/customer/loyalty/${acc{text("ou", "or")}nt.storeId}/redeem`,
+          `${API_URL}/api/customer/loyalty/${account.storeId}/redeem`,
           {
             method: "POST",
             credentials: "include",
@@ -698,7 +690,7 @@ function ContaContent() {
       return;
     }
 
-    r{text("ou", "or")}ter.push(
+    router.push(
       `/pedido/${order.id}?token=${encodeURIComponent(
         token
       )}`
@@ -759,7 +751,7 @@ function ContaContent() {
 
     if (!credential) {
       setError(
-        "O Google não retorn{text("ou", "or")} uma credencial válida."
+        "O Google não retornou uma credencial válida."
       );
       return;
     }
@@ -849,31 +841,31 @@ function ContaContent() {
 
   function initializeGoogleSignIn() {
     if (
-      !window.google?.acc{text("ou", "or")}nts?.id ||
+      !window.google?.accounts?.id ||
       !googleButtonRef.current
     ) {
       return;
     }
 
-    window.google.acc{text("ou", "or")}nts.id.initialize({
+    window.google.accounts.id.initialize({
       client_id:
         GOOGLE_CLIENT_ID,
       callback:
         handleGoogleCredential,
       auto_select:
         false,
-      cancel_on_tap_{text("ou", "or")}tside:
+      cancel_on_tap_outside:
         true,
     });
 
     googleButtonRef.current.innerHTML =
       "";
 
-    window.google.acc{text("ou", "or")}nts.id.renderButton(
+    window.google.accounts.id.renderButton(
       googleButtonRef.current,
       {
         type: "standard",
-        theme: "{text("ou", "or")}tline",
+        theme: "outline",
         size: "large",
         text: "continue_with",
         shape: "pill",
@@ -886,7 +878,7 @@ function ContaContent() {
   useEffect(() => {
     if (
       !customer &&
-      window.google?.acc{text("ou", "or")}nts?.id
+      window.google?.accounts?.id
     ) {
       initializeGoogleSignIn();
     }
@@ -1066,7 +1058,7 @@ function ContaContent() {
       setVerificationCode("");
       setVerificationMessage(
         data?.message ??
-          "{text("E-mail", "Email")} verificado com sucesso."
+          "E-mail verificado com sucesso."
       );
       setCustomer(data);
     } catch (error) {
@@ -1251,7 +1243,7 @@ function ContaContent() {
       if (!validateResponse.ok) {
         throw new Error(
           validateData?.message ??
-            "Código de recuperação inválido {text("ou", "or")} expirado."
+            "Código de recuperação inválido ou expirado."
         );
       }
 
@@ -1454,10 +1446,10 @@ function ContaContent() {
   // LOGOUT
   // =========================
 
-  async function handleLog{text("ou", "or")}t() {
+  async function handleLogout() {
     try {
       await fetch(
-        `${API_URL}/api/customer-auth/log{text("ou", "or")}t`,
+        `${API_URL}/api/customer-auth/logout`,
         {
           method: "POST",
           credentials: "include",
@@ -1491,13 +1483,13 @@ function ContaContent() {
 
   if (loadingSession) {
     return (
-      <main className="min-h-screen bg-backgr{text("ou", "or")}nd px-4 py-12 text-foregr{text("ou", "or")}nd">
+      <main className="min-h-screen bg-background px-4 py-12 text-foreground">
         <div className="mx-auto max-w-4xl">
-          <div className="skeleton h-10 w-48 r{text("ou", "or")}nded-xl" />
+          <div className="skeleton h-10 w-48 rounded-xl" />
 
           <div className="mt-8 grid gap-6 md:grid-cols-[1fr_360px]">
-            <div className="skeleton h-72 r{text("ou", "or")}nded-[28px]" />
-            <div className="skeleton h-72 r{text("ou", "or")}nded-[28px]" />
+            <div className="skeleton h-72 rounded-[28px]" />
+            <div className="skeleton h-72 rounded-[28px]" />
           </div>
         </div>
       </main>
@@ -1514,18 +1506,18 @@ function ContaContent() {
     !customer.googleConnected
   ) {
     return (
-      <main className="min-h-screen bg-backgr{text("ou", "or")}nd px-4 py-10 text-foregr{text("ou", "or")}nd sm:px-6">
+      <main className="min-h-screen bg-background px-4 py-10 text-foreground sm:px-6">
         <div className="mx-auto max-w-lg">
           <button
             type="button"
             onClick={goBackToStore}
-            className="text-sm font-bold text-muted-foregr{text("ou", "or")}nd transition-colors hover:text-foregr{text("ou", "or")}nd"
+            className="text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
           >
-            {text("← Voltar ao cardápio", "← Back to menu")}
+            ← Voltar ao cardápio
           </button>
 
-          <div className="mt-6 r{text("ou", "or")}nded-[30px] border border-border bg-card p-6 shadow-[0_18px_60px_-30px] shadow-foregr{text("ou", "or")}nd/40 sm:p-8">
-            <div className="mx-auto grid h-16 w-16 place-items-center r{text("ou", "or")}nded-2xl bg-primary/10 text-3xl">
+          <div className="mt-6 rounded-[30px] border border-border bg-card p-6 shadow-[0_18px_60px_-30px] shadow-foreground/40 sm:p-8">
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-primary/10 text-3xl">
               ✉
             </div>
 
@@ -1537,10 +1529,10 @@ function ContaContent() {
               Confira seu e-mail
             </h1>
 
-            <p className="mt-3 text-center text-sm leading-6 text-muted-foregr{text("ou", "or")}nd">
+            <p className="mt-3 text-center text-sm leading-6 text-muted-foreground">
               Enviamos um código de 6 dígitos para
               <br />
-              <strong className="text-foregr{text("ou", "or")}nd">
+              <strong className="text-foreground">
                 {customer.email}
               </strong>
             </p>
@@ -1569,12 +1561,12 @@ function ContaContent() {
                   setVerificationError("");
                 }}
                 autoFocus
-                className="mt-3 h-16 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 text-center font-mono text-3xl font-bold tracking-[0.35em] {text("ou", "or")}tline-none transition focus:border-primary"
+                className="mt-3 h-16 w-full rounded-2xl border border-border bg-background px-4 text-center font-mono text-3xl font-bold tracking-[0.35em] outline-none transition focus:border-primary"
                 placeholder="000000"
               />
 
               {verificationError && (
-                <div className="mt-4 r{text("ou", "or")}nded-2xl border border-destructive/20 bg-destructive/5 p-4">
+                <div className="mt-4 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
                   <p className="text-sm font-semibold text-destructive">
                     {verificationError}
                   </p>
@@ -1582,7 +1574,7 @@ function ContaContent() {
               )}
 
               {verificationMessage && (
-                <div className="mt-4 r{text("ou", "or")}nded-2xl border border-primary/20 bg-primary/5 p-4">
+                <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
                   <p className="text-sm font-semibold text-primary">
                     {verificationMessage}
                   </p>
@@ -1596,7 +1588,7 @@ function ContaContent() {
                   verificationSending ||
                   verificationCode.length !== 6
                 }
-                className="brand-button mt-5 min-h-12 w-full r{text("ou", "or")}nded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="brand-button mt-5 min-h-12 w-full rounded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {verificationSubmitting
                   ? "Verificando..."
@@ -1605,7 +1597,7 @@ function ContaContent() {
             </form>
 
             <div className="mt-6 border-t border-border pt-6 text-center">
-              <p className="text-sm text-muted-foregr{text("ou", "or")}nd">
+              <p className="text-sm text-muted-foreground">
                 Não recebeu o código?
               </p>
 
@@ -1629,8 +1621,8 @@ function ContaContent() {
               </button>
             </div>
 
-            <div className="mt-6 r{text("ou", "or")}nded-2xl bg-secondary p-4">
-              <p className="text-center text-xs leading-5 text-muted-foregr{text("ou", "or")}nd">
+            <div className="mt-6 rounded-2xl bg-secondary p-4">
+              <p className="text-center text-xs leading-5 text-muted-foreground">
                 O código expira em 15 minutos. Você precisa confirmar seu e-mail para acessar sua conta.
               </p>
             </div>
@@ -1638,11 +1630,11 @@ function ContaContent() {
             <button
               type="button"
               onClick={() =>
-                void handleLog{text("ou", "or")}t()
+                void handleLogout()
               }
-              className="mt-5 w-full text-center text-sm font-bold text-muted-foregr{text("ou", "or")}nd transition-colors hover:text-foregr{text("ou", "or")}nd"
+              className="mt-5 w-full text-center text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
             >
-              {text("Sair", "Sign {text("ou", "or")}t")} da conta
+              Sair da conta
             </button>
           </div>
         </div>
@@ -1656,9 +1648,9 @@ function ContaContent() {
 
   if (customer) {
     return (
-      <main className="min-h-screen bg-backgr{text("ou", "or")}nd pb-16 text-foregr{text("ou", "or")}nd">
-        <header className="border-b border-border bg-backgr{text("ou", "or")}nd/85 backdrop-blur-md">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+      <main className="min-h-screen bg-background pb-16 text-foreground">
+        <header className="border-b border-border bg-background/85 backdrop-blur-md">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
             <button
               type="button"
               onClick={
@@ -1666,29 +1658,29 @@ function ContaContent() {
               }
               className="text-sm font-bold"
             >
-              {text("← Voltar ao cardápio", "← Back to menu")}
+              ← Voltar ao cardápio
             </button>
 
             <span className="font-display text-2xl tracking-tight">
-              {text("Minha conta", "My acc{text("ou", "or")}nt")}
+              Minha conta
             </span>
 
             <button
               type="button"
               onClick={() =>
-                void handleLog{text("ou", "or")}t()
+                void handleLogout()
               }
               className="text-sm font-bold text-primary"
             >
-              {text("Sair", "Sign {text("ou", "or")}t")}
+              Sair
             </button>
           </div>
         </header>
 
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-          <section className="r{text("ou", "or")}nded-[30px] border border-border bg-card p-6 shadow-[0_18px_60px_-30px] shadow-foregr{text("ou", "or")}nd/40 sm:p-8">
+          <section className="rounded-[30px] border border-border bg-card p-6 shadow-[0_18px_60px_-30px] shadow-foreground/40 sm:p-8">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-              <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden r{text("ou", "or")}nded-full bg-primary text-3xl font-bold text-primary-foregr{text("ou", "or")}nd">
+              <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-3xl font-bold text-primary-foreground">
                 {customer.profileImageUrl ? (
                   <img
                     src={
@@ -1705,16 +1697,16 @@ function ContaContent() {
               </div>
 
               <div>
-                <p className="font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-muted-foregr{text("ou", "or")}nd">
-                  {text("Cliente", "Customer")}
+                <p className="font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                  Cliente
                 </p>
 
                 <h1 className="mt-1 font-display text-4xl tracking-tight sm:text-5xl">
-                  {text("Olá,", "Hello,")}{" "}
+                  Olá,{" "}
                   {customer.name}
                 </h1>
 
-                <p className="mt-2 text-sm text-muted-foregr{text("ou", "or")}nd">
+                <p className="mt-2 text-sm text-muted-foreground">
                   {customer.email}
                 </p>
               </div>
@@ -1727,18 +1719,18 @@ function ContaContent() {
               onClick={() =>
                 void loadOrders()
               }
-              className="r{text("ou", "or")}nded-[26px] border border-border bg-card p-6 text-left shadow-[0_14px_45px_-30px] shadow-foregr{text("ou", "or")}nd/40 transition-transform hover:-translate-y-0.5"
+              className="rounded-[26px] border border-border bg-card p-6 text-left shadow-[0_14px_45px_-30px] shadow-foreground/40 transition-transform hover:-translate-y-0.5"
             >
-              <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foregr{text("ou", "or")}nd">
-                {text("Histórico", "History")}
+              <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                Histórico
               </p>
 
               <h2 className="mt-2 font-display text-2xl tracking-tight">
-                {text("Meus pedidos", "My orders")}
+                Meus pedidos
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-muted-foregr{text("ou", "or")}nd">
-                {text("Acompanhe pedidos feitos com sua conta.", "Track orders placed with y{text("ou", "or")}r acc{text("ou", "or")}nt.")}
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Acompanhe pedidos feitos com sua conta.
               </p>
             </button>
 
@@ -1747,18 +1739,18 @@ function ContaContent() {
               onClick={() =>
                 void loadLoyalty()
               }
-              className="relative overflow-hidden r{text("ou", "or")}nded-[26px] border border-border bg-card p-6 text-left shadow-[0_14px_45px_-30px] shadow-foregr{text("ou", "or")}nd/40 transition-transform hover:-translate-y-0.5"
+              className="relative overflow-hidden rounded-[26px] border border-border bg-card p-6 text-left shadow-[0_14px_45px_-30px] shadow-foreground/40 transition-transform hover:-translate-y-0.5"
             >
               <div className="absolute -right-4 -top-6 text-7xl opacity-[0.06]">
                 ★
               </div>
 
-              <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foregr{text("ou", "or")}nd">
-                {text("Fidelidade", "Loyalty")}
+              <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                Fidelidade
               </p>
 
               <h2 className="mt-2 font-display text-2xl tracking-tight">
-                {text("Meus pontos", "My points")}
+                Meus pontos
               </h2>
 
               {loyalty ? (
@@ -1769,7 +1761,7 @@ function ContaContent() {
                     : "pontos"}
                 </p>
               ) : (
-                <p className="mt-2 text-sm leading-6 text-muted-foregr{text("ou", "or")}nd">
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   Veja seus pontos e benefícios em cada loja.
                 </p>
               )}
@@ -1778,9 +1770,9 @@ function ContaContent() {
             <button
               type="button"
               onClick={openProfile}
-              className="r{text("ou", "or")}nded-[26px] border border-border bg-card p-6 text-left shadow-[0_14px_45px_-30px] shadow-foregr{text("ou", "or")}nd/40 transition-transform hover:-translate-y-0.5"
+              className="rounded-[26px] border border-border bg-card p-6 text-left shadow-[0_14px_45px_-30px] shadow-foreground/40 transition-transform hover:-translate-y-0.5"
             >
-              <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foregr{text("ou", "or")}nd">
+              <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                 Perfil
               </p>
 
@@ -1788,14 +1780,14 @@ function ContaContent() {
                 Meus dados
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-muted-foregr{text("ou", "or")}nd">
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 Altere seu nome, telefone, e-mail e senha.
               </p>
             </button>
           </div>
 
           {profileOpen && (
-            <section className="mt-6 r{text("ou", "or")}nded-[28px] border border-border bg-card p-6 sm:p-7">
+            <section className="mt-6 rounded-[28px] border border-border bg-card p-6 sm:p-7">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
@@ -1806,7 +1798,7 @@ function ContaContent() {
                     Meus dados
                   </h2>
 
-                  <p className="mt-2 text-sm text-muted-foregr{text("ou", "or")}nd">
+                  <p className="mt-2 text-sm text-muted-foreground">
                     Atualize as informações usadas na sua conta.
                   </p>
                 </div>
@@ -1814,7 +1806,7 @@ function ContaContent() {
                 <button
                   type="button"
                   onClick={() => setProfileOpen(false)}
-                  className="self-start r{text("ou", "or")}nded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary"
+                  className="self-start rounded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary"
                 >
                   Fechar
                 </button>
@@ -1823,7 +1815,7 @@ function ContaContent() {
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <label className="block">
                   <span className="text-sm font-bold">
-                    {text("Nome", "Name")}
+                    Nome
                   </span>
                   <input
                     value={profileName}
@@ -1831,14 +1823,14 @@ function ContaContent() {
                       setProfileName(event.target.value)
                     }
                     autoComplete="name"
-                    className="mt-2 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 py-3 {text("ou", "or")}tline-none transition focus:border-primary"
+                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary"
                     placeholder="Seu nome"
                   />
                 </label>
 
                 <label className="block">
                   <span className="text-sm font-bold">
-                    {text("Telefone", "Phone")}
+                    Telefone
                   </span>
                   <input
                     value={profilePhone}
@@ -1846,14 +1838,14 @@ function ContaContent() {
                       setProfilePhone(event.target.value)
                     }
                     autoComplete="tel"
-                    className="mt-2 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 py-3 {text("ou", "or")}tline-none transition focus:border-primary"
+                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary"
                     placeholder="(19) 99999-9999"
                   />
                 </label>
 
                 <label className="block sm:col-span-2">
                   <span className="text-sm font-bold">
-                    {text("E-mail", "Email")}
+                    E-mail
                   </span>
                   <input
                     type="email"
@@ -1862,7 +1854,7 @@ function ContaContent() {
                       setProfileEmail(event.target.value)
                     }
                     autoComplete="email"
-                    className="mt-2 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 py-3 {text("ou", "or")}tline-none transition focus:border-primary"
+                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary"
                     placeholder="voce@email.com"
                   />
                 </label>
@@ -1873,7 +1865,7 @@ function ContaContent() {
                   <p className="font-display text-xl tracking-tight">
                     Alterar senha
                   </p>
-                  <p className="mt-1 text-sm text-muted-foregr{text("ou", "or")}nd">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Deixe estes campos vazios se não quiser trocar sua senha.
                   </p>
                 </div>
@@ -1881,7 +1873,7 @@ function ContaContent() {
                 <div className="mt-4 grid gap-4 sm:grid-cols-3">
                   <label className="block">
                     <span className="text-sm font-bold">
-                      {text("Senha", "Password")} atual
+                      Senha atual
                     </span>
                     <input
                       type="password"
@@ -1890,14 +1882,14 @@ function ContaContent() {
                         setCurrentPassword(event.target.value)
                       }
                       autoComplete="current-password"
-                      className="mt-2 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 py-3 {text("ou", "or")}tline-none transition focus:border-primary"
+                      className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary"
                       placeholder="Sua senha atual"
                     />
                   </label>
 
                   <label className="block">
                     <span className="text-sm font-bold">
-                      {text("Nova senha", "New password")}
+                      Nova senha
                     </span>
                     <input
                       type="password"
@@ -1906,14 +1898,14 @@ function ContaContent() {
                         setNewPassword(event.target.value)
                       }
                       autoComplete="new-password"
-                      className="mt-2 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 py-3 {text("ou", "or")}tline-none transition focus:border-primary"
+                      className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary"
                       placeholder="Mínimo 8 caracteres"
                     />
                   </label>
 
                   <label className="block">
                     <span className="text-sm font-bold">
-                      {text("Confirmar nova senha", "Confirm new password")}
+                      Confirmar nova senha
                     </span>
                     <input
                       type="password"
@@ -1922,7 +1914,7 @@ function ContaContent() {
                         setConfirmNewPassword(event.target.value)
                       }
                       autoComplete="new-password"
-                      className="mt-2 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 py-3 {text("ou", "or")}tline-none transition focus:border-primary"
+                      className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary"
                       placeholder="Repita a nova senha"
                     />
                   </label>
@@ -1930,13 +1922,13 @@ function ContaContent() {
               </div>
 
               {profileError && (
-                <div className="mt-5 r{text("ou", "or")}nded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm font-semibold text-red-600">
+                <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm font-semibold text-red-600">
                   {profileError}
                 </div>
               )}
 
               {profileMessage && (
-                <div className="mt-5 r{text("ou", "or")}nded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">
+                <div className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">
                   {profileMessage}
                 </div>
               )}
@@ -1946,7 +1938,7 @@ function ContaContent() {
                   type="button"
                   onClick={() => setProfileOpen(false)}
                   disabled={savingProfile}
-                  className="r{text("ou", "or")}nded-full border border-border px-5 py-3 text-sm font-bold transition-colors hover:bg-secondary disabled:opacity-50"
+                  className="rounded-full border border-border px-5 py-3 text-sm font-bold transition-colors hover:bg-secondary disabled:opacity-50"
                 >
                   Cancelar
                 </button>
@@ -1955,7 +1947,7 @@ function ContaContent() {
                   type="button"
                   onClick={() => void saveProfile()}
                   disabled={savingProfile}
-                  className="r{text("ou", "or")}nded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foregr{text("ou", "or")}nd transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {savingProfile
                     ? "Salvando..."
@@ -1966,18 +1958,18 @@ function ContaContent() {
           )}
 
           {loyaltyOpen && (
-            <section className="mt-6 r{text("ou", "or")}nded-[28px] border border-border bg-card p-6 sm:p-7">
+            <section className="mt-6 rounded-[28px] border border-border bg-card p-6 sm:p-7">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                    {text("Fidelidade", "Loyalty")}
+                    Fidelidade
                   </p>
 
                   <h2 className="mt-1 font-display text-3xl tracking-tight">
-                    {text("Meus pontos", "My points")}
+                    Meus pontos
                   </h2>
 
-                  <p className="mt-2 text-sm text-muted-foregr{text("ou", "or")}nd">
+                  <p className="mt-2 text-sm text-muted-foreground">
                     Acompanhe seus pontos e o histórico de cada loja.
                   </p>
                 </div>
@@ -1987,7 +1979,7 @@ function ContaContent() {
                   onClick={() =>
                     setLoyaltyOpen(false)
                   }
-                  className="self-start r{text("ou", "or")}nded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary"
+                  className="self-start rounded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary"
                 >
                   Fechar
                 </button>
@@ -1996,18 +1988,18 @@ function ContaContent() {
               {loadingLoyalty ? (
                 <div className="mt-6">
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="skeleton h-28 r{text("ou", "or")}nded-2xl" />
-                    <div className="skeleton h-28 r{text("ou", "or")}nded-2xl" />
-                    <div className="skeleton h-28 r{text("ou", "or")}nded-2xl" />
+                    <div className="skeleton h-28 rounded-2xl" />
+                    <div className="skeleton h-28 rounded-2xl" />
+                    <div className="skeleton h-28 rounded-2xl" />
                   </div>
 
                   <div className="mt-5 space-y-3">
-                    <div className="skeleton h-24 r{text("ou", "or")}nded-2xl" />
-                    <div className="skeleton h-24 r{text("ou", "or")}nded-2xl" />
+                    <div className="skeleton h-24 rounded-2xl" />
+                    <div className="skeleton h-24 rounded-2xl" />
                   </div>
                 </div>
               ) : loyaltyError ? (
-                <div className="mt-6 r{text("ou", "or")}nded-2xl border border-primary/20 bg-primary/5 p-4">
+                <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4">
                   <p className="text-sm font-semibold text-primary">
                     {loyaltyError}
                   </p>
@@ -2017,13 +2009,13 @@ function ContaContent() {
                     onClick={() =>
                       void loadLoyalty()
                     }
-                    className="mt-3 r{text("ou", "or")}nded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foregr{text("ou", "or")}nd"
+                    className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
                   >
                     Tentar novamente
                   </button>
                 </div>
               ) : !loyalty ? (
-                <div className="mt-6 r{text("ou", "or")}nded-2xl bg-secondary p-5">
+                <div className="mt-6 rounded-2xl bg-secondary p-5">
                   <p className="font-bold">
                     Não foi possível encontrar seus pontos.
                   </p>
@@ -2031,7 +2023,7 @@ function ContaContent() {
               ) : (
                 <>
                   <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                    <div className="r{text("ou", "or")}nded-[22px] bg-primary p-5 text-primary-foregr{text("ou", "or")}nd">
+                    <div className="rounded-[22px] bg-primary p-5 text-primary-foreground">
                       <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] opacity-80">
                         Saldo atual
                       </p>
@@ -2047,8 +2039,8 @@ function ContaContent() {
                       </p>
                     </div>
 
-                    <div className="r{text("ou", "or")}nded-[22px] bg-secondary p-5">
-                      <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foregr{text("ou", "or")}nd">
+                    <div className="rounded-[22px] bg-secondary p-5">
+                      <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                         Total conquistado
                       </p>
 
@@ -2056,13 +2048,13 @@ function ContaContent() {
                         {loyalty.totalLifetimePoints}
                       </p>
 
-                      <p className="mt-1 text-sm text-muted-foregr{text("ou", "or")}nd">
+                      <p className="mt-1 text-sm text-muted-foreground">
                         pontos desde o início
                       </p>
                     </div>
 
-                    <div className="r{text("ou", "or")}nded-[22px] bg-secondary p-5">
-                      <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foregr{text("ou", "or")}nd">
+                    <div className="rounded-[22px] bg-secondary p-5">
+                      <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                         Recompensas
                       </p>
 
@@ -2070,14 +2062,14 @@ function ContaContent() {
                         {loyalty.totalRewardsRedeemed}
                       </p>
 
-                      <p className="mt-1 text-sm text-muted-foregr{text("ou", "or")}nd">
+                      <p className="mt-1 text-sm text-muted-foreground">
                         resgatadas até agora
                       </p>
                     </div>
                   </div>
 
                   {redeemMessage && (
-                    <div className="mt-6 r{text("ou", "or")}nded-2xl border border-primary/20 bg-primary/5 p-4">
+                    <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4">
                       <p className="text-sm font-semibold text-primary">
                         {redeemMessage}
                       </p>
@@ -2085,114 +2077,114 @@ function ContaContent() {
                   )}
 
                   {redeemError && (
-                    <div className="mt-6 r{text("ou", "or")}nded-2xl border border-destructive/20 bg-destructive/5 p-4">
+                    <div className="mt-6 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
                       <p className="text-sm font-semibold text-destructive">
                         {redeemError}
                       </p>
                     </div>
                   )}
 
-                  {loyalty.acc{text("ou", "or")}nts.length === 0 ? (
-                    <div className="mt-6 r{text("ou", "or")}nded-2xl bg-secondary p-5">
+                  {loyalty.accounts.length === 0 ? (
+                    <div className="mt-6 rounded-2xl bg-secondary p-5">
                       <p className="font-bold">
                         Você ainda não possui pontos.
                       </p>
 
-                      <p className="mt-1 text-sm leading-6 text-muted-foregr{text("ou", "or")}nd">
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
                         Quando um pedido elegível for aprovado, seus pontos aparecerão aqui.
                       </p>
                     </div>
                   ) : (
                     <div className="mt-6 space-y-5">
-                      {loyalty.acc{text("ou", "or")}nts.map(
-                        (acc{text("ou", "or")}nt) => (
+                      {loyalty.accounts.map(
+                        (account) => (
                           <article
-                            key={acc{text("ou", "or")}nt.id}
-                            className="overflow-hidden r{text("ou", "or")}nded-[24px] border border-border bg-backgr{text("ou", "or")}nd"
+                            key={account.id}
+                            className="overflow-hidden rounded-[24px] border border-border bg-background"
                           >
                             <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
                               <div>
-                                <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foregr{text("ou", "or")}nd">
+                                <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                                   Loja
                                 </p>
 
                                 <h3 className="mt-1 font-display text-2xl tracking-tight">
-                                  {acc{text("ou", "or")}nt.storeName ??
+                                  {account.storeName ??
                                     "Loja"}
                                 </h3>
                               </div>
 
                               <div className="sm:text-right">
                                 <p className="font-display text-3xl tracking-tight text-primary">
-                                  {acc{text("ou", "or")}nt.points}{" "}
-                                  {acc{text("ou", "or")}nt.points === 1
+                                  {account.points}{" "}
+                                  {account.points === 1
                                     ? "ponto"
                                     : "pontos"}
                                 </p>
 
-                                <p className="mt-1 text-xs text-muted-foregr{text("ou", "or")}nd">
-                                  {acc{text("ou", "or")}nt.lifetimePoints} conquistados no total
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {account.lifetimePoints} conquistados no total
                                 </p>
                               </div>
                             </div>
 
-                            {acc{text("ou", "or")}nt.loyaltyEnabled && (
+                            {account.loyaltyEnabled && (
                               <div className="border-b border-border p-5">
-                                <div className="r{text("ou", "or")}nded-[22px] bg-secondary p-5">
+                                <div className="rounded-[22px] bg-secondary p-5">
                                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                      <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foregr{text("ou", "or")}nd">
+                                      <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                                         Recompensa
                                       </p>
 
                                       <h4 className="mt-1 font-display text-2xl tracking-tight">
-                                        {acc{text("ou", "or")}nt.rewardDescription?.trim() ||
+                                        {account.rewardDescription?.trim() ||
                                           "Recompensa da fidelidade"}
                                       </h4>
 
-                                      <p className="mt-2 text-sm text-muted-foregr{text("ou", "or")}nd">
-                                        {acc{text("ou", "or")}nt.rewardAvailable
-                                          ? `Você complet{text("ou", "or")} ${acc{text("ou", "or")}nt.stampGoal} pontos e já pode resgatar.`
-                                          : `Faltam ${acc{text("ou", "or")}nt.pointsMissing} ${
-                                              acc{text("ou", "or")}nt.pointsMissing === 1
+                                      <p className="mt-2 text-sm text-muted-foreground">
+                                        {account.rewardAvailable
+                                          ? `Você completou ${account.stampGoal} pontos e já pode resgatar.`
+                                          : `Faltam ${account.pointsMissing} ${
+                                              account.pointsMissing === 1
                                                 ? "ponto"
                                                 : "pontos"
                                             } para resgatar.`}
                                       </p>
 
-                                      <div className="mt-4 h-2.5 overflow-hidden r{text("ou", "or")}nded-full bg-backgr{text("ou", "or")}nd">
+                                      <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-background">
                                         <div
-                                          className="h-full r{text("ou", "or")}nded-full bg-primary transition-all"
+                                          className="h-full rounded-full bg-primary transition-all"
                                           style={{
                                             width: `${Math.min(
                                               100,
-                                              acc{text("ou", "or")}nt.stampGoal > 0
-                                                ? (acc{text("ou", "or")}nt.points / acc{text("ou", "or")}nt.stampGoal) * 100
+                                              account.stampGoal > 0
+                                                ? (account.points / account.stampGoal) * 100
                                                 : 0
                                             )}%`,
                                           }}
                                         />
                                       </div>
 
-                                      <p className="mt-2 text-xs font-semibold text-muted-foregr{text("ou", "or")}nd">
-                                        {Math.min(acc{text("ou", "or")}nt.points, acc{text("ou", "or")}nt.stampGoal)}/{acc{text("ou", "or")}nt.stampGoal} pontos
+                                      <p className="mt-2 text-xs font-semibold text-muted-foreground">
+                                        {Math.min(account.points, account.stampGoal)}/{account.stampGoal} pontos
                                       </p>
                                     </div>
 
                                     <button
                                       type="button"
                                       disabled={
-                                        !acc{text("ou", "or")}nt.rewardAvailable ||
+                                        !account.rewardAvailable ||
                                         redeemingStoreId !== null
                                       }
                                       onClick={() =>
-                                        void redeemReward(acc{text("ou", "or")}nt)
+                                        void redeemReward(account)
                                       }
-                                      className="min-h-12 shrink-0 r{text("ou", "or")}nded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foregr{text("ou", "or")}nd transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                      className="min-h-12 shrink-0 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                      {redeemingStoreId === acc{text("ou", "or")}nt.storeId
+                                      {redeemingStoreId === account.storeId
                                         ? "Resgatando..."
-                                        : acc{text("ou", "or")}nt.rewardAvailable
+                                        : account.rewardAvailable
                                           ? "Resgatar recompensa"
                                           : "Ainda não disponível"}
                                     </button>
@@ -2203,12 +2195,12 @@ function ContaContent() {
 
                             {(loyalty.redemptions ?? []).filter(
                               (redemption) =>
-                                redemption.storeId === acc{text("ou", "or")}nt.storeId
+                                redemption.storeId === account.storeId
                             ).length > 0 && (
                               <div className="border-t border-border p-5">
                                 <div className="flex items-end justify-between gap-3">
                                   <div>
-                                    <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foregr{text("ou", "or")}nd">
+                                    <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                                       Resgates
                                     </p>
 
@@ -2217,11 +2209,11 @@ function ContaContent() {
                                     </h4>
                                   </div>
 
-                                  <span className="text-xs font-semibold text-muted-foregr{text("ou", "or")}nd">
+                                  <span className="text-xs font-semibold text-muted-foreground">
                                     {
                                       (loyalty.redemptions ?? []).filter(
                                         (redemption) =>
-                                          redemption.storeId === acc{text("ou", "or")}nt.storeId
+                                          redemption.storeId === account.storeId
                                       ).length
                                     }{" "}
                                     resgate(s)
@@ -2232,7 +2224,7 @@ function ContaContent() {
                                   {[...(loyalty.redemptions ?? [])]
                                     .filter(
                                       (redemption) =>
-                                        redemption.storeId === acc{text("ou", "or")}nt.storeId
+                                        redemption.storeId === account.storeId
                                     )
                                     .sort((a, b) => {
                                       if (
@@ -2268,12 +2260,12 @@ function ContaContent() {
                                         return (
                                           <article
                                             key={redemption.id}
-                                            className="r{text("ou", "or")}nded-[20px] border border-primary/20 bg-secondary p-4"
+                                            className="rounded-[20px] border border-primary/20 bg-secondary p-4"
                                           >
                                             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                               <div className="min-w-0">
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                  <span className="r{text("ou", "or")}nded-full bg-primary px-3 py-1 font-mono-brand text-[9px] font-bold uppercase tracking-wider text-primary-foregr{text("ou", "or")}nd">
+                                                  <span className="rounded-full bg-primary px-3 py-1 font-mono-brand text-[9px] font-bold uppercase tracking-wider text-primary-foreground">
                                                     Aguardando utilização
                                                   </span>
                                                 </div>
@@ -2282,14 +2274,14 @@ function ContaContent() {
                                                   {redemption.rewardDescription}
                                                 </h5>
 
-                                                <p className="mt-1 text-xs text-muted-foregr{text("ou", "or")}nd">
+                                                <p className="mt-1 text-xs text-muted-foreground">
                                                   Resgatada em{" "}
                                                   {formatDate(
                                                     redemption.createdAt
                                                   )}
                                                 </p>
 
-                                                <p className="mt-3 text-xs leading-5 text-muted-foregr{text("ou", "or")}nd">
+                                                <p className="mt-3 text-xs leading-5 text-muted-foreground">
                                                   Apresente esta recompensa à loja para utilizar o benefício.
                                                 </p>
                                               </div>
@@ -2299,7 +2291,7 @@ function ContaContent() {
                                                   -{redemption.pointsUsed}
                                                 </p>
 
-                                                <p className="text-[11px] font-semibold text-muted-foregr{text("ou", "or")}nd">
+                                                <p className="text-[11px] font-semibold text-muted-foreground">
                                                   pontos utilizados
                                                 </p>
                                               </div>
@@ -2311,12 +2303,12 @@ function ContaContent() {
                                       return (
                                         <article
                                           key={redemption.id}
-                                          className="r{text("ou", "or")}nded-[18px] bg-secondary px-4 py-3"
+                                          className="rounded-[18px] bg-secondary px-4 py-3"
                                         >
                                           <div className="flex items-start justify-between gap-4">
                                             <div className="min-w-0">
                                               <div className="flex flex-wrap items-center gap-2">
-                                                <span className="r{text("ou", "or")}nded-full bg-backgr{text("ou", "or")}nd px-2.5 py-1 font-mono-brand text-[8px] font-bold uppercase tracking-wider text-muted-foregr{text("ou", "or")}nd">
+                                                <span className="rounded-full bg-background px-2.5 py-1 font-mono-brand text-[8px] font-bold uppercase tracking-wider text-muted-foreground">
                                                   {isUsed
                                                     ? "Utilizada"
                                                     : isCancelled
@@ -2331,7 +2323,7 @@ function ContaContent() {
                                                 {redemption.rewardDescription}
                                               </h5>
 
-                                              <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-muted-foregr{text("ou", "or")}nd">
+                                              <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-muted-foreground">
                                                 <span>
                                                   Resgatada em{" "}
                                                   {formatDate(
@@ -2378,7 +2370,7 @@ function ContaContent() {
                                                     -{redemption.pointsUsed}
                                                   </p>
 
-                                                  <p className="text-[11px] font-semibold text-muted-foregr{text("ou", "or")}nd">
+                                                  <p className="text-[11px] font-semibold text-muted-foreground">
                                                     pontos utilizados
                                                   </p>
                                                 </>
@@ -2395,41 +2387,41 @@ function ContaContent() {
                             <div className="p-5">
                               <div className="flex items-center justify-between gap-3">
                                 <h4 className="font-display text-xl tracking-tight">
-                                  {text("Histórico", "History")} de pontos
+                                  Histórico de pontos
                                 </h4>
 
-                                <span className="text-xs font-semibold text-muted-foregr{text("ou", "or")}nd">
-                                  {acc{text("ou", "or")}nt.transactions.length}{" "}
-                                  {acc{text("ou", "or")}nt.transactions.length === 1
+                                <span className="text-xs font-semibold text-muted-foreground">
+                                  {account.transactions.length}{" "}
+                                  {account.transactions.length === 1
                                     ? "movimentação"
                                     : "movimentações"}
                                 </span>
                               </div>
 
-                              {acc{text("ou", "or")}nt.transactions.length === 0 ? (
-                                <div className="mt-4 r{text("ou", "or")}nded-2xl bg-secondary p-4">
-                                  <p className="text-sm text-muted-foregr{text("ou", "or")}nd">
+                              {account.transactions.length === 0 ? (
+                                <div className="mt-4 rounded-2xl bg-secondary p-4">
+                                  <p className="text-sm text-muted-foreground">
                                     Nenhuma movimentação registrada ainda.
                                   </p>
                                 </div>
                               ) : (
                                 <div className="mt-4 space-y-3">
-                                  {acc{text("ou", "or")}nt.transactions.map(
+                                  {account.transactions.map(
                                     (transaction) => (
                                       <div
                                         key={transaction.id}
-                                        className="flex flex-col gap-4 r{text("ou", "or")}nded-2xl bg-secondary p-4 sm:flex-row sm:items-center sm:justify-between"
+                                        className="flex flex-col gap-4 rounded-2xl bg-secondary p-4 sm:flex-row sm:items-center sm:justify-between"
                                       >
                                         <div className="min-w-0">
                                           <div className="flex flex-wrap items-center gap-2">
-                                            <span className="r{text("ou", "or")}nded-full bg-backgr{text("ou", "or")}nd px-3 py-1 font-mono-brand text-[9px] font-bold uppercase tracking-wider">
+                                            <span className="rounded-full bg-background px-3 py-1 font-mono-brand text-[9px] font-bold uppercase tracking-wider">
                                               {transactionTypeLabel(
                                                 transaction.type
                                               )}
                                             </span>
 
                                             {transaction.orderId != null && (
-                                              <span className="text-xs font-bold text-muted-foregr{text("ou", "or")}nd">
+                                              <span className="text-xs font-bold text-muted-foreground">
                                                 Pedido #{transaction.orderId}
                                               </span>
                                             )}
@@ -2440,7 +2432,7 @@ function ContaContent() {
                                               "Movimentação de pontos"}
                                           </p>
 
-                                          <p className="mt-1 text-xs text-muted-foregr{text("ou", "or")}nd">
+                                          <p className="mt-1 text-xs text-muted-foreground">
                                             {formatDate(
                                               transaction.createdAt
                                             )}
@@ -2452,7 +2444,7 @@ function ContaContent() {
                                             className={`font-display text-3xl tracking-tight ${
                                               transaction.points >= 0
                                                 ? "text-primary"
-                                                : "text-foregr{text("ou", "or")}nd"
+                                                : "text-foreground"
                                             }`}
                                           >
                                             {transaction.points > 0
@@ -2461,7 +2453,7 @@ function ContaContent() {
                                             {transaction.points}
                                           </p>
 
-                                          <p className="text-xs font-semibold text-muted-foregr{text("ou", "or")}nd">
+                                          <p className="text-xs font-semibold text-muted-foreground">
                                             {Math.abs(
                                               transaction.points
                                             ) === 1
@@ -2486,15 +2478,15 @@ function ContaContent() {
           )}
 
           {ordersOpen && (
-            <section className="mt-6 r{text("ou", "or")}nded-[28px] border border-border bg-card p-6 sm:p-7">
+            <section className="mt-6 rounded-[28px] border border-border bg-card p-6 sm:p-7">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foregr{text("ou", "or")}nd">
-                    {text("Histórico", "History")}
+                  <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                    Histórico
                   </p>
 
                   <h2 className="mt-1 font-display text-3xl tracking-tight">
-                    {text("Meus pedidos", "My orders")}
+                    Meus pedidos
                   </h2>
                 </div>
 
@@ -2503,7 +2495,7 @@ function ContaContent() {
                   onClick={() =>
                     setOrdersOpen(false)
                   }
-                  className="self-start r{text("ou", "or")}nded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary"
+                  className="self-start rounded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary"
                 >
                   Fechar
                 </button>
@@ -2511,22 +2503,22 @@ function ContaContent() {
 
               {loadingOrders ? (
                 <div className="mt-6 space-y-3">
-                  <div className="skeleton h-28 r{text("ou", "or")}nded-2xl" />
-                  <div className="skeleton h-28 r{text("ou", "or")}nded-2xl" />
+                  <div className="skeleton h-28 rounded-2xl" />
+                  <div className="skeleton h-28 rounded-2xl" />
                 </div>
               ) : ordersError ? (
-                <div className="mt-6 r{text("ou", "or")}nded-2xl border border-primary/20 bg-primary/5 p-4">
+                <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4">
                   <p className="text-sm font-semibold text-primary">
                     {ordersError}
                   </p>
                 </div>
               ) : orders.length === 0 ? (
-                <div className="mt-6 r{text("ou", "or")}nded-2xl bg-secondary p-5">
+                <div className="mt-6 rounded-2xl bg-secondary p-5">
                   <p className="font-bold">
                     Você ainda não tem pedidos vinculados a esta conta.
                   </p>
 
-                  <p className="mt-1 text-sm text-muted-foregr{text("ou", "or")}nd">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Os próximos pedidos feitos enquanto você estiver logado aparecerão aqui.
                   </p>
                 </div>
@@ -2536,16 +2528,16 @@ function ContaContent() {
                     (order) => (
                       <article
                         key={order.id}
-                        className="r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd p-5"
+                        className="rounded-2xl border border-border bg-background p-5"
                       >
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="r{text("ou", "or")}nded-full bg-foregr{text("ou", "or")}nd px-3 py-1 font-mono-brand text-[10px] font-bold uppercase tracking-wider text-backgr{text("ou", "or")}nd">
+                              <span className="rounded-full bg-foreground px-3 py-1 font-mono-brand text-[10px] font-bold uppercase tracking-wider text-background">
                                 Pedido #{order.id}
                               </span>
 
-                              <span className="r{text("ou", "or")}nded-full bg-secondary px-3 py-1 text-xs font-bold">
+                              <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold">
                                 {orderStatusLabel(
                                   order.status
                                 )}
@@ -2557,7 +2549,7 @@ function ContaContent() {
                                 "Loja"}
                             </h3>
 
-                            <p className="mt-1 text-sm text-muted-foregr{text("ou", "or")}nd">
+                            <p className="mt-1 text-sm text-muted-foreground">
                               {formatOrderDate(
                                 order.createdAt
                               )}
@@ -2580,7 +2572,7 @@ function ContaContent() {
                                   order
                                 )
                               }
-                              className="mt-3 r{text("ou", "or")}nded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foregr{text("ou", "or")}nd transition-transform active:scale-95"
+                              className="mt-3 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-transform active:scale-95"
                             >
                               Ver pedido
                             </button>
@@ -2594,15 +2586,15 @@ function ContaContent() {
             </section>
           )}
 
-          <section className="mt-6 r{text("ou", "or")}nded-[28px] border border-border bg-card p-6">
+          <section className="mt-6 rounded-[28px] border border-border bg-card p-6">
             <h2 className="font-display text-2xl tracking-tight">
               Status da conta
             </h2>
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <div className="r{text("ou", "or")}nded-2xl bg-secondary p-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foregr{text("ou", "or")}nd">
-                  {text("E-mail", "Email")}
+              <div className="rounded-2xl bg-secondary p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  E-mail
                 </p>
 
                 <p className="mt-1 font-semibold">
@@ -2612,8 +2604,8 @@ function ContaContent() {
                 </p>
               </div>
 
-              <div className="r{text("ou", "or")}nded-2xl bg-secondary p-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foregr{text("ou", "or")}nd">
+              <div className="rounded-2xl bg-secondary p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Google
                 </p>
 
@@ -2635,19 +2627,14 @@ function ContaContent() {
   // =========================
 
   return (
-    <main className="min-h-screen bg-backgr{text("ou", "or")}nd px-4 py-10 text-foregr{text("ou", "or")}nd sm:px-6">
+    <main className="min-h-screen bg-background px-4 py-10 text-foreground sm:px-6">
       <Script
-        src="https://acc{text("ou", "or")}nts.google.com/gsi/client"
+        src="https://accounts.google.com/gsi/client"
         strategy="afterInteractive"
         onLoad={initializeGoogleSignIn}
       />
 
       <div className="mx-auto max-w-lg">
-        <div className="mb-4 flex justify-end gap-2">
-          <CountrySwitcher compact />
-          <LanguageSwitcher />
-        </div>
-
         <button
           type="button"
           onClick={
@@ -2659,51 +2646,51 @@ function ContaContent() {
                 }
               : goBackToStore
           }
-          className="text-sm font-bold text-muted-foregr{text("ou", "or")}nd transition-colors hover:text-foregr{text("ou", "or")}nd"
+          className="text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
         >
           {mode === "forgot" || mode === "reset"
             ? "← Voltar ao login"
-            : "{text("← Voltar ao cardápio", "← Back to menu")}"}
+            : "← Voltar ao cardápio"}
         </button>
 
-        <div className="mt-6 r{text("ou", "or")}nded-[30px] border border-border bg-card p-6 shadow-[0_18px_60px_-30px] shadow-foregr{text("ou", "or")}nd/40 sm:p-8">
+        <div className="mt-6 rounded-[30px] border border-border bg-card p-6 shadow-[0_18px_60px_-30px] shadow-foreground/40 sm:p-8">
           <p className="font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-primary">
             PizzaSystem
           </p>
 
           <h1 className="mt-2 font-display text-4xl tracking-tight">
             {mode === "login"
-              ? text("{text("Entrar", "Sign in")} na sua conta", "Sign in to y{text("ou", "or")}r acc{text("ou", "or")}nt")
+              ? "Entrar na sua conta"
               : mode === "register"
-                ? text("Criar sua conta", "Create y{text("ou", "or")}r acc{text("ou", "or")}nt")
+                ? "Criar sua conta"
                 : mode === "forgot"
-                  ? text("Recuperar senha", "Recover password")
-                  : text("Criar nova senha", "Create new password")}
+                  ? "Recuperar senha"
+                  : "Criar nova senha"}
           </h1>
 
-          <p className="mt-3 text-sm leading-6 text-muted-foregr{text("ou", "or")}nd">
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
             {mode === "forgot"
               ? "Informe o e-mail da sua conta. Se ele estiver cadastrado, enviaremos um código de recuperação."
               : mode === "reset"
                 ? `Digite o código de 6 dígitos enviado para ${resetEmail} e escolha uma nova senha.`
-                : text("A conta é opcional. Você pode continuar comprando sem login normalmente.", "An acc{text("ou", "or")}nt is optional. Y{text("ou", "or")} can continue ordering with{text("ou", "or")}t signing in.")}
+                : "A conta é opcional. Você pode continuar comprando sem login normalmente."}
           </p>
 
           {(mode === "login" || mode === "register") && (
-            <div className="mt-6 grid grid-cols-2 r{text("ou", "or")}nded-2xl bg-secondary p-1">
+            <div className="mt-6 grid grid-cols-2 rounded-2xl bg-secondary p-1">
               <button
                 type="button"
                 onClick={() => {
                   setMode("login");
                   setError("");
                 }}
-                className={`r{text("ou", "or")}nded-xl px-4 py-3 text-sm font-bold transition ${
+                className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
                   mode === "login"
                     ? "bg-card shadow-sm"
-                    : "text-muted-foregr{text("ou", "or")}nd"
+                    : "text-muted-foreground"
                 }`}
               >
-                {text("Entrar", "Sign in")}
+                Entrar
               </button>
 
               <button
@@ -2712,13 +2699,13 @@ function ContaContent() {
                   setMode("register");
                   setError("");
                 }}
-                className={`r{text("ou", "or")}nded-xl px-4 py-3 text-sm font-bold transition ${
+                className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
                   mode === "register"
                     ? "bg-card shadow-sm"
-                    : "text-muted-foregr{text("ou", "or")}nd"
+                    : "text-muted-foreground"
                 }`}
               >
-                {text("Criar conta", "Create acc{text("ou", "or")}nt")}
+                Criar conta
               </button>
             </div>
           )}
@@ -2730,7 +2717,7 @@ function ContaContent() {
             >
               <div>
                 <label className="text-sm font-bold">
-                  {text("E-mail", "Email")}
+                  E-mail
                 </label>
 
                 <input
@@ -2743,13 +2730,13 @@ function ContaContent() {
                   required
                   autoComplete="email"
                   autoFocus
-                  className="mt-2 h-12 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 {text("ou", "or")}tline-none transition focus:border-primary"
+                  className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
                   placeholder="voce@email.com"
                 />
               </div>
 
               {resetError && (
-                <div className="r{text("ou", "or")}nded-2xl border border-destructive/20 bg-destructive/5 p-4">
+                <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
                   <p className="text-sm font-semibold text-destructive">
                     {resetError}
                   </p>
@@ -2759,7 +2746,7 @@ function ContaContent() {
               <button
                 type="submit"
                 disabled={resetSubmitting}
-                className="brand-button min-h-12 w-full r{text("ou", "or")}nded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="brand-button min-h-12 w-full rounded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {resetSubmitting
                   ? "Enviando..."
@@ -2772,7 +2759,7 @@ function ContaContent() {
               className="mt-6 space-y-4"
             >
               {resetMessage && (
-                <div className="r{text("ou", "or")}nded-2xl border border-primary/20 bg-primary/5 p-4">
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
                   <p className="text-sm font-semibold text-primary">
                     {resetMessage}
                   </p>
@@ -2799,14 +2786,14 @@ function ContaContent() {
                     setResetError("");
                   }}
                   autoFocus
-                  className="mt-2 h-16 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 text-center font-mono text-3xl font-bold tracking-[0.35em] {text("ou", "or")}tline-none transition focus:border-primary"
+                  className="mt-2 h-16 w-full rounded-2xl border border-border bg-background px-4 text-center font-mono text-3xl font-bold tracking-[0.35em] outline-none transition focus:border-primary"
                   placeholder="000000"
                 />
               </div>
 
               <div>
                 <label className="text-sm font-bold">
-                  {text("Nova senha", "New password")}
+                  Nova senha
                 </label>
 
                 <input
@@ -2819,14 +2806,14 @@ function ContaContent() {
                   required
                   minLength={8}
                   autoComplete="new-password"
-                  className="mt-2 h-12 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 {text("ou", "or")}tline-none transition focus:border-primary"
+                  className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
                   placeholder="Mínimo 8 caracteres"
                 />
               </div>
 
               <div>
                 <label className="text-sm font-bold">
-                  {text("Confirmar nova senha", "Confirm new password")}
+                  Confirmar nova senha
                 </label>
 
                 <input
@@ -2839,13 +2826,13 @@ function ContaContent() {
                   required
                   minLength={8}
                   autoComplete="new-password"
-                  className="mt-2 h-12 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 {text("ou", "or")}tline-none transition focus:border-primary"
+                  className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
                   placeholder="Repita a nova senha"
                 />
               </div>
 
               {resetError && (
-                <div className="r{text("ou", "or")}nded-2xl border border-destructive/20 bg-destructive/5 p-4">
+                <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
                   <p className="text-sm font-semibold text-destructive">
                     {resetError}
                   </p>
@@ -2858,7 +2845,7 @@ function ContaContent() {
                   resetSubmitting ||
                   resetCode.length !== 6
                 }
-                className="brand-button min-h-12 w-full r{text("ou", "or")}nded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="brand-button min-h-12 w-full rounded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {resetSubmitting
                   ? "Alterando senha..."
@@ -2876,9 +2863,9 @@ function ContaContent() {
                   setResetError("");
                   setResetMessage("");
                 }}
-                className="w-full text-center text-sm font-bold text-muted-foregr{text("ou", "or")}nd transition-colors hover:text-foregr{text("ou", "or")}nd disabled:opacity-50"
+                className="w-full text-center text-sm font-bold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
               >
-                Solicitar {text("ou", "or")}tro código
+                Solicitar outro código
               </button>
             </form>
           ) : (
@@ -2895,7 +2882,7 @@ function ContaContent() {
                   <>
                     <div>
                       <label className="text-sm font-bold">
-                        {text("Nome", "Name")}
+                        Nome
                       </label>
 
                       <input
@@ -2907,14 +2894,14 @@ function ContaContent() {
                           )
                         }
                         required
-                        className="mt-2 h-12 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 {text("ou", "or")}tline-none transition focus:border-primary"
+                        className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
                         placeholder="Seu nome"
                       />
                     </div>
 
                     <div>
                       <label className="text-sm font-bold">
-                        {text("Telefone", "Phone")}
+                        Telefone
                       </label>
 
                       <input
@@ -2925,7 +2912,7 @@ function ContaContent() {
                             event.target.value
                           )
                         }
-                        className="mt-2 h-12 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 {text("ou", "or")}tline-none transition focus:border-primary"
+                        className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
                         placeholder="(19) 99999-9999"
                       />
                     </div>
@@ -2934,7 +2921,7 @@ function ContaContent() {
 
                 <div>
                   <label className="text-sm font-bold">
-                    {text("E-mail", "Email")}
+                    E-mail
                   </label>
 
                   <input
@@ -2946,7 +2933,7 @@ function ContaContent() {
                       )
                     }
                     required
-                    className="mt-2 h-12 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 {text("ou", "or")}tline-none transition focus:border-primary"
+                    className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
                     placeholder="voce@email.com"
                   />
                 </div>
@@ -2954,7 +2941,7 @@ function ContaContent() {
                 <div>
                   <div className="flex items-center justify-between gap-3">
                     <label className="text-sm font-bold">
-                      {text("Senha", "Password")}
+                      Senha
                     </label>
 
                     {mode === "login" && (
@@ -2972,7 +2959,7 @@ function ContaContent() {
                         }}
                         className="text-xs font-bold text-primary"
                       >
-                        {text("Esqueci minha senha", "Forgot my password")}
+                        Esqueci minha senha
                       </button>
                     )}
                   </div>
@@ -2987,13 +2974,13 @@ function ContaContent() {
                     }
                     required
                     minLength={8}
-                    className="mt-2 h-12 w-full r{text("ou", "or")}nded-2xl border border-border bg-backgr{text("ou", "or")}nd px-4 {text("ou", "or")}tline-none transition focus:border-primary"
+                    className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
                     placeholder="Mínimo 8 caracteres"
                   />
                 </div>
 
                 {error && (
-                  <div className="r{text("ou", "or")}nded-2xl border border-primary/20 bg-primary/5 p-4">
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
                     <p className="text-sm font-semibold text-primary">
                       {error}
                     </p>
@@ -3003,21 +2990,21 @@ function ContaContent() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="brand-button min-h-12 w-full r{text("ou", "or")}nded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="brand-button min-h-12 w-full rounded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting
                     ? "Aguarde..."
                     : mode === "login"
-                      ? "{text("Entrar", "Sign in")}"
-                      : "{text("Criar conta", "Create acc{text("ou", "or")}nt")}"}
+                      ? "Entrar"
+                      : "Criar conta"}
                 </button>
               </form>
 
               <div className="my-6 flex items-center gap-3">
                 <div className="h-px flex-1 bg-border" />
 
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foregr{text("ou", "or")}nd">
-                  {text("ou", "or")}
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  ou
                 </span>
 
                 <div className="h-px flex-1 bg-border" />
@@ -3036,8 +3023,8 @@ function ContaContent() {
                 />
               </div>
 
-              <p className="mt-3 text-center text-xs text-muted-foregr{text("ou", "or")}nd">
-                Use sua conta Google para entrar {text("ou", "or")} criar sua conta automaticamente.
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                Use sua conta Google para entrar ou criar sua conta automaticamente.
               </p>
             </>
           )}
@@ -3051,13 +3038,13 @@ export default function ContaPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-backgr{text("ou", "or")}nd px-4 py-12 text-foregr{text("ou", "or")}nd">
+        <main className="min-h-screen bg-background px-4 py-12 text-foreground">
           <div className="mx-auto max-w-4xl">
-            <div className="skeleton h-10 w-48 r{text("ou", "or")}nded-xl" />
+            <div className="skeleton h-10 w-48 rounded-xl" />
 
             <div className="mt-8 grid gap-6 md:grid-cols-[1fr_360px]">
-              <div className="skeleton h-72 r{text("ou", "or")}nded-[28px]" />
-              <div className="skeleton h-72 r{text("ou", "or")}nded-[28px]" />
+              <div className="skeleton h-72 rounded-[28px]" />
+              <div className="skeleton h-72 rounded-[28px]" />
             </div>
           </div>
         </main>
