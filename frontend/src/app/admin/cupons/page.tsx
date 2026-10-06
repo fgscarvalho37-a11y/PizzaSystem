@@ -589,7 +589,7 @@ export default function CouponsAdminPage() {
                   </option>
 
                   <option value="FIXED_AMOUNT">
-                    Valor fixo (${getStoreCurrencySymbol()})
+                    Valor fixo ({getStoreCurrencySymbol()})
                   </option>
                 </select>
               </div>
