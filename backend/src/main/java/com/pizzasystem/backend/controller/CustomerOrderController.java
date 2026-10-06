@@ -199,6 +199,7 @@ public class CustomerOrderController {
                 order.getCustomerName(),
                 order.getCustomerPhone(),
                 order.getTotal(),
+                order.getPaymentCurrencyCode(),
                 order.getStatus(),
                 order.getPaymentStatus(),
                 order.getPaymentMethod(),
@@ -263,6 +264,8 @@ public class CustomerOrderController {
             String customerPhone,
 
             BigDecimal total,
+
+            String paymentCurrencyCode,
 
             OrderStatus status,
 
