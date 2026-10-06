@@ -17,6 +17,11 @@ public interface StoreRepository
             String slug
     );
 
+    boolean existsBySlugAndIdNot(
+            String slug,
+            Long id
+    );
+
     Optional<Store> findByOrbittaProductId(
             Long orbittaProductId
     );
