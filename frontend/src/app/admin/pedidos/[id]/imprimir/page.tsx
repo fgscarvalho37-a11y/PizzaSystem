@@ -11,6 +11,7 @@ import {
 } from "next/navigation";
 
 import { adminFetch } from "@/lib/adminFetch";
+import { formatStoreMoney } from "@/lib/storeIntl";
 import { downloadSimplePdf } from "@/lib/simplePdf";
 
 type Product = {
@@ -57,14 +58,8 @@ type StoreProfile = {
 function money(
   value: number | null | undefined
 ) {
-  return Number(
-    value ?? 0
-  ).toLocaleString(
-    "pt-BR",
-    {
-      style: "currency",
-      currency: "BRL",
-    }
+  return formatStoreMoney(
+    value
   );
 }
 
