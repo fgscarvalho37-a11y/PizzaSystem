@@ -130,14 +130,45 @@ export default function LojaOnlinePage() {
           }
         );
 
-      const data =
-        await response.json()
-          .catch(() => null);
+      const responseText =
+        await response.text();
+
+      let data:
+        Storefront | {
+          message?: string;
+        } | null =
+        null;
+
+      try {
+        data =
+          responseText
+            ? JSON.parse(
+                responseText
+              )
+            : null;
+      } catch {
+        data = null;
+      }
 
       if (!response.ok) {
+        const message =
+          data &&
+          "message" in data
+            ? data.message
+            : null;
+
         throw new Error(
-          data?.message ||
-            "Não foi possível salvar o endereço."
+          message ||
+            `Não foi possível salvar o endereço. Código ${response.status}.`
+        );
+      }
+
+      if (
+        !data ||
+        !("slug" in data)
+      ) {
+        throw new Error(
+          "O servidor não retornou o endereço salvo."
         );
       }
 
