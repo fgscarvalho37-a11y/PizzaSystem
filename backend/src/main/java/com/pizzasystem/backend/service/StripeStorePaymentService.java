@@ -2639,6 +2639,7 @@ public class StripeStorePaymentService {
                         "EUR",
                         "GBP",
                         "CAD",
+                        "AUD",
                         "BRL"
                 )
                         .contains(
