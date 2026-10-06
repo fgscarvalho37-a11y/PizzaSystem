@@ -36,7 +36,7 @@ type ViaCepResponse = {
 
 type StoreIntlSettings = {
   countryCode: string;
-  defaultLocale: "pt-BR" | "en-US";
+  defaultLocale: string;
   currencyCode: string;
 };
 
@@ -119,6 +119,9 @@ export default function AdminEntregasPage() {
 
   const isBrazil =
     countryCode === "BR";
+
+  const isAustralia =
+    countryCode === "AU";
 
   function formatMoney(
     value: number
@@ -312,8 +315,9 @@ export default function AdminEntregasPage() {
         );
 
         setDefaultLocale(
-          storeData.defaultLocale ===
-            "en-US"
+          storeData.defaultLocale
+            ?.toLowerCase()
+            .startsWith("en")
             ? "en-US"
             : "pt-BR"
         );
@@ -1366,14 +1370,16 @@ export default function AdminEntregasPage() {
                 <div className="grid gap-3 md:grid-cols-[180px_140px_1fr]">
                   <input
                     inputMode={
-                      isBrazil
+                      isBrazil || isAustralia
                         ? "numeric"
                         : "text"
                     }
                     maxLength={
                       isBrazil
                         ? 9
-                        : 16
+                        : isAustralia
+                          ? 4
+                          : 16
                     }
                     value={originCep}
                     onChange={(event) => {
@@ -1382,9 +1388,13 @@ export default function AdminEntregasPage() {
                           ? formatCep(
                               event.target.value
                             )
-                          : event.target.value
-                              .toUpperCase()
-                              .slice(0, 16)
+                          : isAustralia
+                            ? event.target.value
+                                .replace(/\D/g, "")
+                                .slice(0, 4)
+                            : event.target.value
+                                .toUpperCase()
+                                .slice(0, 16)
                       );
                       setOriginCepError("");
                       setOriginLatitude(null);
@@ -1393,7 +1403,9 @@ export default function AdminEntregasPage() {
                     placeholder={
                       isBrazil
                         ? "CEP"
-                        : "Postal code"
+                        : isAustralia
+                          ? "Postcode"
+                          : "Postal code"
                     }
                     className={fieldClass}
                   />
