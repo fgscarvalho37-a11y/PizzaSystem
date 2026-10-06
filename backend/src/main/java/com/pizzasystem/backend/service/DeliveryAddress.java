@@ -46,13 +46,22 @@ record DeliveryAddress(String street, String number, String city, String region,
 
         for (int i = parts.length - 1; i >= 2; i--) {
             String part = parts[i].trim();
-            if (part.matches("[0-9\\s-]+") || normalized(part).equals("brasil")) continue;
-            if (part.matches("(?i)[A-Z]{2}")) {
+            if (
+                    part.matches("[0-9\\s-]+") ||
+                    isCountryPart(
+                            part,
+                            countryCode
+                    )
+            ) {
+                continue;
+            }
+
+            if (part.matches("(?i)[A-Z]{2,3}")) {
                 region = part.toUpperCase(Locale.ROOT);
                 continue;
             }
 
-            var match = Pattern.compile("^(.+?)\\s*[-/]\\s*([A-Za-z]{2})$").matcher(part);
+            var match = Pattern.compile("^(.+?)\\s*[-/]\\s*([A-Za-z]{2,3})$").matcher(part);
             if (match.matches()) {
                 city = match.group(1).trim();
                 region = match.group(2).toUpperCase(Locale.ROOT);
@@ -109,6 +118,52 @@ record DeliveryAddress(String street, String number, String city, String region,
         }
 
         return !expectedPostalCode.isBlank() && expectedPostalCode.equals(foundPostalCode);
+    }
+
+    private static boolean isCountryPart(
+            String value,
+            String countryCode
+    ) {
+        String normalizedValue =
+                normalized(
+                        value
+                );
+
+        String normalizedCountry =
+                countryCode == null
+                        ? ""
+                        : countryCode
+                                .trim()
+                                .toUpperCase(
+                                        Locale.ROOT
+                                );
+
+        return switch (normalizedCountry) {
+            case "BR" ->
+                    normalizedValue.equals("brasil") ||
+                    normalizedValue.equals("brazil") ||
+                    normalizedValue.equals("br") ||
+                    normalizedValue.equals("bra");
+            case "US" ->
+                    normalizedValue.equals("united states") ||
+                    normalizedValue.equals("usa") ||
+                    normalizedValue.equals("us");
+            case "GB" ->
+                    normalizedValue.equals("united kingdom") ||
+                    normalizedValue.equals("uk") ||
+                    normalizedValue.equals("gb") ||
+                    normalizedValue.equals("gbr");
+            case "AU" ->
+                    normalizedValue.equals("australia") ||
+                    normalizedValue.equals("au") ||
+                    normalizedValue.equals("aus");
+            default ->
+                    normalizedValue.equals(
+                            normalized(
+                                    normalizedCountry
+                            )
+                    );
+        };
     }
 
     private static boolean countryMatches(String expected, String found) {
