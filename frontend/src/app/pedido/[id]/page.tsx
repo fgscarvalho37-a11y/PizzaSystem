@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import CountrySwitcher from "@/components/CountrySwitcher";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 const API_URL = "";
 
@@ -21,32 +24,64 @@ type Order = {
   createdAt: string;
 };
 
-const statusLabels: Record<string, string> = {
-  PENDING_PAYMENT: "Aguardando pagamento",
-  RECEIVED: "Pedido recebido",
-  PREPARING: "Em preparo",
-  READY: "Pronto",
-  OUT_FOR_DELIVERY: "Saiu para entrega",
-  DELIVERED: "Entregue",
-  CANCELLED: "Cancelado",
-};
-
-const statusMessages: Record<string, string> = {
-  PENDING_PAYMENT:
-    "Estamos aguardando a confirmação do pagamento.",
-  RECEIVED:
-    "Seu pedido foi recebido pela pizzaria.",
-  PREPARING:
-    "Seu pedido está sendo preparado.",
-  READY:
-    "Seu pedido está pronto e será enviado em breve.",
-  OUT_FOR_DELIVERY:
-    "Seu pedido saiu para entrega.",
-  DELIVERED:
-    "Pedido entregue. Aproveite.",
-  CANCELLED:
-    "Este pedido foi cancelado.",
-};
+const statusCopy = {
+  PENDING_PAYMENT: {
+    pt: "Aguardando pagamento",
+    en: "Awaiting payment",
+    ptMessage:
+      "Estamos aguardando a confirmação do pagamento.",
+    enMessage:
+      "We are waiting for payment confirmation.",
+  },
+  RECEIVED: {
+    pt: "Pedido recebido",
+    en: "Order received",
+    ptMessage:
+      "Seu pedido foi recebido pela pizzaria.",
+    enMessage:
+      "Your order was received by the restaurant.",
+  },
+  PREPARING: {
+    pt: "Em preparo",
+    en: "Preparing",
+    ptMessage:
+      "Seu pedido está sendo preparado.",
+    enMessage:
+      "Your order is being prepared.",
+  },
+  READY: {
+    pt: "Pronto",
+    en: "Ready",
+    ptMessage:
+      "Seu pedido está pronto e será enviado em breve.",
+    enMessage:
+      "Your order is ready and will be sent soon.",
+  },
+  OUT_FOR_DELIVERY: {
+    pt: "Saiu para entrega",
+    en: "Out for delivery",
+    ptMessage:
+      "Seu pedido saiu para entrega.",
+    enMessage:
+      "Your order is out for delivery.",
+  },
+  DELIVERED: {
+    pt: "Entregue",
+    en: "Delivered",
+    ptMessage:
+      "Pedido entregue. Aproveite.",
+    enMessage:
+      "Order delivered. Enjoy.",
+  },
+  CANCELLED: {
+    pt: "Cancelado",
+    en: "Canceled",
+    ptMessage:
+      "Este pedido foi cancelado.",
+    enMessage:
+      "This order was canceled.",
+  },
+} as const;
 
 const statusSteps = [
   "RECEIVED",
@@ -148,6 +183,12 @@ function MapPinIcon({
 }
 
 export default function PedidoPage() {
+  const {
+    text,
+    isEnglish,
+  } =
+    useLanguage();
+
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -349,16 +390,28 @@ export default function PedidoPage() {
     order.status ===
     "PENDING_PAYMENT";
 
+  const currentStatusCopy =
+    statusCopy[
+      order.status as
+        keyof typeof statusCopy
+    ];
+
   const statusLabel =
-    statusLabels[
-      order.status
-    ] ?? order.status;
+    currentStatusCopy
+      ? isEnglish
+        ? currentStatusCopy.en
+        : currentStatusCopy.pt
+      : order.status;
 
   const statusMessage =
-    statusMessages[
-      order.status
-    ] ??
-    "Status atualizado.";
+    currentStatusCopy
+      ? isEnglish
+        ? currentStatusCopy.enMessage
+        : currentStatusCopy.ptMessage
+      : text(
+          "Status atualizado.",
+          "Status updated."
+        );
 
   return (
     <main className="min-h-screen bg-background pb-16 text-foreground">
@@ -391,9 +444,13 @@ export default function PedidoPage() {
             </span>
           </button>
 
-          <span className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-cream">
-            Pedido #{order.id}
-          </span>
+          <div className="flex items-center gap-2">
+            <CountrySwitcher compact />
+            <LanguageSwitcher />
+            <span className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-cream">
+              {text("Pedido", "Order")} #{order.id}
+            </span>
+          </div>
 
         </div>
       </header>
@@ -541,9 +598,20 @@ export default function PedidoPage() {
                             }`}
                           >
                             {
-                              statusLabels[
-                                status
+                              statusCopy[
+                                status as
+                                  keyof typeof statusCopy
                               ]
+                                ? isEnglish
+                                  ? statusCopy[
+                                      status as
+                                        keyof typeof statusCopy
+                                    ].en
+                                  : statusCopy[
+                                      status as
+                                        keyof typeof statusCopy
+                                    ].pt
+                                : status
                             }
                           </p>
 
