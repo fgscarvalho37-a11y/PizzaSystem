@@ -9,6 +9,11 @@ import {
   useRouter,
 } from "next/navigation";
 
+import CountrySwitcher from "@/components/CountrySwitcher";
+import {
+  useLanguage,
+} from "@/i18n/LanguageProvider";
+
 type IconProps = {
   className?: string;
 };
@@ -171,6 +176,11 @@ export default function AdminLoginPage() {
   const router =
     useRouter();
 
+  const {
+    text,
+  } =
+    useLanguage();
+
   const [
     email,
     setEmail,
@@ -219,7 +229,7 @@ export default function AdminLoginPage() {
       !password
     ) {
       setError(
-        "Preencha o e-mail e a senha."
+        text("Preencha o e-mail e a senha.", "Enter your email and password.")
       );
 
       return;
@@ -263,13 +273,13 @@ export default function AdminLoginPage() {
           403
       ) {
         throw new Error(
-          "E-mail ou senha inválidos."
+          text("E-mail ou senha inválidos.", "Invalid email or password.")
         );
       }
 
       if (!response.ok) {
         throw new Error(
-          "Não foi possível entrar agora. Tente novamente."
+          text("Não foi possível entrar agora. Tente novamente.", "We could not sign you in right now. Try again.")
         );
       }
 
@@ -283,7 +293,7 @@ export default function AdminLoginPage() {
       setError(
         error instanceof Error
           ? error.message
-          : "Não foi possível realizar o login."
+          : text("Não foi possível realizar o login.", "We could not sign you in.")
       );
 
     } finally {
@@ -309,6 +319,10 @@ export default function AdminLoginPage() {
 
       <div className="relative w-full max-w-[430px]">
 
+        <div className="mb-4 flex justify-center">
+          <CountrySwitcher />
+        </div>
+
         {/* MARCA */}
 
         <div className="mb-5 flex justify-center">
@@ -331,7 +345,7 @@ export default function AdminLoginPage() {
           >
             <ArrowLeftIcon />
 
-            Voltar para Orbitta
+            {text("Voltar para Orbitta", "Back to Orbitta")}
           </a>
 
         </div>
@@ -357,7 +371,7 @@ export default function AdminLoginPage() {
                 </p>
 
                 <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
-                  Área administrativa
+                  {text("Área administrativa", "Admin area")}
                 </p>
 
               </div>
@@ -367,11 +381,11 @@ export default function AdminLoginPage() {
             <div className="mt-7">
 
               <h1 className="font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-                Bem-vindo
+                {text("Bem-vindo", "Welcome")}
               </h1>
 
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Acesse o painel para gerenciar pedidos, cardápio e operação da pizzaria.
+                {text("Acesse o painel para gerenciar pedidos, cardápio e operação da pizzaria.", "Access the dashboard to manage orders, menu and restaurant operations.")}
               </p>
 
             </div>
@@ -445,7 +459,7 @@ export default function AdminLoginPage() {
                 htmlFor="password"
                 className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground"
               >
-                Senha
+                {text("Senha", "Password")}
               </label>
 
               <div className="relative">
@@ -487,7 +501,7 @@ export default function AdminLoginPage() {
                     disabled:cursor-not-allowed
                     disabled:opacity-60
                   "
-                  placeholder="Sua senha"
+                  placeholder={text("Sua senha", "Your password")}
                 />
 
                 <button
@@ -503,8 +517,8 @@ export default function AdminLoginPage() {
                   }
                   aria-label={
                     showPassword
-                      ? "Ocultar senha"
-                      : "Mostrar senha"
+                      ? text("Ocultar senha", "Hide password")
+                      : text("Mostrar senha", "Show password")
                   }
                   className="
                     absolute right-2 top-1/2
@@ -580,12 +594,12 @@ export default function AdminLoginPage() {
               {loading ? (
                 <>
                   <Spinner />
-                  Entrando
+                  {text("Entrando", "Signing in")}
                 </>
               ) : (
                 <>
                   <LockIcon className="h-4 w-4" />
-                  Entrar no painel
+                  {text("Entrar no painel", "Open dashboard")}
                 </>
               )}
             </button>
@@ -601,7 +615,7 @@ export default function AdminLoginPage() {
               </div>
 
               <p className="text-xs leading-5 text-muted-foreground">
-                Área restrita à administração. A sessão é mantida por cookie seguro definido pelo servidor.
+                {text("Área restrita à administração. A sessão é mantida por cookie seguro definido pelo servidor.", "Restricted admin area. Your session is maintained by a secure server cookie.")}
               </p>
 
             </div>
