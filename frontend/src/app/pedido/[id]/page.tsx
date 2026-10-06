@@ -17,6 +17,7 @@ type Order = {
   total: number;
   status: string;
   paymentStatus?: string;
+  paymentCurrencyCode?: string | null;
   createdAt: string;
 };
 
@@ -55,12 +56,28 @@ const statusSteps = [
   "DELIVERED",
 ];
 
-function formatMoney(value: number) {
+function formatMoney(
+  value: number,
+  currencyCode = "BRL"
+) {
+  const currency =
+    currencyCode ||
+    "BRL";
+
+  const locale =
+    currency === "AUD"
+      ? "en-AU"
+      : currency === "GBP"
+        ? "en-GB"
+        : currency === "BRL"
+          ? "pt-BR"
+          : "en-US";
+
   return new Intl.NumberFormat(
-    "pt-BR",
+    locale,
     {
       style: "currency",
-      currency: "BRL",
+      currency,
     }
   ).format(value);
 }
@@ -648,7 +665,9 @@ export default function PedidoPage() {
                     Number(
                       order.deliveryFee ??
                         0
-                    )
+                    ),
+                    order.paymentCurrencyCode ??
+                      "BRL"
                   )}
                 </span>
 
@@ -666,7 +685,9 @@ export default function PedidoPage() {
                   {formatMoney(
                     Number(
                       order.total
-                    )
+                    ),
+                    order.paymentCurrencyCode ??
+                      "BRL"
                   )}
                 </span>
 
