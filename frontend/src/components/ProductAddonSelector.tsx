@@ -29,16 +29,21 @@ type ProductAddonSelectorProps = {
   onChange: (
     addonIds: number[]
   ) => void;
+  locale?: string;
+  currencyCode?: string;
 };
 
 function formatMoney(
-  value: number
+  value: number,
+  locale = "pt-BR",
+  currencyCode = "BRL"
 ) {
   return new Intl.NumberFormat(
-    "pt-BR",
+    locale,
     {
       style: "currency",
-      currency: "BRL",
+      currency:
+        currencyCode,
     }
   ).format(value);
 }
@@ -53,7 +58,9 @@ export function validateAddonSelections(
   locale: AppLocale = "pt-BR"
 ) {
   const isEnglish =
-    locale === "en-US";
+    locale.startsWith(
+      "en"
+    );
   const selected =
     new Set(
       selectedAddonIds
@@ -172,6 +179,8 @@ export default function ProductAddonSelector({
   groups,
   selectedAddonIds,
   onChange,
+  locale = "pt-BR",
+  currencyCode = "BRL",
 }: ProductAddonSelectorProps) {
   const {
     text,
@@ -473,7 +482,9 @@ export default function ProductAddonSelector({
                             : `+ ${formatMoney(
                                 Number(
                                   addon.price
-                                )
+                                ),
+                                locale,
+                                currencyCode
                               )}`}
                         </span>
 
