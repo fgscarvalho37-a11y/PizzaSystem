@@ -670,11 +670,13 @@ export default function CheckoutPage() {
           profileData?.defaultLocale
         ) {
           applyDefaultLocale(
-            profileData.defaultLocale
-              ?.toLowerCase()
-              .startsWith("en")
-              ? "en-US"
-              : "pt-BR"
+            profileData.defaultLocale === "en-AU"
+              ? "en-AU"
+              : profileData.defaultLocale === "en-GB"
+                ? "en-GB"
+                : profileData.defaultLocale === "en-US"
+                  ? "en-US"
+                  : "pt-BR"
           );
         }
       } catch (
