@@ -85,7 +85,7 @@ type StoreProfile = {
   menuEmptyDescription: string | null;
   footerTagline: string | null;
   countryCode: string;
-  defaultLocale: "pt-BR" | "en-US";
+  defaultLocale: string;
   currencyCode: string;
 };
 
@@ -497,8 +497,9 @@ export default function CardapioPage() {
     }
 
     applyDefaultLocale(
-      storeProfile.defaultLocale ===
-        "en-US"
+      storeProfile.defaultLocale
+        ?.toLowerCase()
+        .startsWith("en")
         ? "en-US"
         : "pt-BR"
     );
