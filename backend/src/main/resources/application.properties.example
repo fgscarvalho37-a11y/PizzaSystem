@@ -37,6 +37,10 @@ PIZZASYSTEM_STORAGE_BUCKET=pizzasystem-assets
 # Deixe false em produção para impedir imagens Base64 no PostgreSQL.
 PIZZASYSTEM_ALLOW_DATABASE_IMAGE_FALLBACK=false
 
+# Uploads de logo/capa/produto
+spring.servlet.multipart.max-file-size=5MB
+spring.servlet.multipart.max-request-size=6MB
+
 # ===============================
 # STRIPE CONNECT - PAGAMENTOS DAS LOJAS INTERNACIONAIS
 # ===============================
