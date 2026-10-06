@@ -12,7 +12,9 @@ import {
 
 export type AppLocale =
   | "pt-BR"
-  | "en-US";
+  | "en-US"
+  | "en-GB"
+  | "en-AU";
 
 type LanguageContextValue = {
   locale: AppLocale;
@@ -58,7 +60,9 @@ export function LanguageProvider({
 
     if (
       saved === "pt-BR" ||
-      saved === "en-US"
+      saved === "en-US" ||
+      saved === "en-GB" ||
+      saved === "en-AU"
     ) {
       setLocaleState(
         saved
@@ -70,13 +74,19 @@ export function LanguageProvider({
       return;
     }
 
+    const browserLocale =
+      navigator.language
+        .toLowerCase();
+
     const detected:
       AppLocale =
-      navigator.language
-        .toLowerCase()
-        .startsWith("pt")
+      browserLocale.startsWith("pt")
         ? "pt-BR"
-        : "en-US";
+        : browserLocale.startsWith("en-au")
+          ? "en-AU"
+          : browserLocale.startsWith("en-gb")
+            ? "en-GB"
+            : "en-US";
 
     setLocaleState(
       detected
@@ -116,7 +126,9 @@ export function LanguageProvider({
 
     if (
       saved === "pt-BR" ||
-      saved === "en-US"
+      saved === "en-US" ||
+      saved === "en-GB" ||
+      saved === "en-AU"
     ) {
       return;
     }
@@ -134,16 +146,18 @@ export function LanguageProvider({
       () => ({
         locale,
         isEnglish:
-          locale ===
-          "en-US",
+          locale.startsWith(
+            "en"
+          ),
         setLocale,
         applyDefaultLocale,
         text: (
           pt,
           en
         ) =>
-          locale ===
-          "en-US"
+          locale.startsWith(
+            "en"
+          )
             ? en
             : pt,
       }),
