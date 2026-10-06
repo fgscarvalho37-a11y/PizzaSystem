@@ -7,23 +7,29 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 /** Validate the location instead of accepting the geocoder's first result. */
-record DeliveryAddress(String street, String number, String city, String region, String postalCode) {
+record DeliveryAddress(String street, String number, String city, String region, String postalCode, String countryCode) {
     DeliveryAddress {
         street = street == null ? "" : street.trim();
         number = number == null ? "" : number.trim();
         city = city == null ? "" : city.trim();
         region = region == null ? "" : region.trim();
         postalCode = postalCode == null ? "" : postalCode.trim();
+        countryCode = countryCode == null ? "" : countryCode.trim().toUpperCase(Locale.ROOT);
     }
 
-    static DeliveryAddress fromOrigin(String text) {
+    static DeliveryAddress fromOrigin(String text, String countryCode) {
         String[] parts = text == null ? new String[0] : text.split(",");
         String city = "", region = "", postalCode = "";
 
         for (String rawPart : parts) {
-            String digits = rawPart.replaceAll("\\D", "");
-            if (digits.length() == 8) {
+            String candidate = rawPart.trim().toUpperCase(Locale.ROOT);
+            String digits = candidate.replaceAll("\\D", "");
+
+            if ("BR".equalsIgnoreCase(countryCode) && digits.length() == 8) {
                 postalCode = digits;
+            } else if ("GB".equalsIgnoreCase(countryCode) &&
+                    candidate.matches(".*[A-Z]{1,2}[0-9][A-Z0-9]?\\s*[0-9][A-Z]{2}.*")) {
+                postalCode = candidate.replaceAll("[^A-Z0-9 ]", "").trim();
             }
         }
 
@@ -49,7 +55,7 @@ record DeliveryAddress(String street, String number, String city, String region,
         String number = parts.length > 1 ? parts[1].trim().split("\\s+-\\s+", 2)[0] : "";
         if (normalized(number).equals("s n")) number = "";
 
-        return new DeliveryAddress(street, number, city, region, postalCode);
+        return new DeliveryAddress(street, number, city, region, postalCode, countryCode);
     }
 
     boolean matches(JsonNode properties) {
@@ -63,7 +69,7 @@ record DeliveryAddress(String street, String number, String city, String region,
         }
 
         String country = properties.path("country_a").asText();
-        if (!country.isBlank() && !country.equalsIgnoreCase("BRA") && !country.equalsIgnoreCase("BR")) {
+        if (!country.isBlank() && !countryMatches(countryCode, country)) {
             return false;
         }
 
@@ -91,6 +97,20 @@ record DeliveryAddress(String street, String number, String city, String region,
         }
 
         return !expectedPostalCode.isBlank() && expectedPostalCode.equals(foundPostalCode);
+    }
+
+    private static boolean countryMatches(String expected, String found) {
+        if (expected == null || expected.isBlank() || found == null || found.isBlank()) return true;
+
+        String e = expected.toUpperCase(Locale.ROOT);
+        String f = found.toUpperCase(Locale.ROOT);
+
+        if (e.equals(f)) return true;
+        if ("BR".equals(e)) return "BRA".equals(f);
+        if ("US".equals(e)) return "USA".equals(f);
+        if ("GB".equals(e)) return "GBR".equals(f);
+
+        return false;
     }
 
     private static boolean sameStreet(String expected, String found) {
