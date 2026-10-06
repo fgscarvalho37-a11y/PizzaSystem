@@ -10,6 +10,7 @@ import Link from "next/link";
 
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
+import { formatStoreMoney, getStoreCurrencySymbol } from "@/lib/storeIntl";
 
 const API_URL = "";
 
@@ -1806,7 +1807,7 @@ export default function ConfiguracoesPage() {
 
                             <div className="relative">
                               <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
-                                R$
+                                {getStoreCurrencySymbol()}
                               </span>
 
                               <input
@@ -1832,7 +1833,7 @@ export default function ConfiguracoesPage() {
                             </div>
 
                             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                              Exemplo: a cada R$ 20 em compras.
+                              Exemplo: a cada {formatStoreMoney(20)} em compras.
                             </p>
                           </div>
 
@@ -1863,7 +1864,7 @@ export default function ConfiguracoesPage() {
                             />
 
                             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                              Exemplo: 1 selo a cada R$ 20.
+                              Exemplo: 1 selo a cada {formatStoreMoney(20)}.
                             </p>
                           </div>
                         </div>
@@ -1876,7 +1877,7 @@ export default function ConfiguracoesPage() {
 
                         <div className="relative">
                           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
-                            R$
+                            {getStoreCurrencySymbol()}
                           </span>
 
                           <input
@@ -2039,24 +2040,18 @@ export default function ConfiguracoesPage() {
                                 1
                                   ? "selo"
                                   : "selos"
-                              } a cada R$ ${profileForm.loyaltyAmountStep
-                                .toFixed(2)
-                                .replace(
-                                  ".",
-                                  ","
-                                )}`}
+                              } a cada ${formatStoreMoney(
+                                profileForm.loyaltyAmountStep
+                              )}`}
                         </p>
 
                         {profileForm.loyaltyMinimumOrderValue !==
                           null && (
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Pedido mínimo para participar: R${" "}
-                            {profileForm.loyaltyMinimumOrderValue
-                              .toFixed(2)
-                              .replace(
-                                ".",
-                                ","
-                              )}
+                            Pedido mínimo para participar:{" "}
+                            {formatStoreMoney(
+                              profileForm.loyaltyMinimumOrderValue
+                            )}
                           </p>
                         )}
 
