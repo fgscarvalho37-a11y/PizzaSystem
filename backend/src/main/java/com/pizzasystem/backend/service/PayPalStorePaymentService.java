@@ -1032,6 +1032,7 @@ public class PayPalStorePaymentService {
                         "EUR",
                         "GBP",
                         "CAD",
+                        "AUD",
                         "BRL"
                 )
                         .contains(normalized)
