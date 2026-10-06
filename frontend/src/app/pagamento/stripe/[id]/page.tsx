@@ -15,6 +15,7 @@ import {
 } from "next/navigation";
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import CountrySwitcher from "@/components/CountrySwitcher";
 import { useLanguage } from "@/i18n/LanguageProvider";
 
 const API_URL = "";
@@ -592,6 +593,7 @@ export default function StripePaymentPage() {
       <main className="min-h-screen bg-background px-5 py-10 text-foreground">
         <div className="mx-auto max-w-lg">
           <div className="flex justify-end">
+            <CountrySwitcher compact />
             <LanguageSwitcher />
           </div>
 
