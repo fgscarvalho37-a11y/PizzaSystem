@@ -120,6 +120,47 @@ function isSameOriginAdminRequest(
   }
 }
 
+
+function toAdminProxyInput(
+  input: string
+) {
+  try {
+    const requestUrl =
+      new URL(
+        input,
+        window.location.origin
+      );
+
+    if (
+      requestUrl.origin !==
+        window.location.origin ||
+      !requestUrl.pathname.startsWith(
+        "/api/"
+      ) ||
+      requestUrl.pathname.startsWith(
+        "/api/auth/"
+      ) ||
+      requestUrl.pathname.startsWith(
+        "/api/admin-proxy/"
+      )
+    ) {
+      return input;
+    }
+
+    const backendPath =
+      requestUrl.pathname.substring(
+        "/api/".length
+      );
+
+    return (
+      `/api/admin-proxy/${backendPath}` +
+      requestUrl.search
+    );
+  } catch {
+    return input;
+  }
+}
+
 /* =========================
    FETCH ADMINISTRATIVO
 ========================= */
@@ -168,9 +209,14 @@ export async function adminFetch(
     );
   }
 
+  const requestInput =
+    toAdminProxyInput(
+      input
+    );
+
   let response =
     await fetch(
-      input,
+      requestInput,
       {
         ...init,
 
@@ -225,7 +271,7 @@ export async function adminFetch(
 
     response =
       await fetch(
-        input,
+        requestInput,
         {
           ...init,
 
