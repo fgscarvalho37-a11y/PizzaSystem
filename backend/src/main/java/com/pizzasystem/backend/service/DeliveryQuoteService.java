@@ -594,8 +594,15 @@ public class DeliveryQuoteService {
         }
 
         if (
-                "BR".equals(
-                        countryCode
+                java.util.Set.of(
+                        "BR",
+                        "US",
+                        "CA",
+                        "AU"
+                ).contains(
+                        normalizeCountryCode(
+                                countryCode
+                        )
                 ) &&
                 state.isBlank()
         ) {
@@ -1115,17 +1122,42 @@ public class DeliveryQuoteService {
                         value
                 );
 
+        String normalizedCountry =
+                normalizeCountryCode(
+                        countryCode
+                );
+
         if (
                 "BR".equals(
-                        normalizeCountryCode(
-                                countryCode
-                        )
+                        normalizedCountry
                 )
         ) {
             return normalized.replaceAll(
                     "\\D",
                     ""
             );
+        }
+
+        if (
+                "AU".equals(
+                        normalizedCountry
+                )
+        ) {
+            return normalized
+                    .replaceAll(
+                            "\\D",
+                            ""
+                    )
+                    .substring(
+                            0,
+                            Math.min(
+                                    4,
+                                    normalized.replaceAll(
+                                            "\\D",
+                                            ""
+                                    ).length()
+                            )
+                    );
         }
 
         return normalized
