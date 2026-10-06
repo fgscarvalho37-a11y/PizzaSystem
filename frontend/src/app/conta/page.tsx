@@ -10,6 +10,9 @@ import {
 
 import Script from "next/script";
 import { useRouter, useSearchParams } from "next/navigation";
+import CountrySwitcher from "@/components/CountrySwitcher";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 const API_URL = "";
 
@@ -102,6 +105,11 @@ type LoyaltyResponse = {
 };
 
 function ContaContent() {
+  const {
+    text,
+  } =
+    useLanguage();
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -1658,22 +1666,36 @@ function ContaContent() {
               }
               className="text-sm font-bold"
             >
-              ← Voltar ao cardápio
+              {text(
+                "← Voltar ao cardápio",
+                "← Back to menu"
+              )}
             </button>
 
             <span className="font-display text-2xl tracking-tight">
-              Minha conta
+              {text(
+                "Minha conta",
+                "My account"
+              )}
             </span>
 
-            <button
-              type="button"
-              onClick={() =>
-                void handleLogout()
-              }
-              className="text-sm font-bold text-primary"
-            >
-              Sair
-            </button>
+            <div className="flex items-center gap-2">
+              <CountrySwitcher compact />
+              <LanguageSwitcher />
+
+              <button
+                type="button"
+                onClick={() =>
+                  void handleLogout()
+                }
+                className="text-sm font-bold text-primary"
+              >
+                {text(
+                  "Sair",
+                  "Sign out"
+                )}
+              </button>
+            </div>
           </div>
         </header>
 
@@ -1698,11 +1720,17 @@ function ContaContent() {
 
               <div>
                 <p className="font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  Cliente
+                  {text(
+                    "Cliente",
+                    "Customer"
+                  )}
                 </p>
 
                 <h1 className="mt-1 font-display text-4xl tracking-tight sm:text-5xl">
-                  Olá,{" "}
+                  {text(
+                    "Olá,",
+                    "Hello,"
+                  )}{" "}
                   {customer.name}
                 </h1>
 
@@ -1726,11 +1754,17 @@ function ContaContent() {
               </p>
 
               <h2 className="mt-2 font-display text-2xl tracking-tight">
-                Meus pedidos
+                {text(
+                  "Meus pedidos",
+                  "My orders"
+                )}
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Acompanhe pedidos feitos com sua conta.
+                {text(
+                  "Acompanhe pedidos feitos com sua conta.",
+                  "Track orders placed with your account."
+                )}
               </p>
             </button>
 
@@ -2635,6 +2669,11 @@ function ContaContent() {
       />
 
       <div className="mx-auto max-w-lg">
+        <div className="mb-4 flex justify-end gap-2">
+          <CountrySwitcher compact />
+          <LanguageSwitcher />
+        </div>
+
         <button
           type="button"
           onClick={
@@ -2649,8 +2688,14 @@ function ContaContent() {
           className="text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
         >
           {mode === "forgot" || mode === "reset"
-            ? "← Voltar ao login"
-            : "← Voltar ao cardápio"}
+            ? text(
+                "← Voltar ao login",
+                "← Back to login"
+              )
+            : text(
+                "← Voltar ao cardápio",
+                "← Back to menu"
+              )}
         </button>
 
         <div className="mt-6 rounded-[30px] border border-border bg-card p-6 shadow-[0_18px_60px_-30px] shadow-foreground/40 sm:p-8">
@@ -2660,12 +2705,24 @@ function ContaContent() {
 
           <h1 className="mt-2 font-display text-4xl tracking-tight">
             {mode === "login"
-              ? "Entrar na sua conta"
+              ? text(
+                  "Entrar na sua conta",
+                  "Sign in to your account"
+                )
               : mode === "register"
-                ? "Criar sua conta"
+                ? text(
+                    "Criar sua conta",
+                    "Create your account"
+                  )
                 : mode === "forgot"
-                  ? "Recuperar senha"
-                  : "Criar nova senha"}
+                  ? text(
+                      "Recuperar senha",
+                      "Recover password"
+                    )
+                  : text(
+                      "Criar nova senha",
+                      "Create new password"
+                    )}
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
@@ -2673,7 +2730,10 @@ function ContaContent() {
               ? "Informe o e-mail da sua conta. Se ele estiver cadastrado, enviaremos um código de recuperação."
               : mode === "reset"
                 ? `Digite o código de 6 dígitos enviado para ${resetEmail} e escolha uma nova senha.`
-                : "A conta é opcional. Você pode continuar comprando sem login normalmente."}
+                : text(
+                    "A conta é opcional. Você pode continuar comprando sem login normalmente.",
+                    "An account is optional. You can continue ordering without signing in."
+                  )}
           </p>
 
           {(mode === "login" || mode === "register") && (
@@ -2690,7 +2750,10 @@ function ContaContent() {
                     : "text-muted-foreground"
                 }`}
               >
-                Entrar
+                {text(
+                  "Entrar",
+                  "Sign in"
+                )}
               </button>
 
               <button
@@ -2705,7 +2768,10 @@ function ContaContent() {
                     : "text-muted-foreground"
                 }`}
               >
-                Criar conta
+                {text(
+                  "Criar conta",
+                  "Create account"
+                )}
               </button>
             </div>
           )}
@@ -3024,7 +3090,10 @@ function ContaContent() {
               </div>
 
               <p className="mt-3 text-center text-xs text-muted-foreground">
-                Use sua conta Google para entrar ou criar sua conta automaticamente.
+                {text(
+                  "Use sua conta Google para entrar ou criar sua conta automaticamente.",
+                  "Use your Google account to sign in or create an account automatically."
+                )}
               </p>
             </>
           )}
