@@ -9,6 +9,7 @@ import {
 
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
+import { formatStoreMoney } from "@/lib/storeIntl";
 
 const API_URL = "";
 
@@ -1004,15 +1005,11 @@ export default function AdminCardapioPage() {
                       )}
 
                       <p className="mt-4 text-xl font-bold tracking-tight text-foreground">
-                        R${" "}
-                        {Number(
-                          product.price
-                        )
-                          .toFixed(2)
-                          .replace(
-                            ".",
-                            ","
-                          )}
+                        {formatStoreMoney(
+                          Number(
+                            product.price
+                          )
+                        )}
                       </p>
 
                       <div className="mt-5 flex gap-2">
