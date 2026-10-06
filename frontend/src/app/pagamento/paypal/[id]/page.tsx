@@ -12,6 +12,7 @@ import {
 } from "next/navigation";
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import CountrySwitcher from "@/components/CountrySwitcher";
 import { useLanguage } from "@/i18n/LanguageProvider";
 
 const API_URL = "";
@@ -217,7 +218,8 @@ export default function PayPalPaymentPage() {
     <main className="min-h-screen bg-background px-5 py-10 text-foreground">
       <div className="mx-auto max-w-lg">
         <div className="flex justify-end">
-          <LanguageSwitcher />
+          <CountrySwitcher compact />
+            <LanguageSwitcher />
         </div>
 
         <section className="mt-6 rounded-[28px] border border-border bg-card p-7 text-center sm:p-8">
