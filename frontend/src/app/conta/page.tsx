@@ -46,6 +46,7 @@ type CustomerOrder = {
   customerName: string;
   customerPhone: string;
   total: number | null;
+  paymentCurrencyCode?: string | null;
   status: string;
   paymentStatus: string;
   paymentMethod: string | null;
@@ -396,13 +397,27 @@ function ContaContent() {
   }
 
   function formatMoney(
-    value: number | null
+    value: number | null,
+    currencyCode = "BRL"
   ) {
+    const currency =
+      currencyCode ||
+      "BRL";
+
+    const locale =
+      currency === "AUD"
+        ? "en-AU"
+        : currency === "GBP"
+          ? "en-GB"
+          : currency === "BRL"
+            ? "pt-BR"
+            : "en-US";
+
     return new Intl.NumberFormat(
-      "pt-BR",
+      locale,
       {
         style: "currency",
-        currency: "BRL",
+        currency,
       }
     ).format(value ?? 0);
   }
@@ -2544,7 +2559,9 @@ function ContaContent() {
                           <div className="sm:text-right">
                             <p className="font-display text-2xl tracking-tight text-primary">
                               {formatMoney(
-                                order.total
+                                order.total,
+                                order.paymentCurrencyCode ??
+                                  "BRL"
                               )}
                             </p>
 
