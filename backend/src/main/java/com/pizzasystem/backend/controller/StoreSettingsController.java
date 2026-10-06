@@ -183,23 +183,29 @@ public class StoreSettingsController {
                 )
         );
 
-        store.setCountryCode(
-                normalizeCountryCode(
-                        data.countryCode()
-                )
-        );
+        if (data.countryCode() != null) {
+            store.setCountryCode(
+                    normalizeCountryCode(
+                            data.countryCode()
+                    )
+            );
+        }
 
-        store.setDefaultLocale(
-                normalizeLocale(
-                        data.defaultLocale()
-                )
-        );
+        if (data.defaultLocale() != null) {
+            store.setDefaultLocale(
+                    normalizeLocale(
+                            data.defaultLocale()
+                    )
+            );
+        }
 
-        store.setCurrencyCode(
-                normalizeCurrencyCode(
-                        data.currencyCode()
-                )
-        );
+        if (data.currencyCode() != null) {
+            store.setCurrencyCode(
+                    normalizeCurrencyCode(
+                            data.currencyCode()
+                    )
+            );
+        }
 
         store.setOpen(
                 data.open()
@@ -717,6 +723,9 @@ public class StoreSettingsController {
                         normalized
                 ) &&
                 !"en-US".equals(
+                        normalized
+                ) &&
+                !"en-GB".equals(
                         normalized
                 )
         ) {
