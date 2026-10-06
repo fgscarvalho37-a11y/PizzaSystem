@@ -8,6 +8,7 @@ import {
 
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
+import { formatStoreMoney } from "@/lib/storeIntl";
 import { downloadSimplePdf } from "@/lib/simplePdf";
 
 type CashData = {
@@ -76,14 +77,8 @@ const API_URL = "";
 function formatMoney(
   value: number | undefined
 ) {
-  return Number(
-    value ?? 0
-  ).toLocaleString(
-    "pt-BR",
-    {
-      style: "currency",
-      currency: "BRL",
-    }
+  return formatStoreMoney(
+    value
   );
 }
 
