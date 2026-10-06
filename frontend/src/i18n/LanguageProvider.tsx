@@ -10,6 +10,10 @@ import {
   useState,
 } from "react";
 
+import {
+  localeForCountry,
+} from "@/i18n/countries";
+
 export type AppLocale =
   | "pt-BR"
   | "en-US"
@@ -18,9 +22,13 @@ export type AppLocale =
 
 type LanguageContextValue = {
   locale: AppLocale;
+  countryCode: string;
   isEnglish: boolean;
   setLocale: (
     locale: AppLocale
+  ) => void;
+  setCountry: (
+    countryCode: string
   ) => void;
   applyDefaultLocale: (
     locale: AppLocale
@@ -39,6 +47,9 @@ const LanguageContext =
 const STORAGE_KEY =
   "pizzasystem-language";
 
+const COUNTRY_STORAGE_KEY =
+  "pizzasystem-country";
+
 export function LanguageProvider({
   children,
 }: {
@@ -52,7 +63,31 @@ export function LanguageProvider({
       "pt-BR"
     );
 
+  const [
+    countryCode,
+    setCountryCode,
+  ] =
+    useState(
+      "BR"
+    );
+
   useEffect(() => {
+    const savedCountry =
+      window.localStorage.getItem(
+        COUNTRY_STORAGE_KEY
+      );
+
+    if (
+      savedCountry &&
+      /^[A-Za-z]{2}$/.test(
+        savedCountry
+      )
+    ) {
+      setCountryCode(
+        savedCountry.toUpperCase()
+      );
+    }
+
     const saved =
       window.localStorage.getItem(
         STORAGE_KEY
@@ -114,6 +149,51 @@ export function LanguageProvider({
       nextLocale;
   }, []);
 
+  const setCountry =
+    useCallback((
+      nextCountry:
+        string
+    ) => {
+      const normalized =
+        nextCountry
+          .trim()
+          .toUpperCase();
+
+      if (
+        !/^[A-Z]{2}$/.test(
+          normalized
+        )
+      ) {
+        return;
+      }
+
+      const nextLocale =
+        localeForCountry(
+          normalized
+        );
+
+      setCountryCode(
+        normalized
+      );
+
+      setLocaleState(
+        nextLocale
+      );
+
+      window.localStorage.setItem(
+        COUNTRY_STORAGE_KEY,
+        normalized
+      );
+
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        nextLocale
+      );
+
+      document.documentElement.lang =
+        nextLocale;
+    }, []);
+
   const applyDefaultLocale =
     useCallback((
       nextLocale:
@@ -145,11 +225,13 @@ export function LanguageProvider({
     useMemo<LanguageContextValue>(
       () => ({
         locale,
+        countryCode,
         isEnglish:
           locale.startsWith(
             "en"
           ),
         setLocale,
+        setCountry,
         applyDefaultLocale,
         text: (
           pt,
@@ -163,7 +245,9 @@ export function LanguageProvider({
       }),
       [
         locale,
+        countryCode,
         setLocale,
+        setCountry,
         applyDefaultLocale,
       ]
     );
