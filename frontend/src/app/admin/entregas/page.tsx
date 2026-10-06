@@ -110,7 +110,7 @@ export default function AdminEntregasPage() {
   const [
     defaultLocale,
     setDefaultLocale,
-  ] = useState<"pt-BR" | "en-US">("pt-BR");
+  ] = useState<"pt-BR" | "en-US" | "en-GB" | "en-AU">("pt-BR");
 
   const [
     currencyCode,
@@ -315,11 +315,13 @@ export default function AdminEntregasPage() {
         );
 
         setDefaultLocale(
-          storeData.defaultLocale
-            ?.toLowerCase()
-            .startsWith("en")
-            ? "en-US"
-            : "pt-BR"
+          storeData.defaultLocale === "en-AU"
+            ? "en-AU"
+            : storeData.defaultLocale === "en-GB"
+              ? "en-GB"
+              : storeData.defaultLocale === "en-US"
+                ? "en-US"
+                : "pt-BR"
         );
 
         setCurrencyCode(
