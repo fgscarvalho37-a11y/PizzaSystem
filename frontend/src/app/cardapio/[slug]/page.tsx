@@ -2310,6 +2310,14 @@ export default function CardapioPage() {
                 onChange={
                   setSelectedAddonIds
                 }
+                locale={
+                  storeProfile?.defaultLocale ??
+                  locale
+                }
+                currencyCode={
+                  storeProfile?.currencyCode ??
+                  "BRL"
+                }
               />
 
               {selectedProduct.allowCrust && (
