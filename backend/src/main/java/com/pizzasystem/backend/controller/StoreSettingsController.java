@@ -727,6 +727,9 @@ public class StoreSettingsController {
                 ) &&
                 !"en-GB".equals(
                         normalized
+                ) &&
+                !"en-AU".equals(
+                        normalized
                 )
         ) {
             throw new IllegalArgumentException(
@@ -760,7 +763,8 @@ public class StoreSettingsController {
                         "USD",
                         "EUR",
                         "GBP",
-                        "CAD"
+                        "CAD",
+                        "AUD"
                 ).contains(
                         normalized
                 )
