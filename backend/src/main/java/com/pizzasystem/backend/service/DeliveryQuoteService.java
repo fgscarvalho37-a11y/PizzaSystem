@@ -183,7 +183,8 @@ public class DeliveryQuoteService {
                         : geocode(
                                 originAddress,
                                 DeliveryAddress.fromOrigin(
-                                        originAddress
+                                        originAddress,
+                                        countryCode
                                 ),
                                 "saída da pizzaria",
                                 countryCode
@@ -197,7 +198,8 @@ public class DeliveryQuoteService {
                                 request.number(),
                                 request.city(),
                                 request.state(),
-                                request.postalCode()
+                                request.postalCode(),
+                                countryCode
                         ),
                         "entrega",
                         countryCode
