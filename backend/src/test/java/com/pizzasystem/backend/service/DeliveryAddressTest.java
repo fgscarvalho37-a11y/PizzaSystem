@@ -67,6 +67,54 @@ class DeliveryAddressTest {
     }
 
     @Test
+    void acceptsAustralianAddress() {
+        DeliveryAddress australian =
+                new DeliveryAddress(
+                        "George Street",
+                        "100",
+                        "Sydney",
+                        "NSW",
+                        "2000",
+                        "AU"
+                );
+
+        ObjectNode candidate =
+                new ObjectMapper()
+                        .createObjectNode()
+                        .put("layer", "address")
+                        .put("street", "George Street")
+                        .put("housenumber", "100")
+                        .put("locality", "Sydney")
+                        .put("region_a", "AU-NSW")
+                        .put("postalcode", "2000")
+                        .put("country_a", "AUS");
+
+        assertTrue(
+                australian.matches(
+                        candidate
+                )
+        );
+    }
+
+    @Test
+    void parsesAustralianOriginPostcode() {
+        DeliveryAddress australian =
+                DeliveryAddress.fromOrigin(
+                        "George Street, 100, Sydney, NSW, 2000, Australia",
+                        "AU"
+                );
+
+        assertEquals(
+                "2000",
+                australian.postalCode()
+        );
+        assertEquals(
+                "NSW",
+                australian.region()
+        );
+    }
+
+    @Test
     void parsesSeparateState() {
         var result =
                 DeliveryAddress.fromOrigin("Rua das Flores, 100, Centro, São Bento, SP, Brasil");
