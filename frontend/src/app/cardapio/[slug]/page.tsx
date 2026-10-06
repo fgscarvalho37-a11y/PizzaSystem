@@ -14,6 +14,7 @@ import {
 
 import { setBrowserIcon } from "@/lib/browserIcon";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import CountrySwitcher from "@/components/CountrySwitcher";
 import { useLanguage } from "@/i18n/LanguageProvider";
 
 import ProductAddonSelector, {
@@ -1582,6 +1583,7 @@ export default function CardapioPage() {
 
           <div className="flex shrink-0 items-center gap-2">
 
+            <CountrySwitcher compact />
             <LanguageSwitcher />
 
             <button
