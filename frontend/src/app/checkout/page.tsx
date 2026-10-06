@@ -13,6 +13,7 @@ import {
 
 import MapboxLocationPicker from "@/components/MapboxLocationPicker";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import CountrySwitcher from "@/components/CountrySwitcher";
 import { useLanguage } from "@/i18n/LanguageProvider";
 
 const API_URL = "";
@@ -1932,6 +1933,7 @@ export default function CheckoutPage() {
               </span>
             </button>
 
+            <CountrySwitcher compact />
             <LanguageSwitcher />
 
           </div>
