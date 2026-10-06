@@ -38,6 +38,9 @@ record DeliveryAddress(String street, String number, String city, String region,
             } else if ("GB".equalsIgnoreCase(countryCode) &&
                     candidate.matches(".*[A-Z]{1,2}[0-9][A-Z0-9]?\\s*[0-9][A-Z]{2}.*")) {
                 postalCode = candidate.replaceAll("[^A-Z0-9 ]", "").trim();
+            } else if ("AU".equalsIgnoreCase(countryCode) &&
+                    digits.length() == 4) {
+                postalCode = digits;
             }
         }
 
@@ -81,7 +84,8 @@ record DeliveryAddress(String street, String number, String city, String region,
             return false;
         }
 
-        String foundRegion = properties.path("region_a").asText().replaceFirst("(?i)^BR-", "");
+        String foundRegion = properties.path("region_a").asText()
+                .replaceFirst("(?i)^[A-Z]{2}-", "");
         if (!region.isBlank() && !foundRegion.isBlank() && !region.equalsIgnoreCase(foundRegion)) {
             return false;
         }
@@ -117,6 +121,7 @@ record DeliveryAddress(String street, String number, String city, String region,
         if ("BR".equals(e)) return "BRA".equals(f);
         if ("US".equals(e)) return "USA".equals(f);
         if ("GB".equals(e)) return "GBR".equals(f);
+        if ("AU".equals(e)) return "AUS".equals(f);
 
         return false;
     }
