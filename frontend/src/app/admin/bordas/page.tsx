@@ -8,6 +8,7 @@ import {
 
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
+import { formatStoreMoney } from "@/lib/storeIntl";
 
 const API_URL = "";
 
@@ -33,13 +34,9 @@ type Product = {
 function formatMoney(
   value: number
 ) {
-  return new Intl.NumberFormat(
-    "pt-BR",
-    {
-      style: "currency",
-      currency: "BRL",
-    }
-  ).format(value);
+  return formatStoreMoney(
+    value
+  );
 }
 
 export default function AdminBordasPage() {
