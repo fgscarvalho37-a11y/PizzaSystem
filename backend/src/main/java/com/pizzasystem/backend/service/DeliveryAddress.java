@@ -17,6 +17,14 @@ record DeliveryAddress(String street, String number, String city, String region,
         countryCode = countryCode == null ? "" : countryCode.trim().toUpperCase(Locale.ROOT);
     }
 
+    DeliveryAddress(String street, String number, String city, String region, String postalCode) {
+        this(street, number, city, region, postalCode, "BR");
+    }
+
+    static DeliveryAddress fromOrigin(String text) {
+        return fromOrigin(text, "BR");
+    }
+
     static DeliveryAddress fromOrigin(String text, String countryCode) {
         String[] parts = text == null ? new String[0] : text.split(",");
         String city = "", region = "", postalCode = "";
