@@ -277,6 +277,9 @@ export default function PedidoPage() {
       return;
     }
 
+    const currentStoreSlug =
+      storeSlug;
+
     let mounted =
       true;
 
@@ -285,7 +288,7 @@ export default function PedidoPage() {
         const response =
           await fetch(
             `${API_URL}/api/store/fulfillment?store=${encodeURIComponent(
-              storeSlug
+              currentStoreSlug
             )}`,
             {
               cache:
