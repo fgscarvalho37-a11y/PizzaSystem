@@ -10,12 +10,14 @@ import com.pizzasystem.backend.entity.AddonGroup;
 import com.pizzasystem.backend.entity.Coupon;
 import com.pizzasystem.backend.entity.Customer;
 import com.pizzasystem.backend.entity.Crust;
+import com.pizzasystem.backend.entity.FulfillmentType;
 import com.pizzasystem.backend.entity.Order;
 import com.pizzasystem.backend.entity.OrderItem;
 import com.pizzasystem.backend.entity.OrderItemAddon;
 import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentStatus;
 import com.pizzasystem.backend.entity.PaymentMethod;
+import com.pizzasystem.backend.entity.PaymentTiming;
 import com.pizzasystem.backend.entity.Product;
 import com.pizzasystem.backend.entity.Store;
 
@@ -280,27 +282,79 @@ public class OrderController {
             );
         }
 
-        if (request.getCity() == null
-                || request.getCity().isBlank()) {
+        FulfillmentType fulfillmentType =
+                request.getFulfillmentType();
 
+        PaymentTiming paymentTiming =
+                request.getPaymentTiming();
+
+        boolean pickup =
+                fulfillmentType ==
+                        FulfillmentType.PICKUP;
+
+        if (
+                pickup &&
+                !store.isPickupEnabled()
+        ) {
             throw new IllegalArgumentException(
-                    "Cidade não informada"
+                    "A retirada não está disponível nesta loja"
             );
         }
 
         if (
-                "BR".equalsIgnoreCase(
-                        store.getCountryCode()
-                ) &&
-                (
-                        request.getNeighborhood() == null ||
-                        request.getNeighborhood().isBlank()
-                )
+                !pickup &&
+                !store.isDeliveryEnabled()
         ) {
-
             throw new IllegalArgumentException(
-                    "Bairro não informado"
+                    "A entrega não está disponível nesta loja"
             );
+        }
+
+        if (
+                pickup &&
+                paymentTiming ==
+                        PaymentTiming.ON_PICKUP &&
+                !store.isPickupPayAtStoreEnabled()
+        ) {
+            throw new IllegalArgumentException(
+                    "Pagamento na retirada não está disponível"
+            );
+        }
+
+        if (
+                pickup &&
+                paymentTiming ==
+                        PaymentTiming.ONLINE &&
+                !store.isPickupOnlinePaymentEnabled()
+        ) {
+            throw new IllegalArgumentException(
+                    "Pagamento online para retirada não está disponível"
+            );
+        }
+
+        if (!pickup) {
+            if (
+                    request.getCity() == null ||
+                    request.getCity().isBlank()
+            ) {
+                throw new IllegalArgumentException(
+                        "Cidade não informada"
+                );
+            }
+
+            if (
+                    "BR".equalsIgnoreCase(
+                            store.getCountryCode()
+                    ) &&
+                    (
+                            request.getNeighborhood() == null ||
+                            request.getNeighborhood().isBlank()
+                    )
+            ) {
+                throw new IllegalArgumentException(
+                        "Bairro não informado"
+                );
+            }
         }
 
         if (request.getItems() == null
@@ -311,10 +365,28 @@ public class OrderController {
             );
         }
 
-        if (request.getPaymentMethod() == null) {
-
+        if (
+                !(
+                        pickup &&
+                        paymentTiming ==
+                                PaymentTiming.ON_PICKUP
+                ) &&
+                request.getPaymentMethod() == null
+        ) {
             throw new IllegalArgumentException(
                     "Forma de pagamento não informada"
+            );
+        }
+
+        if (
+                pickup &&
+                paymentTiming ==
+                        PaymentTiming.ONLINE &&
+                request.getPaymentMethod() ==
+                        PaymentMethod.CASH
+        ) {
+            throw new IllegalArgumentException(
+                    "Dinheiro está disponível apenas para pagamento na retirada"
             );
         }
 
@@ -371,24 +443,24 @@ public class OrderController {
             );
         }
 
-        if (
-                request.getStreet() == null ||
-                request.getStreet().isBlank()
-        ) {
+        if (!pickup) {
+            if (
+                    request.getStreet() == null ||
+                    request.getStreet().isBlank()
+            ) {
+                throw new IllegalArgumentException(
+                        "Rua não informada"
+                );
+            }
 
-            throw new IllegalArgumentException(
-                    "Rua não informada"
-            );
-        }
-
-        if (
-                request.getNumber() == null ||
-                request.getNumber().isBlank()
-        ) {
-
-            throw new IllegalArgumentException(
-                    "Número não informado"
-            );
+            if (
+                    request.getNumber() == null ||
+                    request.getNumber().isBlank()
+            ) {
+                throw new IllegalArgumentException(
+                        "Número não informado"
+                );
+            }
         }
 
         Order order =
@@ -462,21 +534,45 @@ public class OrderController {
                         .trim()
         );
 
+        order.setFulfillmentType(
+                fulfillmentType
+        );
+
+        order.setPaymentTiming(
+                pickup
+                        ? paymentTiming
+                        : PaymentTiming.ONLINE
+        );
+
+        if (pickup) {
+            order.setPickupEstimatedMinutes(
+                    store.getPickupPreparationMinutes()
+            );
+        }
+
         order.setStreet(
-                request.getStreet()
+                pickup
+                        ? null
+                        : request.getStreet()
         );
 
         order.setNumber(
-                request.getNumber()
+                pickup
+                        ? null
+                        : request.getNumber()
         );
 
         order.setCity(
-                request
-                        .getCity()
-                        .trim()
+                pickup ||
+                request.getCity() == null
+                        ? null
+                        : request
+                                .getCity()
+                                .trim()
         );
 
         order.setNeighborhood(
+                pickup ||
                 request.getNeighborhood() == null
                         ? null
                         : request.getNeighborhood()
@@ -484,7 +580,9 @@ public class OrderController {
         );
 
         order.setComplement(
-                request.getComplement()
+                pickup
+                        ? null
+                        : request.getComplement()
         );
 
         order.setDeliveryFee(
@@ -515,8 +613,14 @@ public class OrderController {
                 request.getPaymentMethod() ==
                         PaymentMethod.CASH;
 
+        boolean payAtPickup =
+                pickup &&
+                paymentTiming ==
+                        PaymentTiming.ON_PICKUP;
+
         order.setStatus(
-                cashPayment
+                cashPayment ||
+                payAtPickup
                         ? OrderStatus.RECEIVED
                         : OrderStatus.PENDING_PAYMENT
         );
@@ -531,7 +635,11 @@ public class OrderController {
 
         String paymentProvider;
 
-        if (cashPayment) {
+        if (payAtPickup) {
+            paymentProvider =
+                    "ON_PICKUP";
+
+        } else if (cashPayment) {
             paymentProvider =
                     "CASH";
 
@@ -1055,40 +1163,65 @@ public class OrderController {
         // ENTREGA POR KM
         // =========================
 
-        DeliveryQuoteResponse deliveryQuote =
-                deliveryQuoteService
-                        .quote(
-                                store,
-                                new DeliveryQuoteRequest(
-                                        request.getStreet(),
-                                        request.getNumber(),
-                                        request.getCity(),
-                                        request.getNeighborhood(),
-                                        request.getState(),
-                                        request.getPostalCode(),
-                                        request.getComplement(),
-                                        productsTotal
-                                )
+        BigDecimal deliveryFee =
+                BigDecimal.ZERO
+                        .setScale(
+                                2,
+                                RoundingMode.HALF_UP
                         );
 
-        BigDecimal deliveryFee =
-                deliveryQuote.fee();
+        if (!pickup) {
+            DeliveryQuoteResponse deliveryQuote =
+                    deliveryQuoteService
+                            .quote(
+                                    store,
+                                    new DeliveryQuoteRequest(
+                                            request.getStreet(),
+                                            request.getNumber(),
+                                            request.getCity(),
+                                            request.getNeighborhood(),
+                                            request.getState(),
+                                            request.getPostalCode(),
+                                            request.getComplement(),
+                                            productsTotal
+                                    )
+                            );
 
-        order.setDeliveryFee(
-                deliveryFee
-        );
+            deliveryFee =
+                    deliveryQuote.fee();
 
-        order.setDeliveryDistanceKm(
-                deliveryQuote.distanceKm()
-        );
+            order.setDeliveryFee(
+                    deliveryFee
+            );
 
-        order.setDeliveryRouteProvider(
-                deliveryQuote.routeProvider()
-        );
+            order.setDeliveryDistanceKm(
+                    deliveryQuote.distanceKm()
+            );
 
-        order.setDeliveryRouteUrl(
-                deliveryQuote.googleMapsUrl()
-        );
+            order.setDeliveryRouteProvider(
+                    deliveryQuote.routeProvider()
+            );
+
+            order.setDeliveryRouteUrl(
+                    deliveryQuote.googleMapsUrl()
+            );
+        } else {
+            order.setDeliveryFee(
+                    deliveryFee
+            );
+
+            order.setDeliveryDistanceKm(
+                    null
+            );
+
+            order.setDeliveryRouteProvider(
+                    null
+            );
+
+            order.setDeliveryRouteUrl(
+                    null
+            );
+        }
 
         // =========================
         // CUPOM
@@ -1207,6 +1340,18 @@ public class OrderController {
                         .orElseThrow(
                                 this::orderNotFound
                         );
+
+        if (
+                order.getFulfillmentType() ==
+                        FulfillmentType.PICKUP &&
+                status ==
+                        OrderStatus.OUT_FOR_DELIVERY
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Pedido para retirada não passa por saída para entrega"
+            );
+        }
 
         order.setStatus(
                 status
