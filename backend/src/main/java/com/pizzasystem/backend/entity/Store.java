@@ -232,6 +232,72 @@ public class Store {
     private BigDecimal deliveryFreeDistanceKm;
 
     // =========================
+    // MODALIDADES / RETIRADA
+    // =========================
+
+    @Column(
+            name = "delivery_enabled",
+            nullable = false
+    )
+    private boolean deliveryEnabled =
+            true;
+
+    @Column(
+            name = "pickup_enabled",
+            nullable = false
+    )
+    private boolean pickupEnabled =
+            false;
+
+    @Column(
+            name = "pickup_online_payment_enabled",
+            nullable = false
+    )
+    private boolean pickupOnlinePaymentEnabled =
+            true;
+
+    @Column(
+            name = "pickup_pay_at_store_enabled",
+            nullable = false
+    )
+    private boolean pickupPayAtStoreEnabled =
+            true;
+
+    @Column(
+            name = "pickup_cash_enabled",
+            nullable = false
+    )
+    private boolean pickupCashEnabled =
+            true;
+
+    @Column(
+            name = "pickup_card_enabled",
+            nullable = false
+    )
+    private boolean pickupCardEnabled =
+            true;
+
+    @Column(
+            name = "pickup_other_enabled",
+            nullable = false
+    )
+    private boolean pickupOtherEnabled =
+            false;
+
+    @Column(
+            name = "pickup_instructions",
+            length = 500
+    )
+    private String pickupInstructions;
+
+    @Column(
+            name = "pickup_preparation_minutes",
+            nullable = false
+    )
+    private Integer pickupPreparationMinutes =
+            30;
+
+    // =========================
     // FIDELIDADE
     // =========================
 
@@ -623,6 +689,107 @@ public class Store {
     ) {
         this.deliveryFreeDistanceKm =
                 deliveryFreeDistanceKm;
+    }
+
+    public boolean isDeliveryEnabled() {
+        return deliveryEnabled;
+    }
+
+    public void setDeliveryEnabled(
+            boolean deliveryEnabled
+    ) {
+        this.deliveryEnabled =
+                deliveryEnabled;
+    }
+
+    public boolean isPickupEnabled() {
+        return pickupEnabled;
+    }
+
+    public void setPickupEnabled(
+            boolean pickupEnabled
+    ) {
+        this.pickupEnabled =
+                pickupEnabled;
+    }
+
+    public boolean isPickupOnlinePaymentEnabled() {
+        return pickupOnlinePaymentEnabled;
+    }
+
+    public void setPickupOnlinePaymentEnabled(
+            boolean pickupOnlinePaymentEnabled
+    ) {
+        this.pickupOnlinePaymentEnabled =
+                pickupOnlinePaymentEnabled;
+    }
+
+    public boolean isPickupPayAtStoreEnabled() {
+        return pickupPayAtStoreEnabled;
+    }
+
+    public void setPickupPayAtStoreEnabled(
+            boolean pickupPayAtStoreEnabled
+    ) {
+        this.pickupPayAtStoreEnabled =
+                pickupPayAtStoreEnabled;
+    }
+
+    public boolean isPickupCashEnabled() {
+        return pickupCashEnabled;
+    }
+
+    public void setPickupCashEnabled(
+            boolean pickupCashEnabled
+    ) {
+        this.pickupCashEnabled =
+                pickupCashEnabled;
+    }
+
+    public boolean isPickupCardEnabled() {
+        return pickupCardEnabled;
+    }
+
+    public void setPickupCardEnabled(
+            boolean pickupCardEnabled
+    ) {
+        this.pickupCardEnabled =
+                pickupCardEnabled;
+    }
+
+    public boolean isPickupOtherEnabled() {
+        return pickupOtherEnabled;
+    }
+
+    public void setPickupOtherEnabled(
+            boolean pickupOtherEnabled
+    ) {
+        this.pickupOtherEnabled =
+                pickupOtherEnabled;
+    }
+
+    public String getPickupInstructions() {
+        return pickupInstructions;
+    }
+
+    public void setPickupInstructions(
+            String pickupInstructions
+    ) {
+        this.pickupInstructions =
+                pickupInstructions;
+    }
+
+    public Integer getPickupPreparationMinutes() {
+        return pickupPreparationMinutes == null
+                ? 30
+                : pickupPreparationMinutes;
+    }
+
+    public void setPickupPreparationMinutes(
+            Integer pickupPreparationMinutes
+    ) {
+        this.pickupPreparationMinutes =
+                pickupPreparationMinutes;
     }
 
     public boolean isLoyaltyEnabled() {
