@@ -1,6 +1,8 @@
 package com.pizzasystem.backend.dto;
 
+import com.pizzasystem.backend.entity.FulfillmentType;
 import com.pizzasystem.backend.entity.PaymentMethod;
+import com.pizzasystem.backend.entity.PaymentTiming;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -48,15 +50,12 @@ public class OrderRequest {
     // ENTREGA
     // =========================
 
-    @NotBlank(message = "Rua não informada.")
     @Size(max = 180, message = "Rua muito longa.")
     private String street;
 
-    @NotBlank(message = "Número não informado.")
     @Size(max = 30, message = "Número inválido.")
     private String number;
 
-    @NotBlank(message = "Cidade não informada.")
     @Size(max = 120, message = "Cidade muito longa.")
     private String city;
 
@@ -73,10 +72,15 @@ public class OrderRequest {
     private String complement;
 
     // =========================
-    // PAGAMENTO
+    // MODALIDADE / PAGAMENTO
     // =========================
 
-    @NotNull(message = "Forma de pagamento não informada.")
+    private FulfillmentType fulfillmentType =
+            FulfillmentType.DELIVERY;
+
+    private PaymentTiming paymentTiming =
+            PaymentTiming.ONLINE;
+
     private PaymentMethod paymentMethod;
 
     // =========================
@@ -207,6 +211,32 @@ public class OrderRequest {
     ) {
         this.complement =
                 complement;
+    }
+
+    public FulfillmentType getFulfillmentType() {
+        return fulfillmentType == null
+                ? FulfillmentType.DELIVERY
+                : fulfillmentType;
+    }
+
+    public void setFulfillmentType(
+            FulfillmentType fulfillmentType
+    ) {
+        this.fulfillmentType =
+                fulfillmentType;
+    }
+
+    public PaymentTiming getPaymentTiming() {
+        return paymentTiming == null
+                ? PaymentTiming.ONLINE
+                : paymentTiming;
+    }
+
+    public void setPaymentTiming(
+            PaymentTiming paymentTiming
+    ) {
+        this.paymentTiming =
+                paymentTiming;
     }
 
     public PaymentMethod getPaymentMethod() {
