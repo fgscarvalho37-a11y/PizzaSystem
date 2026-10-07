@@ -99,6 +99,18 @@ public class FulfillmentSettingsController {
                 currentStoreService
                         .getCurrentStore();
 
+        if (
+                request.pickupEnabled() &&
+                (
+                        store.getDeliveryOriginAddress() == null ||
+                        store.getDeliveryOriginAddress().isBlank()
+                )
+        ) {
+            throw new IllegalArgumentException(
+                    "Configure o endereço da loja em Entregas antes de ativar a retirada."
+            );
+        }
+
         store.setDeliveryEnabled(
                 request.deliveryEnabled()
         );
