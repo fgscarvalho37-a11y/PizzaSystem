@@ -860,24 +860,54 @@ export default function CozinhaPage() {
                       <section className="mt-5 rounded-xl border border-border bg-background p-3">
 
                         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                          Entrega
+                          {order.fulfillmentType ===
+                          "PICKUP"
+                            ? "Retirada"
+                            : "Entrega"}
                         </p>
 
-                        <p className="mt-2 text-sm font-bold text-foreground">
-                          {order.street},{" "}
-                          {order.number}
-                        </p>
+                        {order.fulfillmentType ===
+                        "PICKUP" ? (
+                          <>
+                            <p className="mt-2 text-sm font-bold text-foreground">
+                              Retirada no estabelecimento
+                            </p>
 
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {order.neighborhood}
-                        </p>
+                            {order.pickupEstimatedMinutes !=
+                              null && (
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                Estimativa:{" "}
+                                {
+                                  order.pickupEstimatedMinutes
+                                }{" "}
+                                min
+                              </p>
+                            )}
 
-                        {order.complement && (
+                            {order.paymentTiming ===
+                              "ON_PICKUP" && (
+                              <p className="mt-1 text-xs font-bold text-orange-700">
+                                PAGAMENTO PENDENTE / PAGAR NO BALCÃO
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <p className="mt-2 text-sm font-bold text-foreground">
+                              {order.street},{" "}
+                              {order.number}
+                            </p>
 
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {order.complement}
-                          </p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {order.neighborhood}
+                            </p>
 
+                            {order.complement && (
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {order.complement}
+                              </p>
+                            )}
+                          </>
                         )}
 
                       </section>
