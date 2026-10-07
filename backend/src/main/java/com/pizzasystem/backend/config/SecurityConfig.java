@@ -249,7 +249,8 @@ public class SecurityConfig {
 
                                 .requestMatchers(
                                         HttpMethod.GET,
-                                        "/api/store/profile"
+                                        "/api/store/profile",
+                                        "/api/store/fulfillment"
                                 )
                                 .permitAll()
 
