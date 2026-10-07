@@ -899,7 +899,7 @@ export default function CozinhaPage() {
                         </div>
 
                         {nextStatus(
-                          order.status
+                          order
                         ) && (
 
                           <button
@@ -917,7 +917,7 @@ export default function CozinhaPage() {
                             {isUpdating
                               ? "Atualizando..."
                               : nextButtonText(
-                                  order.status
+                                  order
                                 )}
                           </button>
 
