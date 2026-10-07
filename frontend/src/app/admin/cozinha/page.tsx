@@ -252,6 +252,14 @@ export default function CozinhaPage() {
     >(null);
 
   const [
+    confirmingPaymentId,
+    setConfirmingPaymentId,
+  ] =
+    useState<
+      number | null
+    >(null);
+
+  const [
     errorMessage,
     setErrorMessage,
   ] =
@@ -447,6 +455,62 @@ export default function CozinhaPage() {
     } finally {
 
       setUpdatingId(
+        null
+      );
+    }
+  }
+
+  async function confirmPickupPayment(
+    orderId: number,
+    method:
+      "CASH" |
+      "CARD" |
+      "OTHER"
+  ) {
+    try {
+      setConfirmingPaymentId(
+        orderId
+      );
+
+      setErrorMessage(
+        ""
+      );
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/admin/pickup-payments/${orderId}/confirm?method=${method}`,
+          {
+            method:
+              "POST",
+          }
+        );
+
+      if (!response.ok) {
+        const body =
+          await response
+            .json()
+            .catch(
+              () =>
+                null
+            );
+
+        throw new Error(
+          body?.message ??
+            "Não foi possível marcar como pago."
+        );
+      }
+
+      await loadOrders();
+    } catch (
+      caught
+    ) {
+      setErrorMessage(
+        caught instanceof Error
+          ? caught.message
+          : "Não foi possível marcar como pago."
+      );
+    } finally {
+      setConfirmingPaymentId(
         null
       );
     }
@@ -885,10 +949,52 @@ export default function CozinhaPage() {
                             )}
 
                             {order.paymentTiming ===
-                              "ON_PICKUP" && (
-                              <p className="mt-1 text-xs font-bold text-orange-700">
-                                PAGAMENTO PENDENTE / PAGAR NO BALCÃO
-                              </p>
+                              "ON_PICKUP" &&
+                            order.paymentStatus ===
+                              "PENDING" && (
+                              <div className="mt-3">
+                                <p className="text-xs font-bold text-orange-700">
+                                  PAGAMENTO PENDENTE / PAGAR NO BALCÃO
+                                </p>
+
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {[
+                                    ["CASH", "Dinheiro"],
+                                    ["CARD", "Cartão"],
+                                    ["OTHER", "Outro"],
+                                  ].map(
+                                    (
+                                      [
+                                        method,
+                                        label,
+                                      ]
+                                    ) => (
+                                      <button
+                                        key={
+                                          method
+                                        }
+                                        type="button"
+                                        onClick={() =>
+                                          void confirmPickupPayment(
+                                            order.id,
+                                            method as
+                                              | "CASH"
+                                              | "CARD"
+                                              | "OTHER"
+                                          )
+                                        }
+                                        disabled={
+                                          confirmingPaymentId ===
+                                          order.id
+                                        }
+                                        className="rounded-lg border border-border bg-card px-3 py-2 text-[11px] font-bold text-foreground disabled:opacity-50"
+                                      >
+                                        {label}
+                                      </button>
+                                    )
+                                  )}
+                                </div>
+                              </div>
                             )}
                           </>
                         ) : (
