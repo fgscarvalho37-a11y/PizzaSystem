@@ -66,6 +66,9 @@ type Order = {
 
   status: OrderStatus;
   paymentStatus: PaymentStatus;
+  fulfillmentType?: "DELIVERY" | "PICKUP";
+  paymentTiming?: "ONLINE" | "ON_PICKUP";
+  pickupEstimatedMinutes?: number | null;
 
   createdAt: string;
 };
@@ -150,8 +153,11 @@ function statusClass(
 }
 
 function nextStatus(
-  status: OrderStatus
+  order: Order
 ): OrderStatus | null {
+  const status =
+    order.status;
+
   switch (status) {
     case "RECEIVED":
       return "PREPARING";
@@ -160,7 +166,10 @@ function nextStatus(
       return "READY";
 
     case "READY":
-      return "OUT_FOR_DELIVERY";
+      return order.fulfillmentType ===
+        "PICKUP"
+        ? "DELIVERED"
+        : "OUT_FOR_DELIVERY";
 
     case "OUT_FOR_DELIVERY":
       return "DELIVERED";
@@ -171,8 +180,11 @@ function nextStatus(
 }
 
 function nextButtonText(
-  status: OrderStatus
+  order: Order
 ) {
+  const status =
+    order.status;
+
   switch (status) {
     case "RECEIVED":
       return "Iniciar preparo";
@@ -181,7 +193,10 @@ function nextButtonText(
       return "Marcar como pronto";
 
     case "READY":
-      return "Saiu para entrega";
+      return order.fulfillmentType ===
+        "PICKUP"
+        ? "Marcar como retirado"
+        : "Saiu para entrega";
 
     case "OUT_FOR_DELIVERY":
       return "Marcar como entregue";
@@ -270,8 +285,18 @@ export default function CozinhaPage() {
       const activeOrders =
         allOrders.filter(
           (order) =>
-            order.paymentStatus ===
-              "APPROVED" &&
+            (
+              order.paymentStatus ===
+                "APPROVED" ||
+              (
+                order.fulfillmentType ===
+                  "PICKUP" &&
+                order.paymentTiming ===
+                  "ON_PICKUP" &&
+                order.paymentStatus ===
+                  "PENDING"
+              )
+            ) &&
             activeStatuses.includes(
               order.status
             )
@@ -379,7 +404,7 @@ export default function CozinhaPage() {
 
     const next =
       nextStatus(
-        order.status
+        order
       );
 
     if (!next) {
@@ -450,7 +475,7 @@ export default function CozinhaPage() {
               </h1>
 
               <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-                Pedidos pagos em andamento aparecem automaticamente aqui.
+                Pedidos pagos e retiradas com pagamento no balcão aparecem automaticamente aqui.
               </p>
 
             </div>
@@ -527,7 +552,7 @@ export default function CozinhaPage() {
             </h2>
 
             <p className="mt-2 text-sm text-muted-foreground">
-              Nenhum pedido pago está aguardando preparo no momento.
+              Nenhum pedido está aguardando preparo no momento.
             </p>
 
           </div>
@@ -595,14 +620,41 @@ export default function CozinhaPage() {
                               order.status
                             )}`}
                           >
-                            {statusName(
-                              order.status
-                            )}
+                            {order.fulfillmentType ===
+                              "PICKUP" &&
+                            order.status ===
+                              "DELIVERED"
+                              ? "Retirado"
+                              : statusName(
+                                  order.status
+                                )}
                           </span>
 
-                          <p className="mt-2 text-xs font-bold text-emerald-700">
-                            Pago
-                          </p>
+                          <div className="mt-2 flex flex-col items-end gap-1">
+                            <span className={
+                              order.fulfillmentType ===
+                              "PICKUP"
+                                ? "rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700"
+                                : "rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700"
+                            }>
+                              {order.fulfillmentType ===
+                              "PICKUP"
+                                ? "PICKUP"
+                                : "DELIVERY"}
+                            </span>
+
+                            <span className={
+                              order.paymentStatus ===
+                              "APPROVED"
+                                ? "text-xs font-bold text-emerald-700"
+                                : "text-xs font-bold text-orange-700"
+                            }>
+                              {order.paymentStatus ===
+                              "APPROVED"
+                                ? "PAID"
+                                : "PAY AT PICKUP"}
+                            </span>
+                          </div>
 
                         </div>
 
