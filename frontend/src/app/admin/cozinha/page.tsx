@@ -260,6 +260,18 @@ export default function CozinhaPage() {
     >(null);
 
   const [
+    pickupConfig,
+    setPickupConfig,
+  ] =
+    useState<{
+      pickupCashEnabled: boolean;
+      pickupCardEnabled: boolean;
+      pickupOtherEnabled: boolean;
+    } | null>(
+      null
+    );
+
+  const [
     errorMessage,
     setErrorMessage,
   ] =
@@ -389,6 +401,31 @@ export default function CozinhaPage() {
   useEffect(() => {
 
     loadOrders();
+
+    void adminFetch(
+      `${API_URL}/api/store/fulfillment`,
+      {
+        cache:
+          "no-store",
+      }
+    )
+      .then(
+        async (
+          response
+        ) => {
+          if (
+            response.ok
+          ) {
+            setPickupConfig(
+              await response.json()
+            );
+          }
+        }
+      )
+      .catch(
+        () => {
+        }
+      );
 
     const interval =
       setInterval(
