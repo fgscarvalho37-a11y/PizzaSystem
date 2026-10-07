@@ -52,9 +52,17 @@ public class PickupPaymentAdminController {
             @PathVariable Long orderId,
             @RequestParam PickupPaymentMethod method
     ) {
-        Long storeId =
+        com.pizzasystem.backend.entity.Store store =
                 currentStoreService
-                        .getCurrentStoreId();
+                        .getCurrentStore();
+
+        Long storeId =
+                store.getId();
+
+        validatePickupMethod(
+                store,
+                method
+        );
 
         Order order =
                 orderRepository
@@ -139,6 +147,28 @@ public class PickupPaymentAdminController {
         );
 
         return order;
+    }
+
+    private void validatePickupMethod(
+            com.pizzasystem.backend.entity.Store store,
+            PickupPaymentMethod method
+    ) {
+        boolean enabled =
+                switch (method) {
+                    case CASH ->
+                            store.isPickupCashEnabled();
+                    case CARD ->
+                            store.isPickupCardEnabled();
+                    case OTHER ->
+                            store.isPickupOtherEnabled();
+                };
+
+        if (!enabled) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Este método de pagamento na retirada não está habilitado para a loja."
+            );
+        }
     }
 
     private String currentUsername() {
