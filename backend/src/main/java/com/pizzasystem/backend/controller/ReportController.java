@@ -1,5 +1,7 @@
 package com.pizzasystem.backend.controller;
 
+import com.pizzasystem.backend.entity.FulfillmentType;
+
 import com.pizzasystem.backend.service.ReportService;
 
 import org.springframework.format.annotation.DateTimeFormat;
