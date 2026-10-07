@@ -12,15 +12,19 @@ type Order = {
   id: number;
   customerName: string;
   customerPhone: string;
-  street: string;
-  number: string;
-  neighborhood: string;
-  complement: string;
+  street: string | null;
+  number: string | null;
+  neighborhood: string | null;
+  complement: string | null;
   deliveryFee: number;
   total: number;
   status: string;
   paymentStatus?: string;
   paymentCurrencyCode?: string | null;
+  fulfillmentType?: "DELIVERY" | "PICKUP";
+  paymentTiming?: "ONLINE" | "ON_PICKUP";
+  pickupEstimatedMinutes?: number | null;
+  pickupPaymentMethod?: "CASH" | "CARD" | "OTHER" | null;
   createdAt: string;
 };
 
@@ -215,6 +219,14 @@ export default function PedidoPage() {
   const [order, setOrder] =
     useState<Order | null>(null);
 
+  const [
+    pickupAddress,
+    setPickupAddress,
+  ] =
+    useState<string | null>(
+      null
+    );
+
   const [loading, setLoading] =
     useState(true);
 
@@ -258,6 +270,58 @@ export default function PedidoPage() {
   }, [
     id,
     tokenFromUrl,
+  ]);
+
+  useEffect(() => {
+    if (!storeSlug) {
+      return;
+    }
+
+    let mounted =
+      true;
+
+    async function loadFulfillment() {
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/api/store/fulfillment?store=${encodeURIComponent(
+              storeSlug
+            )}`,
+            {
+              cache:
+                "no-store",
+            }
+          );
+
+        if (
+          !mounted ||
+          !response.ok
+        ) {
+          return;
+        }
+
+        const data:
+          {
+            pickupAddress?: string | null;
+          } =
+          await response.json();
+
+        setPickupAddress(
+          data.pickupAddress ??
+          null
+        );
+      } catch {
+      }
+    }
+
+    void loadFulfillment();
+
+    return () => {
+      mounted =
+        false;
+    };
+  }, [
+    storeSlug,
   ]);
 
   async function loadOrder() {
@@ -373,8 +437,22 @@ export default function PedidoPage() {
     );
   }
 
+  const isPickup =
+    order.fulfillmentType ===
+    "PICKUP";
+
+  const visibleStatusSteps =
+    isPickup
+      ? [
+          "RECEIVED",
+          "PREPARING",
+          "READY",
+          "DELIVERED",
+        ]
+      : statusSteps;
+
   const currentStep =
-    statusSteps.indexOf(
+    visibleStatusSteps.indexOf(
       order.status
     );
 
@@ -397,18 +475,46 @@ export default function PedidoPage() {
     ];
 
   const statusLabel =
-    currentStatusCopy
-      ? isEnglish
-        ? currentStatusCopy.en
-        : currentStatusCopy.pt
-      : order.status;
+    isPickup &&
+    order.status ===
+      "READY"
+      ? text(
+          "Pronto para retirada",
+          "Ready for pickup"
+        )
+      : isPickup &&
+          order.status ===
+            "DELIVERED"
+        ? text(
+            "Retirado",
+            "Picked up"
+          )
+        : currentStatusCopy
+          ? isEnglish
+            ? currentStatusCopy.en
+            : currentStatusCopy.pt
+          : order.status;
 
   const statusMessage =
-    currentStatusCopy
-      ? isEnglish
-        ? currentStatusCopy.enMessage
-        : currentStatusCopy.ptMessage
-      : text(
+    isPickup &&
+    order.status ===
+      "READY"
+      ? text(
+          "Seu pedido está pronto para retirada.",
+          "Your order is ready for pickup."
+        )
+      : isPickup &&
+          order.status ===
+            "DELIVERED"
+        ? text(
+            "Pedido retirado. Aproveite.",
+            "Order picked up. Enjoy."
+          )
+        : currentStatusCopy
+          ? isEnglish
+            ? currentStatusCopy.enMessage
+            : currentStatusCopy.ptMessage
+          : text(
           "Status atualizado.",
           "Status updated."
         );
@@ -545,7 +651,7 @@ export default function PedidoPage() {
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-5">
 
-                  {statusSteps.map(
+                  {visibleStatusSteps.map(
                     (
                       status,
                       index
@@ -597,22 +703,34 @@ export default function PedidoPage() {
                                 : "text-muted-foreground"
                             }`}
                           >
-                            {
-                              statusCopy[
-                                status as
-                                  keyof typeof statusCopy
-                              ]
-                                ? isEnglish
-                                  ? statusCopy[
-                                      status as
-                                        keyof typeof statusCopy
-                                    ].en
-                                  : statusCopy[
-                                      status as
-                                        keyof typeof statusCopy
-                                    ].pt
-                                : status
-                            }
+                            {isPickup &&
+                            status ===
+                              "READY"
+                              ? text(
+                                  "Pronto para retirada",
+                                  "Ready for pickup"
+                                )
+                              : isPickup &&
+                                  status ===
+                                    "DELIVERED"
+                                ? text(
+                                    "Retirado",
+                                    "Picked up"
+                                  )
+                                : statusCopy[
+                                    status as
+                                      keyof typeof statusCopy
+                                  ]
+                                  ? isEnglish
+                                    ? statusCopy[
+                                        status as
+                                          keyof typeof statusCopy
+                                      ].en
+                                    : statusCopy[
+                                        status as
+                                          keyof typeof statusCopy
+                                      ].pt
+                                  : status}
                           </p>
 
                           {current &&
@@ -631,7 +749,9 @@ export default function PedidoPage() {
 
               )}
 
-            {isPendingPayment && (
+            {isPendingPayment &&
+              order.paymentTiming !==
+                "ON_PICKUP" && (
 
               <div className="mt-7 rounded-2xl border border-butter/50 bg-butter/20 p-4">
 
@@ -681,11 +801,27 @@ export default function PedidoPage() {
 
               <div>
                 <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  Entrega
+                  {isPickup
+                    ? text(
+                        "Retirada",
+                        "Pickup"
+                      )
+                    : text(
+                        "Entrega",
+                        "Delivery"
+                      )}
                 </p>
 
                 <h2 className="mt-0.5 font-display text-2xl tracking-tight">
-                  Endereço
+                  {isPickup
+                    ? text(
+                        "Local de retirada",
+                        "Pickup location"
+                      )
+                    : text(
+                        "Endereço",
+                        "Address"
+                      )}
                 </h2>
               </div>
 
@@ -697,17 +833,55 @@ export default function PedidoPage() {
                 {order.customerName}
               </p>
 
-              <p className="leading-6 text-muted-foreground">
-                {order.street},{" "}
-                {order.number}
-                <br />
-                {order.neighborhood}
-              </p>
+              {isPickup ? (
+                <>
+                  <p className="leading-6 text-muted-foreground">
+                    {pickupAddress ||
+                      text(
+                        "Retirada no estabelecimento.",
+                        "Pickup at the store."
+                      )}
+                  </p>
 
-              {order.complement && (
-                <p className="text-muted-foreground">
-                  {order.complement}
-                </p>
+                  {order.pickupEstimatedMinutes !=
+                    null && (
+                    <p className="text-muted-foreground">
+                      {text(
+                        "Tempo estimado",
+                        "Estimated time"
+                      )}:{" "}
+                      {
+                        order.pickupEstimatedMinutes
+                      }{" "}
+                      min
+                    </p>
+                  )}
+
+                  {order.paymentTiming ===
+                    "ON_PICKUP" && (
+                    <p className="font-semibold text-foreground">
+                      {text(
+                        "Pagamento na retirada",
+                        "Pay at pickup"
+                      )}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="leading-6 text-muted-foreground">
+                    {order.street},{" "}
+                    {order.number}
+                    <br />
+                    {order.neighborhood}
+                  </p>
+
+                  {order.complement && (
+                    <p className="text-muted-foreground">
+                      {order.complement}
+                    </p>
+                  )}
+                </>
               )}
 
             </div>
@@ -725,18 +899,31 @@ export default function PedidoPage() {
               <div className="flex items-center justify-between gap-4 text-sm">
 
                 <span className="text-cream/65">
-                  Taxa de entrega
+                  {isPickup
+                    ? text(
+                        "Retirada",
+                        "Pickup"
+                      )
+                    : text(
+                        "Taxa de entrega",
+                        "Delivery fee"
+                      )}
                 </span>
 
                 <span className="font-mono-brand">
-                  {formatMoney(
-                    Number(
-                      order.deliveryFee ??
-                        0
-                    ),
-                    order.paymentCurrencyCode ??
-                      "BRL"
-                  )}
+                  {isPickup
+                    ? text(
+                        "Sem taxa",
+                        "No fee"
+                      )
+                    : formatMoney(
+                        Number(
+                          order.deliveryFee ??
+                            0
+                        ),
+                        order.paymentCurrencyCode ??
+                          "BRL"
+                      )}
                 </span>
 
               </div>
