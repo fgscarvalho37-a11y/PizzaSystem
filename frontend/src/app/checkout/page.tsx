@@ -3132,136 +3132,251 @@ export default function CheckoutPage() {
 
             <section className="rounded-2xl bg-card p-4 ring-1 ring-black/5">
 
-              <h2 className="font-display text-xl tracking-tight">{text("Pagamento", "Payment")}</h2>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-
-                {isBrazil &&
-                  paymentConfig?.pixAvailable && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPaymentMethod(
-                        "PIX"
-                      )
-                    }
-                    className={
-                      paymentMethod ===
-                      "PIX"
-                        ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
-                        : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
-                    }
-                  >
-                    Pix
-                  </button>
+              <h2 className="font-display text-xl tracking-tight">
+                {text(
+                  "Pagamento",
+                  "Payment"
                 )}
+              </h2>
 
-                {paymentConfig?.cardAvailable && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPaymentMethod(
-                        "CREDIT_CARD"
-                      )
-                    }
-                    className={
-                      paymentMethod ===
-                      "CREDIT_CARD"
-                        ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
-                        : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
-                    }
-                  >
-                    {isBrazil
-                      ? text(
-                          "Cartão de crédito",
-                          "Credit card"
-                        )
-                      : text(
-                          "Cartão / Apple Pay / Google Pay",
-                          "Card / Apple Pay / Google Pay"
+              {isPickup && (
+                <div className="mt-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    {text(
+                      "Como deseja pagar?",
+                      "How would you like to pay?"
+                    )}
+                  </p>
+
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {fulfillmentConfig?.pickupOnlinePaymentEnabled && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPaymentTiming(
+                            "ONLINE"
+                          )
+                        }
+                        className={
+                          paymentTiming ===
+                          "ONLINE"
+                            ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream"
+                            : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground"
+                        }
+                      >
+                        {text(
+                          "Pagar online",
+                          "Pay online"
                         )}
-                  </button>
-                )}
-
-                {paymentConfig?.paypalAvailable && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPaymentMethod(
-                        "PAYPAL"
-                      )
-                    }
-                    className={
-                      paymentMethod ===
-                      "PAYPAL"
-                        ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
-                        : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
-                    }
-                  >
-                    PayPal
-                  </button>
-                )}
-
-                {paymentConfig?.cashAvailable && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPaymentMethod(
-                        "CASH"
-                      )
-                    }
-                    className={
-                      paymentMethod ===
-                      "CASH"
-                        ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
-                        : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
-                    }
-                  >
-                    {text(
-                      "Dinheiro",
-                      "Cash"
+                      </button>
                     )}
-                  </button>
-                )}
 
-                {isBrazil && (
-                  <span className="cursor-not-allowed rounded-full border border-border bg-secondary px-4 py-2 text-sm font-medium text-muted-foreground opacity-60">
-                    {text(
-                      "Débito indisponível",
-                      "Debit unavailable"
+                    {fulfillmentConfig?.pickupPayAtStoreEnabled && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPaymentTiming(
+                            "ON_PICKUP"
+                          )
+                        }
+                        className={
+                          paymentTiming ===
+                          "ON_PICKUP"
+                            ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream"
+                            : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground"
+                        }
+                      >
+                        {text(
+                          "Pagar na retirada",
+                          "Pay at pickup"
+                        )}
+                      </button>
                     )}
-                  </span>
-                )}
+                  </div>
+                </div>
+              )}
 
-              </div>
+              {(!isPickup ||
+                paymentTiming ===
+                  "ONLINE") ? (
+                <>
+                  <div className="mt-3 flex flex-wrap gap-2">
 
-              {paymentConfig &&
-                !paymentConfig.ready && (
-                  <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
+                    {isBrazil &&
+                      paymentConfig?.pixAvailable && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPaymentMethod(
+                              "PIX"
+                            )
+                          }
+                          className={
+                            paymentMethod ===
+                            "PIX"
+                              ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
+                              : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
+                          }
+                        >
+                          Pix
+                        </button>
+                      )}
+
+                    {paymentConfig?.cardAvailable && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPaymentMethod(
+                            "CREDIT_CARD"
+                          )
+                        }
+                        className={
+                          paymentMethod ===
+                          "CREDIT_CARD"
+                            ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
+                            : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
+                        }
+                      >
+                        {isBrazil
+                          ? text(
+                              "Cartão de crédito",
+                              "Credit card"
+                            )
+                          : text(
+                              "Cartão / Apple Pay / Google Pay",
+                              "Card / Apple Pay / Google Pay"
+                            )}
+                      </button>
+                    )}
+
+                    {paymentConfig?.paypalAvailable && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPaymentMethod(
+                            "PAYPAL"
+                          )
+                        }
+                        className={
+                          paymentMethod ===
+                          "PAYPAL"
+                            ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
+                            : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
+                        }
+                      >
+                        PayPal
+                      </button>
+                    )}
+
+                    {!isPickup &&
+                      paymentConfig?.cashAvailable && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPaymentMethod(
+                              "CASH"
+                            )
+                          }
+                          className={
+                            paymentMethod ===
+                            "CASH"
+                              ? "rounded-full border-2 border-foreground bg-foreground px-4 py-2 text-sm font-medium text-cream transition-transform active:scale-95"
+                              : "rounded-full border border-border bg-white/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-transform hover:text-foreground active:scale-95"
+                          }
+                        >
+                          {text(
+                            "Dinheiro",
+                            "Cash"
+                          )}
+                        </button>
+                      )}
+
+                    {isBrazil && !isPickup && (
+                      <span className="cursor-not-allowed rounded-full border border-border bg-secondary px-4 py-2 text-sm font-medium text-muted-foreground opacity-60">
+                        {text(
+                          "Débito indisponível",
+                          "Debit unavailable"
+                        )}
+                      </span>
+                    )}
+
+                  </div>
+
+                  {paymentConfig &&
+                    !paymentConfig.ready && (
+                      <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
+                        {text(
+                          "O estabelecimento ainda não configurou o recebimento de pagamentos online.",
+                          "This store has not configured online payments yet."
+                        )}
+                      </p>
+                    )}
+
+                  {!isBrazil &&
+                    paymentConfig?.stripeAvailable && (
+                      <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                        {text(
+                          "Cartões e carteiras compatíveis são processados pela conta Stripe da própria loja quando disponíveis.",
+                          "Cards and compatible wallets are processed by the store's own Stripe account when available."
+                        )}
+                      </p>
+                    )}
+
+                  {!isPickup &&
+                    paymentConfig?.cashAvailable && (
+                      <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                        {text(
+                          "Em dinheiro, o pedido é enviado à loja imediatamente e o pagamento fica pendente até ser recebido.",
+                          "For cash payments, the order is sent to the store immediately and remains pending until the cash is received."
+                        )}
+                      </p>
+                    )}
+                </>
+              ) : (
+                <div className="mt-3 rounded-xl border border-border bg-background p-4">
+                  <p className="text-sm font-bold text-foreground">
                     {text(
-                      "O estabelecimento ainda não configurou o recebimento de pagamentos online.",
-                      "This store has not configured online payments yet."
+                      "Pagamento na retirada",
+                      "Pay at pickup"
                     )}
                   </p>
-                )}
 
-              {!isBrazil &&
-                paymentConfig?.stripeAvailable && (
-                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     {text(
-                      "Cartões e carteiras compatíveis, como Apple Pay e Google Pay, são processados pela conta Stripe da própria loja quando disponíveis.",
-                      "Cards and compatible wallets such as Apple Pay and Google Pay are processed by the store's own Stripe account when available."
+                      "O pedido será enviado à cozinha agora e ficará com pagamento pendente até ser recebido no balcão.",
+                      "The order will be sent to the kitchen now and will remain unpaid until payment is received at pickup."
                     )}
                   </p>
-                )}
 
-              {paymentConfig?.cashAvailable && (
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  {text(
-                    "Em dinheiro, o pedido é enviado à loja imediatamente e o pagamento fica pendente até ser recebido.",
-                    "For cash payments, the order is sent to the store immediately and remains pending until the cash is received."
-                  )}
-                </p>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-muted-foreground">
+                    {fulfillmentConfig?.pickupCashEnabled && (
+                      <span className="rounded-full border border-border px-3 py-1">
+                        {text(
+                          "Dinheiro",
+                          "Cash"
+                        )}
+                      </span>
+                    )}
+
+                    {fulfillmentConfig?.pickupCardEnabled && (
+                      <span className="rounded-full border border-border px-3 py-1">
+                        {text(
+                          "Cartão",
+                          "Card"
+                        )}
+                      </span>
+                    )}
+
+                    {fulfillmentConfig?.pickupOtherEnabled && (
+                      <span className="rounded-full border border-border px-3 py-1">
+                        {text(
+                          "Outro",
+                          "Other"
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </div>
               )}
 
             </section>
