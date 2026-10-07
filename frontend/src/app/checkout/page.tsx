@@ -3491,25 +3491,48 @@ export default function CheckoutPage() {
 
                 <div className="flex justify-between">
 
-                  <dt className="text-cream/70">{text("Entrega", "Delivery")}</dt>
+                  <dt className="text-cream/70">
+                    {isPickup
+                      ? text(
+                          "Retirada",
+                          "Pickup"
+                        )
+                      : text(
+                          "Entrega",
+                          "Delivery"
+                        )}
+                  </dt>
 
                   <dd className="text-right font-mono-brand">
-                    {!street ||
-                    !number ||
-                    !city ||
-                    !neighborhood
-                      ? "—"
-                      : deliveryQuoteLoading
-                        ? text("Calculando...", "Calculating...")
-                        : deliveryQuote
-                          ? deliveryQuote.freeDelivery
-                            ? text("Grátis", "Free")
-                            : formatMoney(
-                                deliveryFee
-                              )
-                          : "—"}
+                    {isPickup
+                      ? text(
+                          "No local",
+                          "At store"
+                        )
+                      : !street ||
+                          !number ||
+                          !city ||
+                          (isBrazil &&
+                            !neighborhood)
+                        ? "—"
+                        : deliveryQuoteLoading
+                          ? text(
+                              "Calculando...",
+                              "Calculating..."
+                            )
+                          : deliveryQuote
+                            ? deliveryQuote.freeDelivery
+                              ? text(
+                                  "Grátis",
+                                  "Free"
+                                )
+                              : formatMoney(
+                                  deliveryFee
+                                )
+                            : "—"}
 
-                    {deliveryQuote &&
+                    {!isPickup &&
+                      deliveryQuote &&
                       deliveryQuote.distanceKm !=
                         null && (
                         <span className="mt-0.5 block text-[10px] text-cream/45">
@@ -3529,6 +3552,49 @@ export default function CheckoutPage() {
                   </dd>
 
                 </div>
+
+                {isPickup && (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-cream/70">
+                      {text(
+                        "Pagamento",
+                        "Payment"
+                      )}
+                    </dt>
+
+                    <dd className="text-right font-mono-brand">
+                      {paymentTiming ===
+                      "ON_PICKUP"
+                        ? text(
+                            "Na retirada",
+                            "At pickup"
+                          )
+                        : text(
+                            "Online",
+                            "Online"
+                          )}
+                    </dd>
+                  </div>
+                )}
+
+                {isPickup && (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-cream/70">
+                      {text(
+                        "Tempo estimado",
+                        "Estimated time"
+                      )}
+                    </dt>
+
+                    <dd className="text-right font-mono-brand">
+                      {
+                        fulfillmentConfig?.pickupPreparationMinutes ??
+                        30
+                      }{" "}
+                      min
+                    </dd>
+                  </div>
+                )}
 
                 {appliedCoupon && (
                   <div className="flex justify-between">
@@ -3566,19 +3632,40 @@ export default function CheckoutPage() {
                 type="submit"
                 disabled={
                   submitting ||
-                  deliveryQuoteLoading ||
-                  !street ||
-                  !number ||
-                  !city ||
-                  (isBrazil &&
-                    !neighborhood) ||
-                  !postalCodeValid ||
-                  (regionRequired &&
-                    !state.trim()) ||
-                  !deliveryQuote ||
-                  !paymentConfig?.ready ||
-                  !paymentMethod ||
-                  !storeStatus?.open
+                  !storeStatus?.open ||
+                  !customerName.trim() ||
+                  !customerPhone.trim() ||
+                  (
+                    !isPickup &&
+                    (
+                      deliveryQuoteLoading ||
+                      !street ||
+                      !number ||
+                      !city ||
+                      (isBrazil &&
+                        !neighborhood) ||
+                      !postalCodeValid ||
+                      (regionRequired &&
+                        !state.trim()) ||
+                      !deliveryQuote
+                    )
+                  ) ||
+                  (
+                    (!isPickup ||
+                      paymentTiming ===
+                        "ONLINE") &&
+                    (
+                      !paymentConfig?.ready ||
+                      !paymentMethod
+                    )
+                  ) ||
+                  (
+                    isPickup &&
+                    paymentTiming ===
+                      "ON_PICKUP" &&
+                    !fulfillmentConfig
+                      ?.pickupPayAtStoreEnabled
+                  )
                 }
                 className="mt-5 w-full rounded-xl bg-primary px-5 py-3.5 text-sm font-bold text-primary-foreground transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -3587,10 +3674,17 @@ export default function CheckoutPage() {
                     "PIX"
                     ? text("Gerando Pix...", "Generating Pix...")
                     : text("Processando...", "Processing...")
-                  : paymentMethod ===
-                    "PIX"
-                    ? text("Gerar Pix e continuar", "Generate Pix and continue")
-                    : text("Confirmar pedido", "Place order")}
+                  : isPickup &&
+                      paymentTiming ===
+                        "ON_PICKUP"
+                    ? text(
+                        "Confirmar retirada",
+                        "Place pickup order"
+                      )
+                    : paymentMethod ===
+                        "PIX"
+                      ? text("Gerar Pix e continuar", "Generate Pix and continue")
+                      : text("Confirmar pedido", "Place order")}
               </button>
 
               <button
