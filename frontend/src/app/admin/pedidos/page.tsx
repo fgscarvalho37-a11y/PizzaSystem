@@ -36,7 +36,16 @@ type PaymentMethod =
   | "CREDIT_CARD"
   | "DEBIT_CARD"
   | "PAYPAL"
-  | "CASH";
+  | "CASH"
+  | "OTHER";
+
+type FulfillmentType =
+  | "DELIVERY"
+  | "PICKUP";
+
+type PaymentTiming =
+  | "ONLINE"
+  | "ON_PICKUP";
 
 type Product = {
   id: number;
@@ -73,7 +82,13 @@ type Order = {
 
   status: OrderStatus;
   paymentStatus: PaymentStatus;
-  paymentMethod: PaymentMethod;
+  paymentMethod: PaymentMethod | null;
+  fulfillmentType?: FulfillmentType;
+  paymentTiming?: PaymentTiming;
+  pickupPaymentMethod?: "CASH" | "CARD" | "OTHER" | null;
+  pickupEstimatedMinutes?: number | null;
+  paymentPaidAt?: string | null;
+  paymentConfirmedBy?: string | null;
 
   paymentExternalId?: string | null;
 
@@ -284,8 +299,11 @@ function paymentStatusClass(
 }
 
 function paymentMethodName(
-  method: PaymentMethod
+  method: PaymentMethod | null
 ) {
+  if (!method) {
+    return "A definir";
+  }
   switch (method) {
     case "PIX":
       return "Pix";
@@ -301,6 +319,9 @@ function paymentMethodName(
 
     case "CASH":
       return "Dinheiro";
+
+    case "OTHER":
+      return "Outro";
 
     default:
       return method;
@@ -703,6 +724,61 @@ export default function AdminPedidosPage() {
           : "Não foi possível confirmar o pagamento em dinheiro."
       );
 
+    } finally {
+      setConfirmingCashId(
+        null
+      );
+    }
+  }
+
+  async function confirmPickupPayment(
+    orderId: number,
+    method:
+      "CASH" |
+      "CARD" |
+      "OTHER"
+  ) {
+    try {
+      setConfirmingCashId(
+        orderId
+      );
+      setErrorMessage(
+        ""
+      );
+
+      const response =
+        await adminFetch(
+          `${API_URL}/api/admin/pickup-payments/${orderId}/confirm?method=${method}`,
+          {
+            method:
+              "POST",
+          }
+        );
+
+      if (!response.ok) {
+        const body =
+          await response
+            .json()
+            .catch(
+              () =>
+                null
+            );
+
+        throw new Error(
+          body?.message ??
+            "Não foi possível marcar o pedido como pago."
+        );
+      }
+
+      await loadOrders();
+    } catch (
+      caught
+    ) {
+      setErrorMessage(
+        caught instanceof Error
+          ? caught.message
+          : "Não foi possível marcar o pedido como pago."
+      );
     } finally {
       setConfirmingCashId(
         null
@@ -1317,6 +1393,25 @@ export default function AdminPedidosPage() {
 
                         <div className="flex flex-wrap items-center gap-2">
 
+                          <span className={
+                            order.fulfillmentType ===
+                            "PICKUP"
+                              ? "rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700"
+                              : "rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700"
+                          }>
+                            {order.fulfillmentType ===
+                            "PICKUP"
+                              ? "RETIRADA"
+                              : "ENTREGA"}
+                          </span>
+
+                          {order.paymentTiming ===
+                            "ON_PICKUP" && (
+                            <span className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-700">
+                              PAGAR NO BALCÃO
+                            </span>
+                          )}
+
                           <span
                             className={`rounded-full border px-3 py-1.5 text-xs font-bold ${paymentStatusClass(
                               order.paymentStatus
@@ -1332,9 +1427,14 @@ export default function AdminPedidosPage() {
                               order.status
                             )}`}
                           >
-                            {orderStatusName(
-                              order.status
-                            )}
+                            {order.fulfillmentType ===
+                              "PICKUP" &&
+                            order.status ===
+                              "DELIVERED"
+                              ? "Retirado"
+                              : orderStatusName(
+                                  order.status
+                                )}
                           </span>
 
                           <div className="ml-0 min-w-28 sm:ml-3 sm:text-right">
@@ -1636,9 +1736,12 @@ export default function AdminPedidosPage() {
                             <div className="mt-3 rounded-xl border border-border bg-card p-4">
 
                               <p className="font-bold text-foreground">
-                                {paymentMethodName(
-                                  order.paymentMethod
-                                )}
+                                {order.paymentTiming ===
+                                "ON_PICKUP"
+                                  ? "Pagamento na retirada"
+                                  : paymentMethodName(
+                                      order.paymentMethod
+                                    )}
                               </p>
 
                               <span
@@ -1651,8 +1754,61 @@ export default function AdminPedidosPage() {
                                 )}
                               </span>
 
+                              {order.fulfillmentType ===
+                                "PICKUP" &&
+                                order.paymentTiming ===
+                                  "ON_PICKUP" &&
+                                order.paymentStatus ===
+                                  "PENDING" && (
+                                  <div className="mt-3">
+                                    <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                                      Marcar como pago
+                                    </p>
+
+                                    <div className="flex flex-wrap gap-2">
+                                      {[
+                                        ["CASH", "Dinheiro"],
+                                        ["CARD", "Cartão"],
+                                        ["OTHER", "Outro"],
+                                      ].map(
+                                        (
+                                          [
+                                            method,
+                                            label,
+                                          ]
+                                        ) => (
+                                          <button
+                                            key={
+                                              method
+                                            }
+                                            type="button"
+                                            onClick={() =>
+                                              void confirmPickupPayment(
+                                                order.id,
+                                                method as
+                                                  | "CASH"
+                                                  | "CARD"
+                                                  | "OTHER"
+                                              )
+                                            }
+                                            disabled={
+                                              confirmingCashId ===
+                                              order.id
+                                            }
+                                            className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground disabled:opacity-50"
+                                          >
+                                            {label}
+                                          </button>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
                               {order.paymentMethod ===
                                 "CASH" &&
+                                order.fulfillmentType !==
+                                  "PICKUP" &&
                                 order.paymentStatus ===
                                   "PENDING" && (
                                   <button
