@@ -29,7 +29,10 @@ type PaymentStatus =
 type PaymentMethod =
   | "PIX"
   | "CREDIT_CARD"
-  | "DEBIT_CARD";
+  | "DEBIT_CARD"
+  | "PAYPAL"
+  | "CASH"
+  | "OTHER";
 
 type Product = {
   id: number;
@@ -68,7 +71,9 @@ type Order = {
   total: number;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
-  paymentMethod: PaymentMethod;
+  paymentMethod: PaymentMethod | null;
+  fulfillmentType?: "DELIVERY" | "PICKUP";
+  paymentTiming?: "ONLINE" | "ON_PICKUP";
   createdAt: string;
 };
 
@@ -136,8 +141,11 @@ function paymentStatusName(
 }
 
 function paymentMethodName(
-  method: PaymentMethod
+  method: PaymentMethod | null
 ) {
+  if (!method) {
+    return "A definir";
+  }
   switch (method) {
     case "PIX":
       return "Pix";
@@ -145,6 +153,12 @@ function paymentMethodName(
       return "Cartão de crédito";
     case "DEBIT_CARD":
       return "Cartão de débito";
+    case "PAYPAL":
+      return "PayPal";
+    case "CASH":
+      return "Dinheiro";
+    case "OTHER":
+      return "Outro";
     default:
       return method;
   }
@@ -331,6 +345,16 @@ export default function AdminHistoricoPage() {
     );
 
   const [
+    fulfillmentFilter,
+    setFulfillmentFilter,
+  ] =
+    useState<
+      "ALL" |
+      "DELIVERY" |
+      "PICKUP"
+    >("ALL");
+
+  const [
     expandedId,
     setExpandedId,
   ] =
@@ -488,6 +512,18 @@ export default function AdminHistoricoPage() {
             return false;
           }
 
+          if (
+            fulfillmentFilter !==
+              "ALL" &&
+            (
+              order.fulfillmentType ??
+              "DELIVERY"
+            ) !==
+              fulfillmentFilter
+          ) {
+            return false;
+          }
+
           if (!normalized) {
             return true;
           }
@@ -532,6 +568,7 @@ export default function AdminHistoricoPage() {
       orders,
       search,
       filter,
+      fulfillmentFilter,
     ]);
 
   const deliveredCount =
@@ -680,7 +717,7 @@ export default function AdminHistoricoPage() {
 
         <section className="mt-6 rounded-2xl border border-border bg-card p-4">
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
 
             <div>
               <label
@@ -753,6 +790,44 @@ export default function AdminHistoricoPage() {
               </select>
             </div>
 
+            <div>
+              <label
+                htmlFor="fulfillment-filter"
+                className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
+              >
+                Modalidade
+              </label>
+
+              <select
+                id="fulfillment-filter"
+                value={
+                  fulfillmentFilter
+                }
+                onChange={(
+                  event
+                ) =>
+                  setFulfillmentFilter(
+                    event.target
+                      .value as
+                      | "ALL"
+                      | "DELIVERY"
+                      | "PICKUP"
+                  )
+                }
+                className="h-11 w-full rounded-xl border border-input bg-background px-4 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+              >
+                <option value="ALL">
+                  Todos
+                </option>
+                <option value="DELIVERY">
+                  Entrega
+                </option>
+                <option value="PICKUP">
+                  Retirada
+                </option>
+              </select>
+            </div>
+
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
@@ -768,12 +843,17 @@ export default function AdminHistoricoPage() {
 
             {(search ||
               filter !==
+                "ALL" ||
+              fulfillmentFilter !==
                 "ALL") && (
               <button
                 type="button"
                 onClick={() => {
                   setSearch("");
                   setFilter(
+                    "ALL"
+                  );
+                  setFulfillmentFilter(
                     "ALL"
                   );
                 }}
@@ -895,14 +975,31 @@ export default function AdminHistoricoPage() {
 
                         <div className="flex flex-wrap items-center gap-2">
 
+                          <span className={
+                            order.fulfillmentType ===
+                            "PICKUP"
+                              ? "rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700"
+                              : "rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700"
+                          }>
+                            {order.fulfillmentType ===
+                            "PICKUP"
+                              ? "RETIRADA"
+                              : "ENTREGA"}
+                          </span>
+
                           <span
                             className={`rounded-full border px-3 py-1.5 text-xs font-bold ${orderStatusClass(
                               order.status
                             )}`}
                           >
-                            {orderStatusName(
-                              order.status
-                            )}
+                            {order.fulfillmentType ===
+                              "PICKUP" &&
+                            order.status ===
+                              "DELIVERED"
+                              ? "Retirado"
+                              : orderStatusName(
+                                  order.status
+                                )}
                           </span>
 
                           <span
