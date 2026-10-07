@@ -30,6 +30,16 @@ type ReportData = {
     DEBIT_CARD?: number;
   };
 
+  ordersByFulfillmentType?: {
+    DELIVERY?: number;
+    PICKUP?: number;
+  };
+
+  ordersByPaymentTiming?: {
+    ONLINE?: number;
+    ON_PICKUP?: number;
+  };
+
   ordersByStatus: {
     PENDING_PAYMENT?: number;
     RECEIVED?: number;
@@ -398,6 +408,26 @@ export default function AdminRelatoriosPage() {
       ?.ordersByStatus
       ?.CANCELLED ?? 0;
 
+  const deliveryCount =
+    report
+      ?.ordersByFulfillmentType
+      ?.DELIVERY ?? 0;
+
+  const pickupCount =
+    report
+      ?.ordersByFulfillmentType
+      ?.PICKUP ?? 0;
+
+  const onlineCount =
+    report
+      ?.ordersByPaymentTiming
+      ?.ONLINE ?? 0;
+
+  const payAtPickupCount =
+    report
+      ?.ordersByPaymentTiming
+      ?.ON_PICKUP ?? 0;
+
   return (
     <main className="min-h-screen bg-background">
 
@@ -718,6 +748,58 @@ export default function AdminRelatoriosPage() {
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
                   Pedidos concluídos no período.
                 </p>
+
+              </div>
+
+            </section>
+
+            <section className="mt-6 rounded-2xl border border-border bg-card p-5">
+
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                Modalidades
+              </p>
+
+              <h2 className="mt-1 text-xl font-bold text-foreground">
+                Entrega, retirada e momento do pagamento
+              </h2>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
+                    Entrega
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-blue-800">
+                    {deliveryCount}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
+                    Retirada
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-amber-800">
+                    {pickupCount}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
+                    Pagamento online
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-emerald-800">
+                    {onlineCount}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-orange-700">
+                    Pago na retirada
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-orange-800">
+                    {payAtPickupCount}
+                  </p>
+                </div>
 
               </div>
 
