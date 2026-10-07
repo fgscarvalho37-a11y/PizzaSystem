@@ -578,6 +578,18 @@ export default function AdminPedidosPage() {
       number | null
     >(null);
 
+  const [
+    pickupConfig,
+    setPickupConfig,
+  ] =
+    useState<{
+      pickupCashEnabled: boolean;
+      pickupCardEnabled: boolean;
+      pickupOtherEnabled: boolean;
+    } | null>(
+      null
+    );
+
   /* =========================
      CARREGAR PEDIDOS
   ========================= */
@@ -668,6 +680,31 @@ export default function AdminPedidosPage() {
 
   useEffect(() => {
     loadOrders();
+
+    void adminFetch(
+      `${API_URL}/api/store/fulfillment`,
+      {
+        cache:
+          "no-store",
+      }
+    )
+      .then(
+        async (
+          response
+        ) => {
+          if (
+            response.ok
+          ) {
+            setPickupConfig(
+              await response.json()
+            );
+          }
+        }
+      )
+      .catch(
+        () => {
+        }
+      );
   }, []);
 
   async function confirmCashPayment(
@@ -1767,16 +1804,45 @@ export default function AdminPedidosPage() {
 
                                     <div className="flex flex-wrap gap-2">
                                       {[
-                                        ["CASH", "Dinheiro"],
-                                        ["CARD", "Cartão"],
-                                        ["OTHER", "Outro"],
-                                      ].map(
+                                        {
+                                          method: "CASH" as const,
+                                          label: "Dinheiro",
+                                          enabled:
+                                            pickupConfig?.pickupCashEnabled ??
+                                            true,
+                                        },
+                                        {
+                                          method: "CARD" as const,
+                                          label: "Cartão",
+                                          enabled:
+                                            pickupConfig?.pickupCardEnabled ??
+                                            true,
+                                        },
+                                        {
+                                          method: "OTHER" as const,
+                                          label: "Outro",
+                                          enabled:
+                                            pickupConfig?.pickupOtherEnabled ??
+                                            false,
+                                        },
+                                      ]
+                                        .filter(
+                                          (
+                                            option
+                                          ) =>
+                                            option.enabled
+                                        )
+                                        .map(
                                         (
-                                          [
-                                            method,
-                                            label,
-                                          ]
+                                          option
                                         ) => (
+                                          (() => {
+                                            const method =
+                                              option.method;
+                                            const label =
+                                              option.label;
+
+                                            return (
                                           <button
                                             key={
                                               method
@@ -1799,6 +1865,8 @@ export default function AdminPedidosPage() {
                                           >
                                             {label}
                                           </button>
+                                            );
+                                          })()
                                         )
                                       )}
                                     </div>
