@@ -1,9 +1,11 @@
 package com.pizzasystem.backend.service;
 
+import com.pizzasystem.backend.entity.FulfillmentType;
 import com.pizzasystem.backend.entity.Order;
 import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentMethod;
 import com.pizzasystem.backend.entity.PaymentStatus;
+import com.pizzasystem.backend.entity.PaymentTiming;
 
 import com.pizzasystem.backend.repository.OrderRepository;
 
@@ -320,6 +322,52 @@ public class CashService {
                 cancelledOrders
         );
 
+        Map<String, Long> ordersByFulfillmentType =
+                new LinkedHashMap<>();
+
+        for (
+                FulfillmentType type :
+                        FulfillmentType.values()
+        ) {
+            long count =
+                    approvedOrders
+                            .stream()
+                            .filter(
+                                    order ->
+                                            order.getFulfillmentType() ==
+                                                    type
+                            )
+                            .count();
+
+            ordersByFulfillmentType.put(
+                    type.name(),
+                    count
+            );
+        }
+
+        Map<String, Long> ordersByPaymentTiming =
+                new LinkedHashMap<>();
+
+        for (
+                PaymentTiming timing :
+                        PaymentTiming.values()
+        ) {
+            long count =
+                    approvedOrders
+                            .stream()
+                            .filter(
+                                    order ->
+                                            order.getPaymentTiming() ==
+                                                    timing
+                            )
+                            .count();
+
+            ordersByPaymentTiming.put(
+                    timing.name(),
+                    count
+            );
+        }
+
         result.put(
                 "ordersByPaymentMethod",
                 ordersByPaymentMethod
@@ -328,6 +376,16 @@ public class CashService {
         result.put(
                 "revenueByPaymentMethod",
                 revenueByPaymentMethod
+        );
+
+        result.put(
+                "ordersByFulfillmentType",
+                ordersByFulfillmentType
+        );
+
+        result.put(
+                "ordersByPaymentTiming",
+                ordersByPaymentTiming
         );
 
         return result;
