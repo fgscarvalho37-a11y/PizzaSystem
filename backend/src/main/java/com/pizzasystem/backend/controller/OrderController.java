@@ -302,6 +302,18 @@ public class OrderController {
         }
 
         if (
+                pickup &&
+                (
+                        store.getDeliveryOriginAddress() == null ||
+                        store.getDeliveryOriginAddress().isBlank()
+                )
+        ) {
+            throw new IllegalArgumentException(
+                    "O endereço de retirada ainda não foi configurado pela loja"
+            );
+        }
+
+        if (
                 !pickup &&
                 !store.isDeliveryEnabled()
         ) {
