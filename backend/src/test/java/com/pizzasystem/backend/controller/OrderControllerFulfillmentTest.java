@@ -30,6 +30,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -48,6 +49,7 @@ class OrderControllerFulfillmentTest {
     private DeliveryQuoteService deliveryQuoteService;
     private StoreStatusService storeStatusService;
     private PublicStoreService publicStoreService;
+    private CurrentStoreService currentStoreService;
     private OrderController controller;
     private Store store;
 
@@ -71,7 +73,7 @@ class OrderControllerFulfillmentTest {
                 mock(AddonRepository.class);
         publicStoreService =
                 mock(PublicStoreService.class);
-        CurrentStoreService currentStoreService =
+        currentStoreService =
                 mock(CurrentStoreService.class);
         CustomerRepository customerRepository =
                 mock(CustomerRepository.class);
@@ -166,6 +168,13 @@ class OrderControllerFulfillmentTest {
                         )
         ).thenReturn(
                 store
+        );
+
+        when(
+                currentStoreService
+                        .getCurrentStoreId()
+        ).thenReturn(
+                9L
         );
 
         Product product =
@@ -298,6 +307,142 @@ class OrderControllerFulfillmentTest {
 
         verifyNoInteractions(
                 deliveryQuoteService
+        );
+    }
+
+    @Test
+    void pickupOnlineSkipsDeliveryAndWaitsForPayment() {
+        OrderRequest request =
+                baseRequest();
+
+        request.setFulfillmentType(
+                FulfillmentType.PICKUP
+        );
+        request.setPaymentTiming(
+                PaymentTiming.ONLINE
+        );
+        request.setPaymentMethod(
+                PaymentMethod.PIX
+        );
+
+        HttpServletRequest servletRequest =
+                mock(
+                        HttpServletRequest.class
+                );
+
+        when(
+                servletRequest.getSession(
+                        false
+                )
+        ).thenReturn(
+                null
+        );
+
+        Order order =
+                controller.create(
+                        request,
+                        servletRequest
+                );
+
+        assertEquals(
+                FulfillmentType.PICKUP,
+                order.getFulfillmentType()
+        );
+        assertEquals(
+                PaymentTiming.ONLINE,
+                order.getPaymentTiming()
+        );
+        assertEquals(
+                OrderStatus.PENDING_PAYMENT,
+                order.getStatus()
+        );
+        assertEquals(
+                PaymentStatus.PENDING,
+                order.getPaymentStatus()
+        );
+        assertEquals(
+                PaymentMethod.PIX,
+                order.getPaymentMethod()
+        );
+        assertEquals(
+                new BigDecimal(
+                        "0.00"
+                ),
+                order.getDeliveryFee()
+        );
+
+        verifyNoInteractions(
+                deliveryQuoteService
+        );
+    }
+
+    @Test
+    void pickupCannotEnterOutForDelivery() {
+        Order order =
+                new Order();
+
+        order.setFulfillmentType(
+                FulfillmentType.PICKUP
+        );
+        order.setStatus(
+                OrderStatus.READY
+        );
+
+        when(
+                orderRepository
+                        .findByIdAndStoreId(
+                                15L,
+                                9L
+                        )
+        ).thenReturn(
+                Optional.of(
+                        order
+                )
+        );
+
+        assertThrows(
+                ResponseStatusException.class,
+                () ->
+                        controller.changeStatus(
+                                15L,
+                                OrderStatus.OUT_FOR_DELIVERY
+                        )
+        );
+    }
+
+    @Test
+    void pickupCanFinishUsingDeliveredAsPickedUp() {
+        Order order =
+                new Order();
+
+        order.setFulfillmentType(
+                FulfillmentType.PICKUP
+        );
+        order.setStatus(
+                OrderStatus.READY
+        );
+
+        when(
+                orderRepository
+                        .findByIdAndStoreId(
+                                16L,
+                                9L
+                        )
+        ).thenReturn(
+                Optional.of(
+                        order
+                )
+        );
+
+        Order updated =
+                controller.changeStatus(
+                        16L,
+                        OrderStatus.DELIVERED
+                );
+
+        assertEquals(
+                OrderStatus.DELIVERED,
+                updated.getStatus()
         );
     }
 
