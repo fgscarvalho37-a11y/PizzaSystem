@@ -2527,8 +2527,100 @@ export default function CheckoutPage() {
 
             </section>
 
-            {/* ENTREGA */}
+            {/* MODALIDADE */}
 
+            {fulfillmentConfig && (
+              <section className="rounded-2xl bg-card p-4 ring-1 ring-black/5">
+
+                <h2 className="font-display text-xl tracking-tight">
+                  {text(
+                    "Como deseja receber seu pedido?",
+                    "How would you like to receive your order?"
+                  )}
+                </h2>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+
+                  {fulfillmentConfig.deliveryEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFulfillmentType(
+                          "DELIVERY"
+                        );
+                        setPaymentTiming(
+                          "ONLINE"
+                        );
+                      }}
+                      className={
+                        fulfillmentType ===
+                        "DELIVERY"
+                          ? "rounded-2xl border-2 border-foreground bg-foreground p-4 text-left text-cream"
+                          : "rounded-2xl border border-border bg-background p-4 text-left text-foreground transition hover:border-foreground/40"
+                      }
+                    >
+                      <span className="block text-sm font-bold">
+                        {text(
+                          "Entrega",
+                          "Delivery"
+                        )}
+                      </span>
+
+                      <span className="mt-1 block text-xs opacity-70">
+                        {text(
+                          "Receba no seu endereço.",
+                          "Delivered to your address."
+                        )}
+                      </span>
+                    </button>
+                  )}
+
+                  {fulfillmentConfig.pickupEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFulfillmentType(
+                          "PICKUP"
+                        );
+
+                        setPaymentTiming(
+                          fulfillmentConfig
+                            .pickupOnlinePaymentEnabled
+                            ? "ONLINE"
+                            : "ON_PICKUP"
+                        );
+                      }}
+                      className={
+                        fulfillmentType ===
+                        "PICKUP"
+                          ? "rounded-2xl border-2 border-foreground bg-foreground p-4 text-left text-cream"
+                          : "rounded-2xl border border-border bg-background p-4 text-left text-foreground transition hover:border-foreground/40"
+                      }
+                    >
+                      <span className="block text-sm font-bold">
+                        {text(
+                          "Retirada",
+                          "Pickup"
+                        )}
+                      </span>
+
+                      <span className="mt-1 block text-xs opacity-70">
+                        {text(
+                          "Retire no estabelecimento.",
+                          "Pick up at the store."
+                        )}
+                      </span>
+                    </button>
+                  )}
+
+                </div>
+
+              </section>
+            )}
+
+            {/* ENTREGA / RETIRADA */}
+
+            {fulfillmentType === "DELIVERY" ? (
             <section className="rounded-2xl bg-card p-4 ring-1 ring-black/5">
 
               <h2 className="font-display text-xl tracking-tight">{text("Entrega", "Delivery")}</h2>
@@ -2929,6 +3021,112 @@ export default function CheckoutPage() {
               </div>
 
             </section>
+            ) : (
+              <section className="rounded-2xl bg-card p-4 ring-1 ring-black/5">
+
+                <h2 className="font-display text-xl tracking-tight">
+                  {text(
+                    "Retirada no local",
+                    "Pickup"
+                  )}
+                </h2>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {text(
+                    "Informe seus dados para identificarmos o pedido.",
+                    "Enter your contact details so we can identify your order."
+                  )}
+                </p>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <input
+                    className={
+                      inputClass
+                    }
+                    placeholder={text(
+                      "Seu nome",
+                      "Your name"
+                    )}
+                    required
+                    value={
+                      customerName
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setCustomerName(
+                        event.target.value
+                      )
+                    }
+                  />
+
+                  <input
+                    className={
+                      inputClass
+                    }
+                    placeholder={text(
+                      "Telefone / WhatsApp",
+                      "Phone / WhatsApp"
+                    )}
+                    required
+                    value={
+                      customerPhone
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setCustomerPhone(
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="mt-4 rounded-xl border border-border bg-background p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    {text(
+                      "Retirada em",
+                      "Pickup at"
+                    )}
+                  </p>
+
+                  <p className="mt-1 font-bold text-foreground">
+                    {fulfillmentConfig?.storeName ??
+                      storeName}
+                  </p>
+
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {fulfillmentConfig?.pickupAddress ||
+                      text(
+                        "Endereço da loja ainda não configurado.",
+                        "Store pickup address is not configured yet."
+                      )}
+                  </p>
+
+                  {fulfillmentConfig?.pickupInstructions && (
+                    <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                      {
+                        fulfillmentConfig
+                          .pickupInstructions
+                      }
+                    </p>
+                  )}
+
+                  <p className="mt-3 text-xs font-semibold text-foreground">
+                    {text(
+                      "Tempo estimado",
+                      "Estimated time"
+                    )}:{" "}
+                    {
+                      fulfillmentConfig?.pickupPreparationMinutes ??
+                      30
+                    }{" "}
+                    min
+                  </p>
+                </div>
+
+              </section>
+            )}
 
             {/* PAGAMENTO */}
 
