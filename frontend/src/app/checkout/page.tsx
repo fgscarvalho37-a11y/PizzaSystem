@@ -82,6 +82,31 @@ type StoreProfileIntl = {
   currencyCode: string;
 };
 
+type FulfillmentType =
+  | "DELIVERY"
+  | "PICKUP";
+
+type PaymentTiming =
+  | "ONLINE"
+  | "ON_PICKUP";
+
+type FulfillmentConfig = {
+  deliveryEnabled: boolean;
+  pickupEnabled: boolean;
+  pickupOnlinePaymentEnabled: boolean;
+  pickupPayAtStoreEnabled: boolean;
+  pickupCashEnabled: boolean;
+  pickupCardEnabled: boolean;
+  pickupOtherEnabled: boolean;
+  pickupInstructions: string | null;
+  pickupPreparationMinutes: number;
+  pickupAddress: string | null;
+  storeName: string;
+  countryCode: string;
+  defaultLocale: string;
+  currencyCode: string;
+};
+
 type PaymentConfig = {
   provider:
     | "MERCADO_PAGO"
@@ -249,6 +274,33 @@ export default function CheckoutPage() {
   ] = useState<
     PaymentConfig | null
   >(null);
+
+  const [
+    fulfillmentConfig,
+    setFulfillmentConfig,
+  ] = useState<
+    FulfillmentConfig | null
+  >(null);
+
+  const [
+    fulfillmentType,
+    setFulfillmentType,
+  ] =
+    useState<FulfillmentType>(
+      "DELIVERY"
+    );
+
+  const [
+    paymentTiming,
+    setPaymentTiming,
+  ] =
+    useState<PaymentTiming>(
+      "ONLINE"
+    );
+
+  const isPickup =
+    fulfillmentType ===
+    "PICKUP";
 
   function formatMoney(
     value: number
@@ -490,6 +542,21 @@ export default function CheckoutPage() {
     paymentMethod,
   ]);
 
+  useEffect(() => {
+    if (
+      isPickup &&
+      paymentTiming ===
+        "ON_PICKUP"
+    ) {
+      setPaymentMethod(
+        ""
+      );
+    }
+  }, [
+    isPickup,
+    paymentTiming,
+  ]);
+
   // =========================
   // CARRINHO
   // =========================
@@ -596,6 +663,7 @@ export default function CheckoutPage() {
           statusResponse,
           profileResponse,
           paymentConfigResponse,
+          fulfillmentResponse,
         ] =
           await Promise.all([
             fetch(
@@ -618,6 +686,15 @@ export default function CheckoutPage() {
             ),
             fetch(
               `${API_URL}/api/payments/config?store=${encodeURIComponent(
+                storeSlug
+              )}`,
+              {
+                cache:
+                  "no-store",
+              }
+            ),
+            fetch(
+              `${API_URL}/api/store/fulfillment?store=${encodeURIComponent(
                 storeSlug
               )}`,
               {
@@ -651,6 +728,12 @@ export default function CheckoutPage() {
             ? await paymentConfigResponse.json()
             : null;
 
+        const fulfillmentData:
+          FulfillmentConfig | null =
+          fulfillmentResponse.ok
+            ? await fulfillmentResponse.json()
+            : null;
+
         if (!mounted) {
           return;
         }
@@ -666,6 +749,20 @@ export default function CheckoutPage() {
         setPaymentConfig(
           paymentConfigData
         );
+
+        setFulfillmentConfig(
+          fulfillmentData
+        );
+
+        if (
+          fulfillmentData &&
+          !fulfillmentData.deliveryEnabled &&
+          fulfillmentData.pickupEnabled
+        ) {
+          setFulfillmentType(
+            "PICKUP"
+          );
+        }
 
         if (
           profileData?.defaultLocale
@@ -868,11 +965,13 @@ export default function CheckoutPage() {
     );
 
   const deliveryFee =
-    deliveryQuote
-      ? Number(
-          deliveryQuote.fee
-        )
-      : 0;
+    isPickup
+      ? 0
+      : deliveryQuote
+        ? Number(
+            deliveryQuote.fee
+          )
+        : 0;
 
   const totalBeforeDiscount =
     subtotal +
@@ -1018,6 +1117,14 @@ export default function CheckoutPage() {
       ""
     );
     setDeliveryQuote(null);
+
+    if (isPickup) {
+      setDeliveryQuoteLoading(
+        false
+      );
+
+      return;
+    }
 
     if (
       !postalCodeValid ||
@@ -1476,66 +1583,71 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (
-      !city
-    ) {
-      setCheckoutError(
-        text("Informe a cidade para continuar.", "Enter the city to continue.")
-      );
+    if (!isPickup) {
+      if (
+        !city
+      ) {
+        setCheckoutError(
+          text("Informe a cidade para continuar.", "Enter the city to continue.")
+        );
 
-      return;
+        return;
+      }
+
+      if (
+        isBrazil &&
+        !neighborhood
+      ) {
+        setCheckoutError(
+          text("Informe o bairro para continuar.", "Enter the neighborhood to continue.")
+        );
+
+        return;
+      }
+
+      if (
+        !postalCodeValid
+      ) {
+        setCheckoutError(
+          text(
+            "Informe um código postal válido.",
+            "Enter a valid postal code."
+          )
+        );
+
+        return;
+      }
+
+      if (
+        regionRequired &&
+        !state.trim()
+      ) {
+        setCheckoutError(
+          text(
+            "Informe o estado ou região para continuar.",
+            "Enter the state or region to continue."
+          )
+        );
+
+        return;
+      }
+
+      if (
+        !deliveryQuote
+      ) {
+        setCheckoutError(
+          deliveryQuoteError ||
+            text("Aguarde o cálculo da taxa de entrega.", "Wait for the delivery fee to be calculated.")
+        );
+
+        return;
+      }
     }
 
     if (
-      isBrazil &&
-      !neighborhood
-    ) {
-      setCheckoutError(
-        text("Informe o bairro para continuar.", "Enter the neighborhood to continue.")
-      );
-
-      return;
-    }
-
-    if (
-      !postalCodeValid
-    ) {
-      setCheckoutError(
-        text(
-          "Informe um código postal válido.",
-          "Enter a valid postal code."
-        )
-      );
-
-      return;
-    }
-
-    if (
-      regionRequired &&
-      !state.trim()
-    ) {
-      setCheckoutError(
-        text(
-          "Informe o estado ou região para continuar.",
-          "Enter the state or region to continue."
-        )
-      );
-
-      return;
-    }
-
-    if (
-      !deliveryQuote
-    ) {
-      setCheckoutError(
-        deliveryQuoteError ||
-          text("Aguarde o cálculo da taxa de entrega.", "Wait for the delivery fee to be calculated.")
-      );
-
-      return;
-    }
-
-    if (
+      (!isPickup ||
+        paymentTiming ===
+          "ONLINE") &&
       !paymentConfig?.ready
     ) {
       setCheckoutError(
@@ -1549,6 +1661,9 @@ export default function CheckoutPage() {
     }
 
     if (
+      (!isPickup ||
+        paymentTiming ===
+          "ONLINE") &&
       !paymentMethod
     ) {
       setCheckoutError(
@@ -1581,22 +1696,54 @@ export default function CheckoutPage() {
 
         customerPhone,
 
-        street,
+        fulfillmentType,
 
-        number,
+        paymentTiming:
+          isPickup
+            ? paymentTiming
+            : "ONLINE",
 
-        city,
+        street:
+          isPickup
+            ? null
+            : street,
 
-        neighborhood,
+        number:
+          isPickup
+            ? null
+            : number,
 
-        state,
+        city:
+          isPickup
+            ? null
+            : city,
+
+        neighborhood:
+          isPickup
+            ? null
+            : neighborhood,
+
+        state:
+          isPickup
+            ? null
+            : state,
 
         postalCode:
-          normalizedPostalCode,
+          isPickup
+            ? null
+            : normalizedPostalCode,
 
-        complement,
+        complement:
+          isPickup
+            ? null
+            : complement,
 
-        paymentMethod,
+        paymentMethod:
+          isPickup &&
+          paymentTiming ===
+            "ON_PICKUP"
+            ? null
+            : paymentMethod,
 
         couponCode:
           appliedCoupon
@@ -1717,6 +1864,24 @@ export default function CheckoutPage() {
         encodeURIComponent(
           publicAccessToken
         );
+
+      if (
+        isPickup &&
+        paymentTiming ===
+          "ON_PICKUP"
+      ) {
+        localStorage.removeItem(
+          cartKey
+        );
+
+        router.push(
+          `/pedido/${order.id}?token=${encodedToken}&store=${encodeURIComponent(
+            storeSlug
+          )}`
+        );
+
+        return;
+      }
 
       if (
         paymentMethod ===
