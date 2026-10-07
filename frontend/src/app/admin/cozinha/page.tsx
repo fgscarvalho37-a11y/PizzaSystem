@@ -996,40 +996,61 @@ export default function CozinhaPage() {
 
                                 <div className="mt-2 flex flex-wrap gap-2">
                                   {[
-                                    ["CASH", "Dinheiro"],
-                                    ["CARD", "Cartão"],
-                                    ["OTHER", "Outro"],
-                                  ].map(
-                                    (
-                                      [
-                                        method,
-                                        label,
-                                      ]
-                                    ) => (
-                                      <button
-                                        key={
-                                          method
-                                        }
-                                        type="button"
-                                        onClick={() =>
-                                          void confirmPickupPayment(
-                                            order.id,
-                                            method as
-                                              | "CASH"
-                                              | "CARD"
-                                              | "OTHER"
-                                          )
-                                        }
-                                        disabled={
-                                          confirmingPaymentId ===
-                                          order.id
-                                        }
-                                        className="rounded-lg border border-border bg-card px-3 py-2 text-[11px] font-bold text-foreground disabled:opacity-50"
-                                      >
-                                        {label}
-                                      </button>
+                                    {
+                                      method: "CASH" as const,
+                                      label: "Dinheiro",
+                                      enabled:
+                                        pickupConfig?.pickupCashEnabled ??
+                                        true,
+                                    },
+                                    {
+                                      method: "CARD" as const,
+                                      label: "Cartão",
+                                      enabled:
+                                        pickupConfig?.pickupCardEnabled ??
+                                        true,
+                                    },
+                                    {
+                                      method: "OTHER" as const,
+                                      label: "Outro",
+                                      enabled:
+                                        pickupConfig?.pickupOtherEnabled ??
+                                        false,
+                                    },
+                                  ]
+                                    .filter(
+                                      (
+                                        option
+                                      ) =>
+                                        option.enabled
                                     )
-                                  )}
+                                    .map(
+                                      (
+                                        option
+                                      ) => (
+                                        <button
+                                          key={
+                                            option.method
+                                          }
+                                          type="button"
+                                          onClick={() =>
+                                            void confirmPickupPayment(
+                                              order.id,
+                                              option.method
+                                            )
+                                          }
+                                          disabled={
+                                            confirmingPaymentId ===
+                                            order.id
+                                          }
+                                          className="rounded-lg border border-border bg-card px-3 py-2 text-[11px] font-bold text-foreground disabled:opacity-50"
+                                        >
+                                          {
+                                            option.label
+                                          }
+                                        </button>
+                                      )
+                                    )}
                                 </div>
                               </div>
                             )}
