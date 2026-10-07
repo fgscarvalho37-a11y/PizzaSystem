@@ -82,8 +82,44 @@ public class Order {
     private String customerPhone;
 
     // =========================
-    // ENTREGA
+    // ENTREGA / RETIRADA
     // =========================
+
+    @Enumerated(EnumType.STRING)
+    @Column(
+            name = "fulfillment_type",
+            nullable = false,
+            length = 20
+    )
+    private FulfillmentType fulfillmentType =
+            FulfillmentType.DELIVERY;
+
+    @Enumerated(EnumType.STRING)
+    @Column(
+            name = "payment_timing",
+            nullable = false,
+            length = 20
+    )
+    private PaymentTiming paymentTiming =
+            PaymentTiming.ONLINE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(
+            name = "pickup_payment_method",
+            length = 20
+    )
+    private PickupPaymentMethod pickupPaymentMethod;
+
+    @Column(
+            name = "pickup_estimated_minutes"
+    )
+    private Integer pickupEstimatedMinutes;
+
+    @Column(
+            name = "payment_confirmed_by",
+            length = 160
+    )
+    private String paymentConfirmedBy;
 
     private String street;
 
@@ -270,6 +306,69 @@ public class Order {
     ) {
         this.customerPhone =
                 customerPhone;
+    }
+
+    public FulfillmentType getFulfillmentType() {
+        return fulfillmentType == null
+                ? FulfillmentType.DELIVERY
+                : fulfillmentType;
+    }
+
+    public void setFulfillmentType(
+            FulfillmentType fulfillmentType
+    ) {
+        this.fulfillmentType =
+                fulfillmentType == null
+                        ? FulfillmentType.DELIVERY
+                        : fulfillmentType;
+    }
+
+    public PaymentTiming getPaymentTiming() {
+        return paymentTiming == null
+                ? PaymentTiming.ONLINE
+                : paymentTiming;
+    }
+
+    public void setPaymentTiming(
+            PaymentTiming paymentTiming
+    ) {
+        this.paymentTiming =
+                paymentTiming == null
+                        ? PaymentTiming.ONLINE
+                        : paymentTiming;
+    }
+
+    public PickupPaymentMethod getPickupPaymentMethod() {
+        return pickupPaymentMethod;
+    }
+
+    public void setPickupPaymentMethod(
+            PickupPaymentMethod pickupPaymentMethod
+    ) {
+        this.pickupPaymentMethod =
+                pickupPaymentMethod;
+    }
+
+    public Integer getPickupEstimatedMinutes() {
+        return pickupEstimatedMinutes;
+    }
+
+    public void setPickupEstimatedMinutes(
+            Integer pickupEstimatedMinutes
+    ) {
+        this.pickupEstimatedMinutes =
+                pickupEstimatedMinutes;
+    }
+
+    public String getPaymentConfirmedBy() {
+        return paymentConfirmedBy;
+    }
+
+    public void setPaymentConfirmedBy(
+            String paymentConfirmedBy
+    ) {
+        this.paymentConfirmedBy =
+                paymentConfirmedBy;
     }
 
     public String getStreet() {
