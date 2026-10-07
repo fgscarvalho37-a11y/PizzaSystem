@@ -502,6 +502,11 @@ const sections = [
         href: "/admin/entregas",
         icon: DeliveryIcon,
       },
+      {
+        label: "Retirada",
+        href: "/admin/retirada",
+        icon: OrdersIcon,
+      },
     ],
   },
   {
@@ -607,6 +612,7 @@ const NAV_EN: Record<string, string> = {
   "Pedidos": "Orders",
   "Cozinha": "Kitchen",
   "Entregas": "Delivery",
+  "Retirada": "Pickup",
   "Gestão": "Management",
   "Histórico": "History",
   "Relatórios": "Reports",
