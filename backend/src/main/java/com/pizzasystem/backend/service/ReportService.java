@@ -1,9 +1,11 @@
 package com.pizzasystem.backend.service;
 
+import com.pizzasystem.backend.entity.FulfillmentType;
 import com.pizzasystem.backend.entity.Order;
 import com.pizzasystem.backend.entity.OrderStatus;
 import com.pizzasystem.backend.entity.PaymentMethod;
 import com.pizzasystem.backend.entity.PaymentStatus;
+import com.pizzasystem.backend.entity.PaymentTiming;
 
 import com.pizzasystem.backend.repository.OrderRepository;
 
@@ -260,6 +262,52 @@ public class ReportService {
                 averageTicket
         );
 
+        Map<String, Long> ordersByFulfillmentType =
+                new LinkedHashMap<>();
+
+        for (
+                FulfillmentType type :
+                        FulfillmentType.values()
+        ) {
+            long count =
+                    approvedOrders
+                            .stream()
+                            .filter(
+                                    order ->
+                                            order.getFulfillmentType() ==
+                                                    type
+                            )
+                            .count();
+
+            ordersByFulfillmentType.put(
+                    type.name(),
+                    count
+            );
+        }
+
+        Map<String, Long> ordersByPaymentTiming =
+                new LinkedHashMap<>();
+
+        for (
+                PaymentTiming timing :
+                        PaymentTiming.values()
+        ) {
+            long count =
+                    approvedOrders
+                            .stream()
+                            .filter(
+                                    order ->
+                                            order.getPaymentTiming() ==
+                                                    timing
+                            )
+                            .count();
+
+            ordersByPaymentTiming.put(
+                    timing.name(),
+                    count
+            );
+        }
+
         report.put(
                 "ordersByPaymentMethod",
                 ordersByPaymentMethod
@@ -268,6 +316,16 @@ public class ReportService {
         report.put(
                 "revenueByPaymentMethod",
                 revenueByPaymentMethod
+        );
+
+        report.put(
+                "ordersByFulfillmentType",
+                ordersByFulfillmentType
+        );
+
+        report.put(
+                "ordersByPaymentTiming",
+                ordersByPaymentTiming
         );
 
         report.put(
