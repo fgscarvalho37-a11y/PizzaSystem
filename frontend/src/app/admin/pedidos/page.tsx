@@ -1833,42 +1833,32 @@ export default function AdminPedidosPage() {
                                             option.enabled
                                         )
                                         .map(
-                                        (
-                                          option
-                                        ) => (
-                                          (() => {
-                                            const method =
-                                              option.method;
-                                            const label =
-                                              option.label;
-
-                                            return (
-                                          <button
-                                            key={
-                                              method
-                                            }
-                                            type="button"
-                                            onClick={() =>
-                                              void confirmPickupPayment(
-                                                order.id,
-                                                method as
-                                                  | "CASH"
-                                                  | "CARD"
-                                                  | "OTHER"
-                                              )
-                                            }
-                                            disabled={
-                                              confirmingCashId ===
-                                              order.id
-                                            }
-                                            className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground disabled:opacity-50"
-                                          >
-                                            {label}
-                                          </button>
-                                            );
-                                          })()
-                                        )
-                                      )}
+                                          (
+                                            option
+                                          ) => (
+                                            <button
+                                              key={
+                                                option.method
+                                              }
+                                              type="button"
+                                              onClick={() =>
+                                                void confirmPickupPayment(
+                                                  order.id,
+                                                  option.method
+                                                )
+                                              }
+                                              disabled={
+                                                confirmingCashId ===
+                                                order.id
+                                              }
+                                              className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground disabled:opacity-50"
+                                            >
+                                              {
+                                                option.label
+                                              }
+                                            </button>
+                                          )
+                                        )}
                                     </div>
                                   </div>
                                 )}
