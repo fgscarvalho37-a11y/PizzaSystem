@@ -35,6 +35,19 @@ type CashData = {
     PIX?: number;
     CREDIT_CARD?: number;
     DEBIT_CARD?: number;
+    PAYPAL?: number;
+    CASH?: number;
+    OTHER?: number;
+  };
+
+  ordersByFulfillmentType?: {
+    DELIVERY?: number;
+    PICKUP?: number;
+  };
+
+  ordersByPaymentTiming?: {
+    ONLINE?: number;
+    ON_PICKUP?: number;
   };
 };
 
@@ -687,8 +700,14 @@ export default function AdminCaixaPage() {
         debitRevenue
       )}`,
       "",
+      "MODALIDADES",
+      `Entrega: ${deliveryCount}`,
+      `Retirada: ${pickupCount}`,
+      `Pagamento online: ${onlineCount}`,
+      `Pagamento na retirada: ${payAtPickupCount}`,
+      "",
       "STATUS DOS PEDIDOS",
-      `Entregues: ${cash.deliveredOrders}`,
+      `Entregues/concluidos: ${cash.deliveredOrders}`,
       `Em andamento: ${cash.activeOrders}`,
       `Cancelados: ${cash.cancelledOrders}`,
       "",
@@ -733,6 +752,26 @@ export default function AdminCaixaPage() {
     cash
       ?.revenueByPaymentMethod
       ?.DEBIT_CARD ?? 0;
+
+  const deliveryCount =
+    cash
+      ?.ordersByFulfillmentType
+      ?.DELIVERY ?? 0;
+
+  const pickupCount =
+    cash
+      ?.ordersByFulfillmentType
+      ?.PICKUP ?? 0;
+
+  const onlineCount =
+    cash
+      ?.ordersByPaymentTiming
+      ?.ONLINE ?? 0;
+
+  const payAtPickupCount =
+    cash
+      ?.ordersByPaymentTiming
+      ?.ON_PICKUP ?? 0;
 
   return (
     <main className="min-h-screen bg-background">
@@ -1122,6 +1161,58 @@ export default function AdminCaixaPage() {
                     {formatMoney(
                       cash.totalRevenue
                     )}
+                  </p>
+                </div>
+
+              </div>
+
+            </section>
+
+            <section className="mt-6 rounded-2xl border border-border bg-card p-5">
+
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                Modalidades
+              </p>
+
+              <h2 className="mt-1 text-xl font-bold text-foreground">
+                Entrega e retirada
+              </h2>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
+                    Entrega
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-blue-800">
+                    {deliveryCount}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
+                    Retirada
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-amber-800">
+                    {pickupCount}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
+                    Online
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-emerald-800">
+                    {onlineCount}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-orange-700">
+                    Na retirada
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-orange-800">
+                    {payAtPickupCount}
                   </p>
                 </div>
 
