@@ -227,6 +227,16 @@ export default function AdminRelatoriosPage() {
   );
 
   const [
+    fulfillmentFilter,
+    setFulfillmentFilter,
+  ] =
+    useState<
+      "ALL" |
+      "DELIVERY" |
+      "PICKUP"
+    >("ALL");
+
+  const [
     report,
     setReport,
   ] =
@@ -246,7 +256,12 @@ export default function AdminRelatoriosPage() {
 
   async function loadReport(
     start: string,
-    end: string
+    end: string,
+    fulfillment:
+      "ALL" |
+      "DELIVERY" |
+      "PICKUP" =
+        fulfillmentFilter
   ) {
     try {
       setLoading(true);
@@ -254,7 +269,12 @@ export default function AdminRelatoriosPage() {
 
       const response =
         await adminFetch(
-          `${API_URL}/api/reports?startDate=${start}&endDate=${end}`,
+          `${API_URL}/api/reports?startDate=${start}&endDate=${end}${
+            fulfillment ===
+            "ALL"
+              ? ""
+              : `&fulfillmentType=${fulfillment}`
+          }`,
           {
             cache: "no-store",
           }
@@ -285,7 +305,8 @@ export default function AdminRelatoriosPage() {
   useEffect(() => {
     loadReport(
       firstDayOfMonth,
-      today
+      today,
+      "ALL"
     );
   }, []);
 
@@ -319,7 +340,8 @@ export default function AdminRelatoriosPage() {
 
     await loadReport(
       startDate,
-      endDate
+      endDate,
+      fulfillmentFilter
     );
   }
 
@@ -329,7 +351,8 @@ export default function AdminRelatoriosPage() {
 
     await loadReport(
       today,
-      today
+      today,
+      fulfillmentFilter
     );
   }
 
@@ -344,7 +367,8 @@ export default function AdminRelatoriosPage() {
 
     await loadReport(
       firstDayOfMonth,
-      today
+      today,
+      fulfillmentFilter
     );
   }
 
@@ -458,7 +482,7 @@ export default function AdminRelatoriosPage() {
           className="mt-6 rounded-2xl border border-border bg-card p-4 sm:p-5"
         >
 
-          <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+          <div className="grid gap-4 lg:grid-cols-[1fr_1fr_190px_auto] lg:items-end">
 
             <div>
 
@@ -536,6 +560,44 @@ export default function AdminRelatoriosPage() {
                 "
               />
 
+            </div>
+
+            <div>
+              <label
+                htmlFor="report-fulfillment"
+                className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
+              >
+                Modalidade
+              </label>
+
+              <select
+                id="report-fulfillment"
+                value={
+                  fulfillmentFilter
+                }
+                onChange={(
+                  event
+                ) =>
+                  setFulfillmentFilter(
+                    event.target
+                      .value as
+                      | "ALL"
+                      | "DELIVERY"
+                      | "PICKUP"
+                  )
+                }
+                className="h-11 w-full rounded-xl border border-input bg-background px-4 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+              >
+                <option value="ALL">
+                  Todos
+                </option>
+                <option value="DELIVERY">
+                  Entrega
+                </option>
+                <option value="PICKUP">
+                  Retirada
+                </option>
+              </select>
             </div>
 
             <div className="flex flex-wrap gap-2">
