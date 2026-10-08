@@ -10,6 +10,7 @@ import com.pizzasystem.backend.repository.OrderRepository;
 import com.pizzasystem.backend.service.CouponService;
 import com.pizzasystem.backend.service.LoyaltyService;
 import com.pizzasystem.backend.service.MercadoPagoService;
+import com.pizzasystem.backend.service.PaymentStateGuard;
 import com.pizzasystem.backend.service.MercadoPagoWebhookSignatureService;
 
 import org.springframework.http.ResponseEntity;
@@ -214,13 +215,7 @@ public class MercadoPagoWebhookController {
 
             if (approved) {
 
-                order.setPaymentStatus(
-                        PaymentStatus.APPROVED
-                );
-
-                order.setStatus(
-                        OrderStatus.RECEIVED
-                );
+                PaymentStateGuard.markApproved(order);
 
                 order =
                         orderRepository.save(

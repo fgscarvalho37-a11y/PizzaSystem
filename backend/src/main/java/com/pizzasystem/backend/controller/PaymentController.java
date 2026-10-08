@@ -17,6 +17,7 @@ import com.pizzasystem.backend.service.CouponService;
 import com.pizzasystem.backend.service.CurrentStoreService;
 import com.pizzasystem.backend.service.LoyaltyService;
 import com.pizzasystem.backend.service.MercadoPagoService;
+import com.pizzasystem.backend.service.PaymentStateGuard;
 import com.pizzasystem.backend.service.MercadoPagoService.MercadoPagoResult;
 
 import jakarta.validation.Valid;
@@ -389,13 +390,7 @@ public class PaymentController {
                 );
             }
 
-            order.setPaymentStatus(
-                    PaymentStatus.REJECTED
-            );
-
-            order.setStatus(
-                    OrderStatus.PENDING_PAYMENT
-            );
+            PaymentStateGuard.markUnapproved(order, PaymentStatus.REJECTED);
 
             orderRepository.save(
                     order
@@ -697,13 +692,7 @@ public class PaymentController {
         PaymentStatus previousPaymentStatus =
                 order.getPaymentStatus();
 
-        order.setPaymentStatus(
-                PaymentStatus.APPROVED
-        );
-
-        order.setStatus(
-                OrderStatus.RECEIVED
-        );
+        PaymentStateGuard.markApproved(order);
 
         order =
                 orderRepository.save(
@@ -1016,13 +1005,7 @@ public class PaymentController {
 
         if (approved) {
 
-            order.setPaymentStatus(
-                    PaymentStatus.APPROVED
-            );
-
-            order.setStatus(
-                    OrderStatus.RECEIVED
-            );
+            PaymentStateGuard.markApproved(order);
 
             return;
         }
@@ -1034,24 +1017,12 @@ public class PaymentController {
                         paymentStatus
                 )) {
 
-            order.setPaymentStatus(
-                    PaymentStatus.REJECTED
-            );
-
-            order.setStatus(
-                    OrderStatus.PENDING_PAYMENT
-            );
+            PaymentStateGuard.markUnapproved(order, PaymentStatus.REJECTED);
 
             return;
         }
 
-        order.setPaymentStatus(
-                PaymentStatus.PENDING
-        );
-
-        order.setStatus(
-                OrderStatus.PENDING_PAYMENT
-        );
+        PaymentStateGuard.markUnapproved(order, PaymentStatus.PENDING);
     }
 
     private String translateCardRejection(
