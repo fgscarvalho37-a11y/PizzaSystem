@@ -4,6 +4,7 @@ import com.pizzasystem.backend.entity.AddonGroup;
 import com.pizzasystem.backend.entity.Category;
 import com.pizzasystem.backend.entity.Product;
 import com.pizzasystem.backend.entity.Store;
+import com.pizzasystem.backend.dto.ProductResponse;
 
 import com.pizzasystem.backend.repository.AddonGroupRepository;
 import com.pizzasystem.backend.repository.CategoryRepository;
@@ -14,6 +15,7 @@ import com.pizzasystem.backend.service.PublicStoreService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.LinkedHashSet;
@@ -68,7 +70,8 @@ public class ProductController {
     // =========================
 
     @GetMapping
-    public List<Product> listAll() {
+    @Transactional(readOnly = true)
+    public List<ProductResponse> listAll() {
 
         Long storeId =
                 currentStoreService
@@ -77,7 +80,12 @@ public class ProductController {
         return productRepository
                 .findByStoreIdOrderByIdAsc(
                         storeId
-                );
+                )
+                .stream()
+                .map(
+                        ProductResponse::from
+                )
+                .toList();
     }
 
     // =========================
@@ -85,7 +93,8 @@ public class ProductController {
     // =========================
 
     @GetMapping("/available")
-    public List<Product> listAvailable(
+    @Transactional(readOnly = true)
+    public List<ProductResponse> listAvailable(
             @RequestParam String store
     ) {
 
@@ -98,7 +107,12 @@ public class ProductController {
         return productRepository
                 .findByStoreIdAndAvailableTrueOrderByIdAsc(
                         storeId
-                );
+                )
+                .stream()
+                .map(
+                        ProductResponse::from
+                )
+                .toList();
     }
 
     // =========================
@@ -106,7 +120,8 @@ public class ProductController {
     // =========================
 
     @GetMapping("/category/{categoryId}")
-    public List<Product> listByCategory(
+    @Transactional(readOnly = true)
+    public List<ProductResponse> listByCategory(
             @PathVariable Long categoryId,
             @RequestParam String store
     ) {
@@ -132,7 +147,12 @@ public class ProductController {
                 .findByStoreIdAndCategoryIdAndAvailableTrueOrderByIdAsc(
                         storeId,
                         categoryId
-                );
+                )
+                .stream()
+                .map(
+                        ProductResponse::from
+                )
+                .toList();
     }
 
     // =========================
@@ -143,7 +163,8 @@ public class ProductController {
     @ResponseStatus(
             HttpStatus.CREATED
     )
-    public Product create(
+    @Transactional
+    public ProductResponse create(
             @RequestBody Product data
     ) {
 
@@ -219,10 +240,15 @@ public class ProductController {
                 new LinkedHashSet<>()
         );
 
-        return productRepository
-                .save(
-                        product
-                );
+        Product saved =
+                productRepository
+                        .saveAndFlush(
+                                product
+                        );
+
+        return ProductResponse.from(
+                saved
+        );
     }
 
     // =========================
@@ -230,7 +256,8 @@ public class ProductController {
     // =========================
 
     @PutMapping("/{id}")
-    public Product update(
+    @Transactional
+    public ProductResponse update(
             @PathVariable Long id,
             @RequestBody Product data
     ) {
@@ -311,10 +338,15 @@ public class ProductController {
          * Existe endpoint específico
          * para isso.
          */
-        return productRepository
-                .save(
-                        product
-                );
+        Product saved =
+                productRepository
+                        .saveAndFlush(
+                                product
+                        );
+
+        return ProductResponse.from(
+                saved
+        );
     }
 
     // =========================
@@ -338,7 +370,8 @@ public class ProductController {
      * vinculados ao produto.
      */
     @PutMapping("/{id}/addon-groups")
-    public Product updateAddonGroups(
+    @Transactional
+    public ProductResponse updateAddonGroups(
             @PathVariable Long id,
             @RequestBody List<Long> addonGroupIds
     ) {
@@ -393,10 +426,15 @@ public class ProductController {
                 groups
         );
 
-        return productRepository
-                .save(
-                        product
-                );
+        Product saved =
+                productRepository
+                        .saveAndFlush(
+                                product
+                        );
+
+        return ProductResponse.from(
+                saved
+        );
     }
 
     // =========================
@@ -404,7 +442,8 @@ public class ProductController {
     // =========================
 
     @PatchMapping("/{id}/availability")
-    public Product changeAvailability(
+    @Transactional
+    public ProductResponse changeAvailability(
             @PathVariable Long id,
             @RequestParam boolean available
     ) {
@@ -429,10 +468,15 @@ public class ProductController {
                 available
         );
 
-        return productRepository
-                .save(
-                        product
-                );
+        Product saved =
+                productRepository
+                        .saveAndFlush(
+                                product
+                        );
+
+        return ProductResponse.from(
+                saved
+        );
     }
 
     // =========================
@@ -444,7 +488,8 @@ public class ProductController {
      * a migração completa para adicionais.
      */
     @PatchMapping("/{id}/allow-crust")
-    public Product changeAllowCrust(
+    @Transactional
+    public ProductResponse changeAllowCrust(
             @PathVariable Long id,
             @RequestParam boolean allowCrust
     ) {
@@ -469,10 +514,15 @@ public class ProductController {
                 allowCrust
         );
 
-        return productRepository
-                .save(
-                        product
-                );
+        Product saved =
+                productRepository
+                        .saveAndFlush(
+                                product
+                        );
+
+        return ProductResponse.from(
+                saved
+        );
     }
 
     // =========================
