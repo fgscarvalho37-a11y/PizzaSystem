@@ -11,6 +11,7 @@ import {
   useRouter,
   useSearchParams,
 } from "next/navigation";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 import {
   CardPayment,
@@ -75,6 +76,7 @@ function formatMoney(
 }
 
 export default function CardPaymentPage() {
+  const { text } = useLanguage();
 
   const params =
     useParams();
@@ -1046,11 +1048,11 @@ export default function CardPaymentPage() {
           }
           className="font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
         >
-          ← Voltar ao pedido
+          {text("← Voltar ao pedido", "← Back to order")}
         </button>
 
         <p className="mt-7 font-mono-brand text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-          (c) Pagamento
+          {text("(c) Pagamento", "(c) Payment")}
         </p>
 
         <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -1059,12 +1061,12 @@ export default function CardPaymentPage() {
 
             <h1 className="font-display text-4xl tracking-tight sm:text-5xl">
               {isDebit
-                ? "Pague no débito"
-                : "Pague com cartão"}
+                ? text("Pague no débito", "Pay by debit card")
+                : text("Pague com cartão", "Pay by card")}
             </h1>
 
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Preencha os dados do cartão para concluir o pedido com segurança.
+              {text("Preencha os dados do cartão para concluir o pedido com segurança.", "Enter your card details to securely complete your order.")}
             </p>
 
           </div>
@@ -1087,11 +1089,11 @@ export default function CardPaymentPage() {
             <div>
 
               <p className="font-bold">
-                Processando pagamento
+                {text("Processando pagamento", "Processing payment")}
               </p>
 
               <p className="mt-0.5 text-sm text-muted-foreground">
-                Aguarde enquanto confirmamos os dados do cartão.
+                {text("Aguarde enquanto confirmamos os dados do cartão.", "Please wait while we verify your card details.")}
               </p>
 
             </div>
@@ -1111,7 +1113,7 @@ export default function CardPaymentPage() {
               <div>
 
                 <p className="font-bold text-primary">
-                  Pagamento não aprovado
+                  {text("Pagamento não aprovado", "Payment not approved")}
                 </p>
 
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
@@ -1119,7 +1121,7 @@ export default function CardPaymentPage() {
                 </p>
 
                 <p className="mt-2 font-mono-brand text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Revise os dados ou tente outro cartão
+                  {text("Revise os dados ou tente outro cartão", "Check the details or try another card")}
                 </p>
 
               </div>
@@ -1142,13 +1144,13 @@ export default function CardPaymentPage() {
               <div>
 
                 <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  Dados do cartão
+                  {text("Dados do cartão", "Card details")}
                 </p>
 
                 <h2 className="mt-1 font-display text-2xl tracking-tight">
                   {isDebit
-                    ? "Cartão de débito"
-                    : "Cartão de crédito"}
+                    ? text("Cartão de débito", "Debit card")
+                    : text("Cartão de crédito", "Credit card")}
                 </h2>
 
               </div>
@@ -1171,7 +1173,7 @@ export default function CardPaymentPage() {
                 <div>
 
                   <label className="mb-2 block text-sm font-bold">
-                    Número do cartão
+                    {text("Número do cartão", "Card number")}
                   </label>
 
                   <div className="flex h-12 items-center rounded-xl border border-border bg-white/70 px-3 transition-colors focus-within:border-foreground">
@@ -1179,7 +1181,7 @@ export default function CardPaymentPage() {
                     <div className="w-full">
 
                       <CardNumber
-                        placeholder="Número do cartão"
+                        placeholder={text("Número do cartão", "Card number")}
                       />
 
                     </div>
@@ -1193,7 +1195,7 @@ export default function CardPaymentPage() {
                   <div>
 
                     <label className="mb-2 block text-sm font-bold">
-                      Validade
+                      {text("Validade", "Expiration")}
                     </label>
 
                     <div className="flex h-12 items-center rounded-xl border border-border bg-white/70 px-3 transition-colors focus-within:border-foreground">
@@ -1235,7 +1237,7 @@ export default function CardPaymentPage() {
                 <div>
 
                   <label className="mb-2 block text-sm font-bold">
-                    Nome do titular
+                    {text("Nome do titular", "Cardholder name")}
                   </label>
 
                   <input
@@ -1250,7 +1252,7 @@ export default function CardPaymentPage() {
                         event.target.value
                       )
                     }
-                    placeholder="Nome como está no cartão"
+                    placeholder={text("Nome como está no cartão", "Name on card")}
                     className="h-12 w-full rounded-xl border border-border bg-white/70 px-3 text-sm outline-none transition-colors focus:border-foreground"
                     required
                   />
@@ -1285,7 +1287,7 @@ export default function CardPaymentPage() {
                 <div>
 
                   <label className="mb-2 block text-sm font-bold">
-                    E-mail
+                    {text("E-mail", "Email")}
                   </label>
 
                   <input
@@ -1315,7 +1317,7 @@ export default function CardPaymentPage() {
                   className="brand-button mt-2 w-full rounded-2xl px-5 py-3.5 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {processing
-                    ? "Processando..."
+                    ? text("Processando...", "Processing...")
                     : `Pagar ${formatMoney(
                         Number(
                           order.total
@@ -1361,7 +1363,7 @@ export default function CardPaymentPage() {
                   onError={() => {
 
                     setErrorMessage(
-                      "Não foi possível carregar o formulário de crédito."
+                      text("Não foi possível carregar o formulário de crédito.", "Could not load the credit card form.")
                     );
                   }}
                 />
@@ -1381,7 +1383,7 @@ export default function CardPaymentPage() {
             <div className="rounded-[28px] border-2 border-foreground bg-foreground p-5 text-cream shadow-[0_6px_0_0] shadow-primary/40">
 
               <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-cream/55">
-                Resumo
+                {text("Resumo", "Summary")}
               </p>
 
               <h2 className="mt-1 font-display text-2xl tracking-tight">
@@ -1393,13 +1395,13 @@ export default function CardPaymentPage() {
                 <div className="flex items-center justify-between gap-4 text-sm">
 
                   <span className="text-cream/65">
-                    Forma de pagamento
+                    {text("Forma de pagamento", "Payment method")}
                   </span>
 
                   <span className="text-right font-bold">
                     {isDebit
-                      ? "Débito"
-                      : "Crédito"}
+                      ? text("Débito", "Debit")
+                      : text("Crédito", "Credit")}
                   </span>
 
                 </div>
@@ -1408,11 +1410,11 @@ export default function CardPaymentPage() {
                   <div className="flex items-center justify-between gap-4 text-sm">
 
                     <span className="text-cream/65">
-                      Parcelamento
+                      {text("Parcelamento", "Installments")}
                     </span>
 
                     <span className="font-bold">
-                      Até 12x
+                      {text("Até 12x", "Up to 12 installments")}
                     </span>
 
                   </div>
@@ -1421,7 +1423,7 @@ export default function CardPaymentPage() {
                 <div className="flex items-center justify-between gap-4 text-sm">
 
                   <span className="text-cream/65">
-                    Processamento
+                    {text("Processamento", "Processing")}
                   </span>
 
                   <span className="font-bold">
