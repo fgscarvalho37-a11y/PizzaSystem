@@ -959,7 +959,7 @@ export default function AdminPedidosPage() {
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
                 Acompanhe pedidos, pagamentos,
-                clientes e andamento da operação.
+                {text("clientes e andamento da operação.", "customers and order progress.")}
               </p>
             </div>
 
@@ -1141,7 +1141,7 @@ export default function AdminPedidosPage() {
                       event.target.value
                     )
                   }
-                  placeholder="Número, cliente, telefone, bairro..."
+                  placeholder={text("Número, cliente, telefone, bairro...", "Order number, customer, phone, neighborhood...")}
                   className="
                     h-12 w-full
                     rounded-xl
@@ -1887,7 +1887,7 @@ export default function AdminPedidosPage() {
                                 <div className="mt-4 border-t border-border pt-4">
 
                                   <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                                    Referência
+                                    {text("Referência", "Reference")}
                                   </p>
 
                                   <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
