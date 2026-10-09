@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 import { formatStoreMoney } from "@/lib/storeIntl";
 
@@ -56,6 +57,7 @@ function formatMoney(
 }
 
 export default function AdminAdicionaisPage() {
+  const { text } = useLanguage();
 
   // =========================
   // DADOS
@@ -1235,15 +1237,15 @@ export default function AdminAdicionaisPage() {
         <div className="mb-6 border-b border-border pb-6">
 
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-            Cardápio
+            {text("Cardápio", "Menu")}
           </p>
 
           <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-            Adicionais
+            {text("Adicionais", "Extras")}
           </h1>
 
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Crie grupos personalizados para qualquer tipo de produto, como complementos, molhos, extras, bordas e acompanhamentos.
+            {text("Crie grupos personalizados para qualquer tipo de produto, como complementos, molhos, extras, bordas e acompanhamentos.", "Create customizable groups such as toppings, sauces, extras and sides.")}
           </p>
 
         </div>
@@ -1256,7 +1258,7 @@ export default function AdminAdicionaisPage() {
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
 
             <p className="font-semibold text-red-700">
-              Atenção
+              {text("Atenção", "Attention")}
             </p>
 
             <p className="mt-1 text-sm text-red-600">
@@ -1270,7 +1272,7 @@ export default function AdminAdicionaisPage() {
           <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
 
             <p className="font-semibold text-emerald-700">
-              Tudo certo
+              {text("Tudo certo", "All set")}
             </p>
 
             <p className="mt-1 text-sm text-emerald-700">
@@ -1289,7 +1291,7 @@ export default function AdminAdicionaisPage() {
           <section className="h-fit rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
 
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-              Grupo
+              {text("Grupo", "Group")}
             </p>
 
             <h2 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
@@ -1331,7 +1333,7 @@ export default function AdminAdicionaisPage() {
               <div>
 
                 <label className="mb-1.5 block text-xs font-bold text-muted-foreground">
-                  Descrição
+                  {text("Descrição", "Description")}
                 </label>
 
                 <input
@@ -1356,7 +1358,7 @@ export default function AdminAdicionaisPage() {
                 <div>
 
                   <label className="mb-1.5 block text-xs font-bold text-muted-foreground">
-                    Mínimo
+                    {text("Mínimo", "Minimum")}
                   </label>
 
                   <input
@@ -1380,7 +1382,7 @@ export default function AdminAdicionaisPage() {
                 <div>
 
                   <label className="mb-1.5 block text-xs font-bold text-muted-foreground">
-                    Máximo
+                    {text("Máximo", "Maximum")}
                   </label>
 
                   <input
@@ -1406,7 +1408,7 @@ export default function AdminAdicionaisPage() {
               <div>
 
                 <label className="mb-1.5 block text-xs font-bold text-muted-foreground">
-                  Ordem
+                  {text("Ordem", "Order")}
                 </label>
 
                 <input
@@ -1432,11 +1434,11 @@ export default function AdminAdicionaisPage() {
                 <div>
 
                   <p className="text-sm font-bold text-foreground">
-                    Obrigatório
+                    {text("Obrigatório", "Required")}
                   </p>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    O cliente precisa selecionar uma opção.
+                    {text("O cliente precisa selecionar uma opção.", "The customer must select an option.")}
                   </p>
 
                 </div>
@@ -1471,7 +1473,7 @@ export default function AdminAdicionaisPage() {
               <label className="flex cursor-pointer items-center justify-between rounded-xl border border-border bg-background p-4">
 
                 <span className="text-sm font-bold text-foreground">
-                  Grupo ativo
+                  {text("Grupo ativo", "Active group")}
                 </span>
 
                 <input
@@ -1513,7 +1515,7 @@ export default function AdminAdicionaisPage() {
                   }
                   className="h-11 w-full rounded-xl border border-input text-sm font-semibold"
                 >
-                  Cancelar edição
+                  {text("Cancelar edição", "Cancel editing")}
                 </button>
               )}
 
@@ -1528,11 +1530,11 @@ export default function AdminAdicionaisPage() {
               <div>
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                  Grupos cadastrados
+                  {text("Grupos cadastrados", "Registered groups")}
                 </p>
 
                 <h2 className="mt-1 font-display text-2xl uppercase text-foreground">
-                  Personalização
+                  {text("Personalização", "Customization")}
                 </h2>
 
               </div>
@@ -1544,7 +1546,7 @@ export default function AdminAdicionaisPage() {
                 }
                 className="rounded-xl border border-input px-4 py-2 text-sm font-semibold"
               >
-                Atualizar
+                {text("Atualizar", "Refresh")}
               </button>
 
             </div>
@@ -1552,13 +1554,13 @@ export default function AdminAdicionaisPage() {
             {loading ? (
 
               <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                Carregando...
+                {text("Carregando...", "Loading...")}
               </div>
 
             ) : groups.length === 0 ? (
 
               <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                Nenhum grupo cadastrado.
+                {text("Nenhum grupo cadastrado.", "No groups registered.")}
               </div>
 
             ) : (
@@ -1642,7 +1644,7 @@ export default function AdminAdicionaisPage() {
                           }
                           className="rounded-lg border border-input px-3 py-2 text-xs font-bold"
                         >
-                          Editar
+                          {text("Editar", "Edit")}
                         </button>
 
                         <button
@@ -1687,7 +1689,7 @@ export default function AdminAdicionaisPage() {
             <div>
 
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                Opções
+                {text("Opções", "Options")}
               </p>
 
               <h2 className="mt-1 font-display text-2xl uppercase text-foreground">
@@ -1746,7 +1748,7 @@ export default function AdminAdicionaisPage() {
                   <div>
 
                     <label className="mb-1 block text-xs font-bold text-muted-foreground">
-                      Preço adicional
+                      {text("Preço adicional", "Extra price")}
                     </label>
 
                     <input
@@ -1771,7 +1773,7 @@ export default function AdminAdicionaisPage() {
                   <div>
 
                     <label className="mb-1 block text-xs font-bold text-muted-foreground">
-                      Ordem
+                      {text("Ordem", "Order")}
                     </label>
 
                     <input
@@ -1797,7 +1799,7 @@ export default function AdminAdicionaisPage() {
                 <label className="flex items-center justify-between rounded-xl border border-border p-3">
 
                   <span className="text-sm font-bold">
-                    Ativo
+                    {text("Ativo", "Active")}
                   </span>
 
                   <input
@@ -1840,7 +1842,7 @@ export default function AdminAdicionaisPage() {
                     }
                     className="h-11 w-full rounded-xl border border-input text-sm font-semibold"
                   >
-                    Cancelar
+                    {text("Cancelar", "Cancel")}
                   </button>
 
                 )}
@@ -1852,7 +1854,7 @@ export default function AdminAdicionaisPage() {
                 {(selectedGroup.addons ?? []).length === 0 ? (
 
                   <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                    Nenhuma opção cadastrada neste grupo.
+                    {text("Nenhuma opção cadastrada neste grupo.", "No options in this group yet.")}
                   </div>
 
                 ) : (
@@ -1916,7 +1918,7 @@ export default function AdminAdicionaisPage() {
                               }
                               className="rounded-lg border border-input px-3 py-2 text-xs font-bold"
                             >
-                              Editar
+                              {text("Editar", "Edit")}
                             </button>
 
                             <button
@@ -1962,15 +1964,15 @@ export default function AdminAdicionaisPage() {
           <div>
 
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-              Aplicação
+              {text("Aplicação", "Assignment")}
             </p>
 
             <h2 className="mt-1 font-display text-2xl uppercase text-foreground">
-              Produtos
+              {text("Produtos", "Products")}
             </h2>
 
             <p className="mt-2 text-sm text-muted-foreground">
-              Escolha quais grupos aparecem em cada produto.
+              {text("Escolha quais grupos aparecem em cada produto.", "Choose which groups appear on each product.")}
             </p>
 
           </div>
@@ -1978,7 +1980,7 @@ export default function AdminAdicionaisPage() {
           {loadingProducts ? (
 
             <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-              Carregando produtos...
+              {text("Carregando produtos...", "Loading products...")}
             </div>
 
           ) : (
