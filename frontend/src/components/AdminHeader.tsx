@@ -1294,7 +1294,7 @@ export default function AdminHeader() {
                   </p>
 
                   <p className="text-sm font-semibold text-foreground">
-                    Administração
+                    {text("Administração", "Administration")}
                   </p>
 
                 </div>
