@@ -581,6 +581,82 @@ export default function CheckoutPage() {
       false
     );
 
+    // Independent branded storefronts use a compact, price-free cart handoff.
+    // Always reconstruct products, extras and crusts from this store's API.
+    // No client-submitted name, amount or product price is trusted.
+    const transfer = new URLSearchParams(window.location.search).get("importCart");
+    if (transfer) {
+      let active = true;
+      void (async () => {
+        try {
+          if (transfer.length > 5500 || !/^[A-Za-z0-9_-]+$/.test(transfer)) {
+            throw new Error("Invalid imported cart");
+          }
+          const payload: unknown = JSON.parse(atob(transfer.replace(/-/g, "+").replace(/_/g, "/")));
+          if (!Array.isArray(payload) || payload.length < 1 || payload.length > 35) {
+            throw new Error("Invalid imported cart items");
+          }
+          const [productsResponse, crustsResponse] = await Promise.all([
+            fetch(`${API_URL}/api/products/available?store=${encodeURIComponent(storeSlug)}`, { cache: "no-store" }),
+            fetch(`${API_URL}/api/crusts/active?store=${encodeURIComponent(storeSlug)}`, { cache: "no-store" }),
+          ]);
+          if (!productsResponse.ok || !crustsResponse.ok) throw new Error("Menu is unavailable");
+          type LiveProduct = Product & { allowCrust?: boolean; addonGroups?: {
+            active: boolean; addons: Addon[];
+          }[] };
+          const products = await productsResponse.json() as LiveProduct[];
+          const crusts = await crustsResponse.json() as Crust[];
+          const imported: CartItem[] = (payload as unknown[]).map(raw => {
+            if (!raw || typeof raw !== "object") throw new Error("Malformed cart item");
+            const item = raw as Record<string, unknown>;
+            const id = Number(item.productId);
+            const quantity = Number(item.quantity);
+            if (!Number.isSafeInteger(id) || id < 1 ||
+                !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 25 ||
+                typeof item.observation !== "string" || item.observation.length > 300) {
+              throw new Error("Invalid product or quantity");
+            }
+            const product = products.find(p => p.id === id);
+            if (!product) throw new Error("Product unavailable");
+            const crustId = item.crustId == null ? null : Number(item.crustId);
+            const crust = crustId == null ? null : crusts.find(x => x.id === crustId && x.active) ?? null;
+            if (crustId !== null && (!product.allowCrust || !crust)) throw new Error("Invalid crust");
+            const addonIds = item.addonIds;
+            if (!Array.isArray(addonIds) || addonIds.length > 30) throw new Error("Invalid extras");
+            const possibleAddons = (product.addonGroups ?? [])
+              .filter(group => group.active)
+              .flatMap(group => group.addons.filter(addon => addon.active !== false));
+            const seen = new Set<number>();
+            const addons: Addon[] = addonIds.map(entry => {
+              const value = Number(entry);
+              if (!Number.isSafeInteger(value) || seen.has(value)) throw new Error("Invalid extra");
+              seen.add(value);
+              const addon = possibleAddons.find(a => a.id === value);
+              if (!addon) throw new Error("Extra no longer available");
+              return addon;
+            });
+            return { product: { id: product.id, name: product.name, price: product.price,
+              imageUrl: product.imageUrl }, quantity,
+              observation: item.observation, crust, addons };
+          });
+          if (active) {
+            localStorage.setItem(cartKey, JSON.stringify(imported));
+            setCart(imported);
+          }
+        } catch (error) {
+          console.error("Unable to import branded cart:", error);
+          if (active) {
+            setCart([]);
+            setCheckoutError(text("Não foi possível importar os itens. Volte ao cardápio e tente novamente.",
+              "Could not import your cart. Please return to the menu and try again."));
+          }
+        } finally {
+          if (active) setLoaded(true);
+        }
+      })();
+      return () => { active = false; };
+    }
+
     const savedCart =
       localStorage.getItem(
         cartKey
