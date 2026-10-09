@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 import { formatStoreMoney } from "@/lib/storeIntl";
 
@@ -29,6 +30,7 @@ type Product = {
 };
 
 export default function AdminCardapioPage() {
+  const { text } = useLanguage();
   const [products, setProducts] =
     useState<Product[]>([]);
 
@@ -531,15 +533,15 @@ export default function AdminCardapioPage() {
         <div className="mb-6 border-b border-border pb-6">
 
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-            Cardápio
+            {text("Cardápio", "Menu")}
           </p>
 
           <h2 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-            Produtos
+            {text("Produtos", "Products")}
           </h2>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Cadastre produtos, altere preços, organize por categoria e controle a disponibilidade no site.
+            {text("Cadastre produtos, altere preços, organize por categoria e controle a disponibilidade no site.", "Add products, change prices, organize categories and control online availability.")}
           </p>
 
         </div>
@@ -552,7 +554,7 @@ export default function AdminCardapioPage() {
           <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm">
 
             <p className="font-semibold text-red-700">
-              Atenção
+              {text("Atenção", "Attention")}
             </p>
 
             <p className="mt-1 text-sm text-red-600">
@@ -566,7 +568,7 @@ export default function AdminCardapioPage() {
           <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
 
             <p className="font-semibold text-emerald-700">
-              Tudo certo
+              {text("Tudo certo", "All set")}
             </p>
 
             <p className="mt-1 text-sm text-emerald-700">
@@ -611,7 +613,7 @@ export default function AdminCardapioPage() {
                 }
                 className="h-9 rounded-lg border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 transition hover:bg-red-100"
               >
-                Cancelar edição
+                {text("Cancelar edição", "Cancel editing")}
               </button>
             )}
 
@@ -650,7 +652,7 @@ export default function AdminCardapioPage() {
             <div>
 
               <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                Categoria
+                {text("Categoria", "Category")}
               </label>
 
               <select
@@ -668,7 +670,7 @@ export default function AdminCardapioPage() {
                 className="h-12 w-full rounded-xl border border-input bg-card px-4 outline-none transition focus:border-border"
               >
                 <option value="">
-                  Selecione uma categoria
+                  {text("Selecione uma categoria", "Select a category")}
                 </option>
 
                 {categories.map(
@@ -690,7 +692,7 @@ export default function AdminCardapioPage() {
             <div>
 
               <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                Preço
+                {text("Preço", "Price")}
               </label>
 
               <input
@@ -719,7 +721,7 @@ export default function AdminCardapioPage() {
             <div>
 
               <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                Imagem do produto
+                {text("Imagem do produto", "Product image")}
               </label>
 
               <div className="flex gap-2">
@@ -837,7 +839,7 @@ export default function AdminCardapioPage() {
             <div>
 
               <h3 className="font-display text-2xl uppercase tracking-tight text-foreground">
-                Produtos cadastrados
+                {text("Produtos cadastrados", "Registered products")}
               </h3>
 
               <p className="mt-1 text-sm text-muted-foreground">
@@ -856,7 +858,7 @@ export default function AdminCardapioPage() {
               }
               className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted/40"
             >
-              Atualizar
+              {text("Atualizar", "Refresh")}
             </button>
 
           </div>
@@ -865,7 +867,7 @@ export default function AdminCardapioPage() {
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl border border-border bg-background p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  Produtos
+                  {text("Produtos", "Products")}
                 </p>
                 <p className="mt-1 text-2xl font-bold text-foreground">
                   {products.length}
@@ -874,7 +876,7 @@ export default function AdminCardapioPage() {
 
               <div className="rounded-xl border border-border bg-background p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  Disponíveis
+                  {text("Disponíveis", "Available")}
                 </p>
                 <p className="mt-1 text-2xl font-bold text-emerald-700">
                   {products.filter((product) => product.available).length}
@@ -883,7 +885,7 @@ export default function AdminCardapioPage() {
 
               <div className="rounded-xl border border-border bg-background p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  Categorias em uso
+                  {text("Categorias em uso", "Categories in use")}
                 </p>
                 <p className="mt-1 text-2xl font-bold text-foreground">
                   {new Set(products.map((product) => product.category.id)).size}
@@ -897,7 +899,7 @@ export default function AdminCardapioPage() {
             <div className="mt-5 rounded-2xl border border-dashed border-border bg-background p-10 text-center">
 
               <p className="text-muted-foreground">
-                Carregando produtos...
+                {text("Carregando produtos...", "Loading products...")}
               </p>
 
             </div>
@@ -925,11 +927,11 @@ export default function AdminCardapioPage() {
 </div>
 
               <h4 className="mt-3 text-lg font-bold text-foreground">
-                Nenhum produto cadastrado
+                {text("Nenhum produto cadastrado", "No products registered")}
               </h4>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Cadastre o primeiro item para começar a montar o cardápio.
+                {text("Cadastre o primeiro item para começar a montar o cardápio.", "Add your first product to get started.")}
               </p>
 
             </div>
@@ -1027,7 +1029,7 @@ export default function AdminCardapioPage() {
                           }
                           className="flex-1 rounded-xl border border-border px-4 py-2.5 font-semibold transition hover:bg-muted/40 disabled:opacity-50"
                         >
-                          Editar
+                          {text("Editar", "Edit")}
                         </button>
 
                         <button
