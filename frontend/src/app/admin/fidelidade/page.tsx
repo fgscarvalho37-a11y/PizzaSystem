@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 
 const API_URL = "";
@@ -185,6 +186,7 @@ function CheckIcon() {
 }
 
 export default function FidelidadePage() {
+  const { text } = useLanguage();
 
   const [
     redemptions,
@@ -790,11 +792,11 @@ export default function FidelidadePage() {
             <div>
 
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                Programa de fidelidade
+                {text("Programa de fidelidade", "Loyalty program")}
               </p>
 
               <h1 className="mt-1 font-display text-3xl uppercase tracking-tight text-foreground sm:text-4xl">
-                Resgates
+                {text("Resgates", "Redemptions")}
               </h1>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
@@ -850,7 +852,7 @@ export default function FidelidadePage() {
           >
 
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-600">
-              Pendentes
+              {text("Pendentes", "Pending")}
             </p>
 
             <p className="mt-2 font-display text-4xl text-foreground">
@@ -858,7 +860,7 @@ export default function FidelidadePage() {
             </p>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              Aguardando utilização
+              {text("Aguardando utilização", "Awaiting use")}
             </p>
 
           </button>
@@ -879,7 +881,7 @@ export default function FidelidadePage() {
           >
 
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-600">
-              Utilizadas
+              {text("Utilizadas", "Used")}
             </p>
 
             <p className="mt-2 font-display text-4xl text-foreground">
@@ -887,7 +889,7 @@ export default function FidelidadePage() {
             </p>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              Benefícios entregues
+              {text("Benefícios entregues", "Rewards given")}
             </p>
 
           </button>
@@ -908,7 +910,7 @@ export default function FidelidadePage() {
           >
 
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-red-600">
-              Canceladas
+              {text("Canceladas", "Canceled")}
             </p>
 
             <p className="mt-2 font-display text-4xl text-foreground">
@@ -916,7 +918,7 @@ export default function FidelidadePage() {
             </p>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              Resgates cancelados
+              {text("Resgates cancelados", "Canceled redemptions")}
             </p>
 
           </button>
@@ -937,7 +939,7 @@ export default function FidelidadePage() {
           >
 
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              Total
+              {text("Total", "Total")}
             </p>
 
             <p className="mt-2 font-display text-4xl text-foreground">
@@ -945,7 +947,7 @@ export default function FidelidadePage() {
             </p>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              Todos os resgates
+              {text("Todos os resgates", "All redemptions")}
             </p>
 
           </button>
@@ -979,7 +981,7 @@ export default function FidelidadePage() {
             <div>
 
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                Recompensas
+                {text("Recompensas", "Rewards")}
               </p>
 
               <h2 className="mt-1 font-display text-3xl uppercase tracking-tight text-foreground">
@@ -1008,7 +1010,7 @@ export default function FidelidadePage() {
                 }
                 className="text-sm font-semibold text-primary transition hover:opacity-75"
               >
-                Limpar filtro
+                {text("Limpar filtro", "Clear filter")}
               </button>
             )}
 
@@ -1017,7 +1019,7 @@ export default function FidelidadePage() {
           {loading ? (
 
             <div className="mt-6 rounded-2xl border border-dashed border-border bg-background px-6 py-14 text-center text-sm text-muted-foreground">
-              Carregando resgates...
+              {text("Carregando resgates...", "Loading redemptions...")}
             </div>
 
           ) : redemptions.length ===
@@ -1026,7 +1028,7 @@ export default function FidelidadePage() {
             <div className="mt-6 rounded-2xl border border-dashed border-border bg-background px-6 py-14 text-center">
 
               <p className="font-semibold text-foreground">
-                Nenhum resgate encontrado.
+                {text("Nenhum resgate encontrado.", "No redemptions found.")}
               </p>
 
               <p className="mt-1 text-sm text-muted-foreground">
@@ -1108,7 +1110,7 @@ export default function FidelidadePage() {
                             }
                             className="h-10 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-bold text-red-700 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-sm disabled:pointer-events-none disabled:opacity-50"
                           >
-                            Cancelar
+                            {text("Cancelar", "Cancel")}
                           </button>
 
                           <button
@@ -1125,7 +1127,7 @@ export default function FidelidadePage() {
                             }
                             className="h-10 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:shadow-sm disabled:pointer-events-none disabled:opacity-50"
                           >
-                            Marcar como utilizada
+                            {text("Marcar como utilizada", "Mark as used")}
                           </button>
 
                         </div>
@@ -1139,7 +1141,7 @@ export default function FidelidadePage() {
                       <div className="rounded-xl border border-border bg-card p-4">
 
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                          Cliente
+                          {text("Cliente", "Customer")}
                         </p>
 
                         <p className="mt-1 truncate text-sm font-semibold text-foreground">
@@ -1158,7 +1160,7 @@ export default function FidelidadePage() {
                       <div className="rounded-xl border border-border bg-card p-4">
 
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                          Resgatada em
+                          {text("Resgatada em", "Redeemed on")}
                         </p>
 
                         <p className="mt-1 text-sm font-semibold text-foreground">
@@ -1192,7 +1194,7 @@ export default function FidelidadePage() {
                       <div className="rounded-xl border border-border bg-card p-4">
 
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                          Resgate
+                          {text("Resgate", "Redemption")}
                         </p>
 
                         <p className="mt-1 text-sm font-semibold text-foreground">
@@ -1325,7 +1327,7 @@ export default function FidelidadePage() {
                 <div className="mt-5 rounded-2xl border border-border bg-background p-4">
 
                   <p className="text-xs font-semibold text-muted-foreground">
-                    Cliente
+                    {text("Cliente", "Customer")}
                   </p>
 
                   <p className="mt-1 font-bold text-foreground">
@@ -1338,7 +1340,7 @@ export default function FidelidadePage() {
                   <div className="my-3 h-px bg-border" />
 
                   <p className="text-xs font-semibold text-muted-foreground">
-                    Recompensa
+                    {text("Recompensa", "Reward")}
                   </p>
 
                   <p className="mt-1 font-bold text-foreground">
@@ -1352,7 +1354,7 @@ export default function FidelidadePage() {
                   <div className="flex items-center justify-between gap-4">
 
                     <p className="text-xs font-semibold text-muted-foreground">
-                      Pontos utilizados
+                      {text("Pontos utilizados", "Points used")}
                     </p>
 
                     <p className="font-bold text-foreground">
@@ -1414,7 +1416,7 @@ export default function FidelidadePage() {
                     }
                     className="h-11 rounded-xl border border-input bg-card px-5 text-sm font-bold text-foreground transition hover:bg-muted/50 disabled:pointer-events-none disabled:opacity-50"
                   >
-                    Voltar
+                    {text("Voltar", "Back")}
                   </button>
 
                   <button
