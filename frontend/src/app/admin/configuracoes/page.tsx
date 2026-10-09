@@ -441,7 +441,7 @@ export default function ConfiguracoesPage() {
         { cache: "no-store" }
       );
       if (!response.ok) {
-        throw new Error("Não foi possível consultar o Mercado Pago.");
+        throw new Error(text("Não foi possível consultar o Mercado Pago.", "Could not check Mercado Pago."));
       }
       const data: MercadoPagoStatus = await response.json();
       setMercadoPagoStatus(data);
@@ -464,7 +464,7 @@ export default function ConfiguracoesPage() {
       );
 
       if (!response.ok) {
-        let message = "Não foi possível iniciar a conexão com o Mercado Pago.";
+        let message = text("Não foi possível iniciar a conexão com o Mercado Pago.", "Could not start Mercado Pago connection.");
         try {
           const data = await response.json();
           if (typeof data?.message === "string" && data.message) {
@@ -478,7 +478,7 @@ export default function ConfiguracoesPage() {
 
       const data: { authorizationUrl?: string } = await response.json();
       if (!data.authorizationUrl) {
-        throw new Error("O Mercado Pago não retornou a URL de autorização.");
+        throw new Error(text("O Mercado Pago não retornou a URL de autorização.", "Mercado Pago did not return an authorization URL."));
       }
 
       window.location.assign(data.authorizationUrl);
@@ -486,7 +486,7 @@ export default function ConfiguracoesPage() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Não foi possível iniciar a conexão com o Mercado Pago."
+          : text("Não foi possível iniciar a conexão com o Mercado Pago.", "Could not start Mercado Pago connection.")
       );
       setMercadoPagoActionLoading(false);
     }
@@ -508,16 +508,16 @@ export default function ConfiguracoesPage() {
       );
 
       if (!response.ok) {
-        throw new Error("Não foi possível desconectar o Mercado Pago.");
+        throw new Error(text("Não foi possível desconectar o Mercado Pago.", "Could not disconnect Mercado Pago."));
       }
 
       await loadMercadoPagoStatus();
-      setSuccessMessage("Mercado Pago desconectado.");
+      setSuccessMessage(text("Mercado Pago desconectado.", "Mercado Pago disconnected."));
     } catch (error) {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Não foi possível desconectar o Mercado Pago."
+          : text("Não foi possível desconectar o Mercado Pago.", "Could not disconnect Mercado Pago.")
       );
     } finally {
       setMercadoPagoActionLoading(false);
@@ -601,7 +601,7 @@ export default function ConfiguracoesPage() {
       fillProfileForm(profileData);
     } catch {
       setErrorMessage(
-        "Não foi possível carregar as configurações."
+        text("Não foi possível carregar as configurações.", "Could not load settings.")
       );
     } finally {
       setLoading(false);
@@ -639,10 +639,10 @@ export default function ConfiguracoesPage() {
     const mercadoPagoResult = params.get("mercadopago");
 
     if (mercadoPagoResult === "connected") {
-      setSuccessMessage("Mercado Pago conectado com sucesso.");
+      setSuccessMessage(text("Mercado Pago conectado com sucesso.", "Mercado Pago connected successfully."));
       window.history.replaceState({}, "", window.location.pathname);
     } else if (mercadoPagoResult === "error") {
-      setErrorMessage("Não foi possível concluir a conexão com o Mercado Pago.");
+      setErrorMessage(text("Não foi possível concluir a conexão com o Mercado Pago.", "Could not complete Mercado Pago connection."));
       window.history.replaceState({}, "", window.location.pathname);
     }
 
@@ -692,12 +692,12 @@ export default function ConfiguracoesPage() {
 
       setSuccessMessage(
         newStatus
-          ? "Recebimento manual de pedidos ativado."
+          ? text("Recebimento manual de pedidos ativado.", "Manual order intake enabled.")
           : "Recebimento de pedidos fechado manualmente."
       );
     } catch {
       setErrorMessage(
-        "Não foi possível alterar o funcionamento."
+        text("Não foi possível alterar o funcionamento.", "Could not change store availability.")
       );
     } finally {
       setChangingStatus(false);
@@ -787,11 +787,11 @@ export default function ConfiguracoesPage() {
       await refreshStatus();
 
       setSuccessMessage(
-        "Configurações operacionais salvas."
+        text("Configurações operacionais salvas.", "Operation settings saved.")
       );
     } catch {
       setErrorMessage(
-        "Não foi possível salvar as configurações."
+        text("Não foi possível salvar as configurações.", "Could not save settings.")
       );
     } finally {
       setSaving(false);
@@ -987,7 +987,7 @@ export default function ConfiguracoesPage() {
 
       if (!response.ok) {
         let message =
-          "Não foi possível salvar as configurações.";
+          text("Não foi possível salvar as configurações.", "Could not save settings.");
 
         try {
           const data =
@@ -1047,7 +1047,7 @@ export default function ConfiguracoesPage() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Não foi possível salvar as configurações."
+          : text("Não foi possível salvar as configurações.", "Could not save settings.")
       );
     } finally {
       setSavingProfile(false);
@@ -1119,7 +1119,7 @@ export default function ConfiguracoesPage() {
 
             <p className="mt-1 text-sm text-red-600">
               {errorMessage ||
-                "Não foi possível carregar as configurações."}
+                text("Não foi possível carregar as configurações.", "Could not load settings.")}
             </p>
           </div>
         </div>
