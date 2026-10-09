@@ -1927,7 +1927,7 @@ export default function CardapioPage() {
             <div className="mt-7 rounded-2xl border border-primary/20 bg-primary/5 p-5">
 
               <p className="font-bold text-primary">
-                Não foi possível carregar o cardápio
+                {text("Não foi possível carregar o cardápio", "Unable to load the menu")}
               </p>
 
               <p className="mt-1 text-sm text-muted-foreground">
@@ -2663,7 +2663,7 @@ export default function CardapioPage() {
                     </div>
 
                     <p className="mt-4 font-display text-2xl">
-                      Seu pedido está vazio
+                      {text("Seu pedido está vazio", "Your order is empty")}
                     </p>
 
                     <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-muted-foreground">
