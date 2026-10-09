@@ -1365,7 +1365,7 @@ export default function AdminEntregasPage() {
 
               <fieldset className="mt-6 flex flex-wrap gap-4" aria-label={text("Modo de cobrança da entrega", "Delivery pricing mode")}>
                 <label><input type="radio" name="pricingMode" checked={pricingMode === "PER_KM"} onChange={() => setPricingMode("PER_KM")} /> {text("Por km", "Per km")}</label>
-                <label><input type="radio" name="pricingMode" checked={pricingMode === "DISTANCE_TIERED"} onChange={() => setPricingMode("DISTANCE_TIERED")} /> Faixas por distância</label>
+                <label><input type="radio" name="pricingMode" checked={pricingMode === "DISTANCE_TIERED"} onChange={() => setPricingMode("DISTANCE_TIERED")} /> {text("Faixas por distância", "Distance bands")}</label>
                 <label><input type="radio" name="pricingMode" checked={pricingMode === "FIXED"} onChange={() => setPricingMode("FIXED")} /> {text("Taxa fixa por bairro", "Fixed fee by neighborhood")}</label>
               </fieldset>
 
@@ -1442,7 +1442,7 @@ export default function AdminEntregasPage() {
                     }
                     placeholder={
                       isBrazil
-                        ? "Endereço completo da pizzaria"
+                        ? text("Endereço completo da pizzaria", "Full restaurant address")
                         : "Street, city, state / region"
                     }
                     className={
@@ -1455,8 +1455,8 @@ export default function AdminEntregasPage() {
 
                   <p className="text-xs leading-5 text-muted-foreground">
                     {isBrazil
-                      ? "Digite o CEP e o número. Rua, bairro, cidade e UF são preenchidos automaticamente. O endereço completo continua editável."
-                      : "Informe o postal code, número e endereço no formato local. O Mapbox localizará o estabelecimento e você poderá ajustar o pino."}
+                      ? text("Digite o CEP e o número. Rua, bairro, cidade e UF são preenchidos automaticamente. O endereço completo continua editável.", "Enter ZIP code and street number. Street, district and city fill automatically, and you can edit the full address.")
+                      : text("Informe o postal code, número e endereço no formato local. O Mapbox localizará o estabelecimento e você poderá ajustar o pino.", "Enter your postal code, street number, and local address. Mapbox will locate the restaurant and you can adjust the pin.")}
                   </p>
 
                   {originCepLoading && (
@@ -1704,7 +1704,7 @@ export default function AdminEntregasPage() {
                             )
                         )}.`
                       : "Defina o valor por km para visualizar um exemplo."
-                    : "Nas faixas, a distância real da rota escolhe automaticamente o valor fixo cadastrado abaixo."}
+                    : text("Nas faixas, a distância real da rota escolhe automaticamente o valor fixo cadastrado abaixo.", "Distance-band pricing uses the actual route to select the fixed fee below.")}
 
                   {freeDeliveryDistanceKm.trim()
                     ? ` Entregas de até ${Number(
@@ -1734,7 +1734,7 @@ export default function AdminEntregasPage() {
               >
                 {saving
                   ? "Salvando..."
-                  : "Salvar configuração"}
+                  : text("Salvar configuração", "Save settings")}
               </button>
 
             </form>
@@ -1859,7 +1859,7 @@ export default function AdminEntregasPage() {
                           >
                             <div>
                               <p className="text-sm font-bold text-foreground">
-                                Mais de {Number(tier.minDistanceKm)} km até {Number(tier.maxDistanceKm)} km
+                                {text("Mais de", "Over")} {Number(tier.minDistanceKm)} km {text("até", "to")} {Number(tier.maxDistanceKm)} km
                               </p>
                               <p className="mt-1 text-xs text-muted-foreground">
                                 Taxa fixa: {formatMoney(tier.fee)}
