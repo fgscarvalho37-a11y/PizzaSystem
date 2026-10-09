@@ -1530,11 +1530,11 @@ function ContaContent() {
             </div>
 
             <p className="mt-6 text-center font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-primary">
-              Verificação de e-mail
+              {text("Verificação de e-mail", "Email verification")}
             </p>
 
             <h1 className="mt-2 text-center font-display text-4xl tracking-tight">
-              Confira seu e-mail
+              {text("Confira seu e-mail", "Check your email")}
             </h1>
 
             <p className="mt-3 text-center text-sm leading-6 text-muted-foreground">
@@ -1550,7 +1550,7 @@ function ContaContent() {
               className="mt-7"
             >
               <label className="block text-center text-sm font-bold">
-                Código de verificação
+                {text("Código de verificação", "Verification code")}
               </label>
 
               <input
@@ -1606,7 +1606,7 @@ function ContaContent() {
 
             <div className="mt-6 border-t border-border pt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Não recebeu o código?
+                {text("Não recebeu o código?", "Didn't get the code?")}
               </p>
 
               <button
@@ -1642,7 +1642,7 @@ function ContaContent() {
               }
               className="mt-5 w-full text-center text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
             >
-              Sair da conta
+              {text("Sair da conta", "Sign out")}
             </button>
           </div>
         </div>
@@ -1750,7 +1750,7 @@ function ContaContent() {
               className="rounded-[26px] border border-border bg-card p-6 text-left shadow-[0_14px_45px_-30px] shadow-foreground/40 transition-transform hover:-translate-y-0.5"
             >
               <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                Histórico
+                {text("Histórico", "History")}
               </p>
 
               <h2 className="mt-2 font-display text-2xl tracking-tight">
@@ -1780,11 +1780,11 @@ function ContaContent() {
               </div>
 
               <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                Fidelidade
+                {text("Fidelidade", "Loyalty")}
               </p>
 
               <h2 className="mt-2 font-display text-2xl tracking-tight">
-                Meus pontos
+                {text("Meus pontos", "My points")}
               </h2>
 
               {loyalty ? (
@@ -1796,7 +1796,7 @@ function ContaContent() {
                 </p>
               ) : (
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Veja seus pontos e benefícios em cada loja.
+                  {text("Veja seus pontos e benefícios em cada loja.", "See your points and rewards at each restaurant.")}
                 </p>
               )}
             </button>
@@ -1807,15 +1807,15 @@ function ContaContent() {
               className="rounded-[26px] border border-border bg-card p-6 text-left shadow-[0_14px_45px_-30px] shadow-foreground/40 transition-transform hover:-translate-y-0.5"
             >
               <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                Perfil
+                {text("Perfil", "Profile")}
               </p>
 
               <h2 className="mt-2 font-display text-2xl tracking-tight">
-                Meus dados
+                {text("Meus dados", "My details")}
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Altere seu nome, telefone, e-mail e senha.
+                {text("Altere seu nome, telefone, e-mail e senha.", "Update your name, phone number, email and password.")}
               </p>
             </button>
           </div>
@@ -1825,15 +1825,15 @@ function ContaContent() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                    Perfil
+                    {text("Perfil", "Profile")}
                   </p>
 
                   <h2 className="mt-1 font-display text-3xl tracking-tight">
-                    Meus dados
+                    {text("Meus dados", "My details")}
                   </h2>
 
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Atualize as informações usadas na sua conta.
+                    {text("Atualize as informações usadas na sua conta.", "Update your account information.")}
                   </p>
                 </div>
 
@@ -1842,7 +1842,7 @@ function ContaContent() {
                   onClick={() => setProfileOpen(false)}
                   className="self-start rounded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary"
                 >
-                  Fechar
+                  {text("Fechar", "Close")}
                 </button>
               </div>
 
@@ -1864,7 +1864,7 @@ function ContaContent() {
 
                 <label className="block">
                   <span className="text-sm font-bold">
-                    Telefone
+                    {text("Telefone", "Phone")}
                   </span>
                   <input
                     value={profilePhone}
@@ -1879,7 +1879,7 @@ function ContaContent() {
 
                 <label className="block sm:col-span-2">
                   <span className="text-sm font-bold">
-                    E-mail
+                    {text("E-mail", "Email")}
                   </span>
                   <input
                     type="email"
@@ -1897,17 +1897,17 @@ function ContaContent() {
               <div className="mt-7 border-t border-border pt-6">
                 <div>
                   <p className="font-display text-xl tracking-tight">
-                    Alterar senha
+                    {text("Alterar senha", "Change password")}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Deixe estes campos vazios se não quiser trocar sua senha.
+                    {text("Deixe estes campos vazios se não quiser trocar sua senha.", "Leave these fields blank if you don't want to change your password.")}
                   </p>
                 </div>
 
                 <div className="mt-4 grid gap-4 sm:grid-cols-3">
                   <label className="block">
                     <span className="text-sm font-bold">
-                      Senha atual
+                      {text("Senha atual", "Current password")}
                     </span>
                     <input
                       type="password"
@@ -1923,7 +1923,7 @@ function ContaContent() {
 
                   <label className="block">
                     <span className="text-sm font-bold">
-                      Nova senha
+                      {text("Nova senha", "New password")}
                     </span>
                     <input
                       type="password"
@@ -1939,7 +1939,7 @@ function ContaContent() {
 
                   <label className="block">
                     <span className="text-sm font-bold">
-                      Confirmar nova senha
+                      {text("Confirmar nova senha", "Confirm new password")}
                     </span>
                     <input
                       type="password"
@@ -1974,7 +1974,7 @@ function ContaContent() {
                   disabled={savingProfile}
                   className="rounded-full border border-border px-5 py-3 text-sm font-bold transition-colors hover:bg-secondary disabled:opacity-50"
                 >
-                  Cancelar
+                  {text("Cancelar", "Cancel")}
                 </button>
 
                 <button
@@ -1996,15 +1996,15 @@ function ContaContent() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                    Fidelidade
+                    {text("Fidelidade", "Loyalty")}
                   </p>
 
                   <h2 className="mt-1 font-display text-3xl tracking-tight">
-                    Meus pontos
+                    {text("Meus pontos", "My points")}
                   </h2>
 
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Acompanhe seus pontos e o histórico de cada loja.
+                    {text("Acompanhe seus pontos e o histórico de cada loja.", "Track your points and history across restaurants.")}
                   </p>
                 </div>
 
@@ -2015,7 +2015,7 @@ function ContaContent() {
                   }
                   className="self-start rounded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary"
                 >
-                  Fechar
+                  {text("Fechar", "Close")}
                 </button>
               </div>
 
@@ -2045,13 +2045,13 @@ function ContaContent() {
                     }
                     className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
                   >
-                    Tentar novamente
+                    {text("Tentar novamente", "Try again")}
                   </button>
                 </div>
               ) : !loyalty ? (
                 <div className="mt-6 rounded-2xl bg-secondary p-5">
                   <p className="font-bold">
-                    Não foi possível encontrar seus pontos.
+                    {text("Não foi possível encontrar seus pontos.", "Could not load your points.")}
                   </p>
                 </div>
               ) : (
@@ -2059,7 +2059,7 @@ function ContaContent() {
                   <div className="mt-6 grid gap-4 sm:grid-cols-3">
                     <div className="rounded-[22px] bg-primary p-5 text-primary-foreground">
                       <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] opacity-80">
-                        Saldo atual
+                        {text("Saldo atual", "Current balance")}
                       </p>
 
                       <p className="mt-2 font-display text-4xl tracking-tight">
@@ -2075,7 +2075,7 @@ function ContaContent() {
 
                     <div className="rounded-[22px] bg-secondary p-5">
                       <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                        Total conquistado
+                        {text("Total conquistado", "Total earned")}
                       </p>
 
                       <p className="mt-2 font-display text-4xl tracking-tight">
@@ -2089,7 +2089,7 @@ function ContaContent() {
 
                     <div className="rounded-[22px] bg-secondary p-5">
                       <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                        Recompensas
+                        {text("Recompensas", "Rewards")}
                       </p>
 
                       <p className="mt-2 font-display text-4xl tracking-tight">
@@ -2125,7 +2125,7 @@ function ContaContent() {
                       </p>
 
                       <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                        Quando um pedido elegível for aprovado, seus pontos aparecerão aqui.
+                        {text("Quando um pedido elegível for aprovado, seus pontos aparecerão aqui.", "Your points appear here when an eligible order is approved.")}
                       </p>
                     </div>
                   ) : (
@@ -2168,7 +2168,7 @@ function ContaContent() {
                                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                       <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                                        Recompensa
+                                        {text("Recompensa", "Reward")}
                                       </p>
 
                                       <h4 className="mt-1 font-display text-2xl tracking-tight">
@@ -2235,11 +2235,11 @@ function ContaContent() {
                                 <div className="flex items-end justify-between gap-3">
                                   <div>
                                     <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                                      Resgates
+                                      {text("Resgates", "Redemptions")}
                                     </p>
 
                                     <h4 className="mt-1 font-display text-xl tracking-tight">
-                                      Minhas recompensas
+                                      {text("Minhas recompensas", "My rewards")}
                                     </h4>
                                   </div>
 
@@ -2300,7 +2300,7 @@ function ContaContent() {
                                               <div className="min-w-0">
                                                 <div className="flex flex-wrap items-center gap-2">
                                                   <span className="rounded-full bg-primary px-3 py-1 font-mono-brand text-[9px] font-bold uppercase tracking-wider text-primary-foreground">
-                                                    Aguardando utilização
+                                                    {text("Aguardando utilização", "Awaiting use")}
                                                   </span>
                                                 </div>
 
@@ -2421,7 +2421,7 @@ function ContaContent() {
                             <div className="p-5">
                               <div className="flex items-center justify-between gap-3">
                                 <h4 className="font-display text-xl tracking-tight">
-                                  Histórico de pontos
+                                  {text("Histórico de pontos", "Points history")}
                                 </h4>
 
                                 <span className="text-xs font-semibold text-muted-foreground">
@@ -2435,7 +2435,7 @@ function ContaContent() {
                               {account.transactions.length === 0 ? (
                                 <div className="mt-4 rounded-2xl bg-secondary p-4">
                                   <p className="text-sm text-muted-foreground">
-                                    Nenhuma movimentação registrada ainda.
+                                    {text("Nenhuma movimentação registrada ainda.", "No transactions recorded yet.")}
                                   </p>
                                 </div>
                               ) : (
@@ -2516,11 +2516,11 @@ function ContaContent() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                    Histórico
+                    {text("Histórico", "History")}
                   </p>
 
                   <h2 className="mt-1 font-display text-3xl tracking-tight">
-                    Meus pedidos
+                    {text("Meus pedidos", "My orders")}
                   </h2>
                 </div>
 
@@ -2531,7 +2531,7 @@ function ContaContent() {
                   }
                   className="self-start rounded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary"
                 >
-                  Fechar
+                  {text("Fechar", "Close")}
                 </button>
               </div>
 
@@ -2608,7 +2608,7 @@ function ContaContent() {
                               }
                               className="mt-3 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-transform active:scale-95"
                             >
-                              Ver pedido
+                              {text("Ver pedido", "View order")}
                             </button>
                           </div>
                         </div>
@@ -2622,13 +2622,13 @@ function ContaContent() {
 
           <section className="mt-6 rounded-[28px] border border-border bg-card p-6">
             <h2 className="font-display text-2xl tracking-tight">
-              Status da conta
+              {text("Status da conta", "Account status")}
             </h2>
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl bg-secondary p-4">
                 <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  E-mail
+                  {text("E-mail", "Email")}
                 </p>
 
                 <p className="mt-1 font-semibold">
@@ -2783,7 +2783,7 @@ function ContaContent() {
             >
               <div>
                 <label className="text-sm font-bold">
-                  E-mail
+                  {text("E-mail", "Email")}
                 </label>
 
                 <input
@@ -2834,7 +2834,7 @@ function ContaContent() {
 
               <div>
                 <label className="text-sm font-bold">
-                  Código de recuperação
+                  {text("Código de recuperação", "Recovery code")}
                 </label>
 
                 <input
@@ -2859,7 +2859,7 @@ function ContaContent() {
 
               <div>
                 <label className="text-sm font-bold">
-                  Nova senha
+                  {text("Nova senha", "New password")}
                 </label>
 
                 <input
@@ -2879,7 +2879,7 @@ function ContaContent() {
 
               <div>
                 <label className="text-sm font-bold">
-                  Confirmar nova senha
+                  {text("Confirmar nova senha", "Confirm new password")}
                 </label>
 
                 <input
@@ -2931,7 +2931,7 @@ function ContaContent() {
                 }}
                 className="w-full text-center text-sm font-bold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
               >
-                Solicitar outro código
+                {text("Solicitar outro código", "Request another code")}
               </button>
             </form>
           ) : (
@@ -2967,7 +2967,7 @@ function ContaContent() {
 
                     <div>
                       <label className="text-sm font-bold">
-                        Telefone
+                        {text("Telefone", "Phone")}
                       </label>
 
                       <input
@@ -2987,7 +2987,7 @@ function ContaContent() {
 
                 <div>
                   <label className="text-sm font-bold">
-                    E-mail
+                    {text("E-mail", "Email")}
                   </label>
 
                   <input
@@ -3025,7 +3025,7 @@ function ContaContent() {
                         }}
                         className="text-xs font-bold text-primary"
                       >
-                        Esqueci minha senha
+                        {text("Esqueci minha senha", "Forgot my password")}
                       </button>
                     )}
                   </div>
