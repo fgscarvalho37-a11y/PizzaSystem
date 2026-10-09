@@ -1496,7 +1496,7 @@ export default function ConfiguracoesPage() {
                   <p className="text-sm font-bold text-foreground">Conta Mercado Pago vinculada</p>
                   {mercadoPagoStatus.mercadoPagoUserId && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Identificação da conta: {mercadoPagoStatus.mercadoPagoUserId}
+                      {text("Identificação da conta:", "Account ID:")} {mercadoPagoStatus.mercadoPagoUserId}
                     </p>
                   )}
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -2062,7 +2062,7 @@ export default function ConfiguracoesPage() {
                         {profileForm.loyaltyMinimumOrderValue !==
                           null && (
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Pedido mínimo para participar:{" "}
+                            {text("Pedido mínimo para participar:", "Minimum order to qualify:")}{" "}
                             {formatStoreMoney(
                               profileForm.loyaltyMinimumOrderValue
                             )}
@@ -2070,7 +2070,7 @@ export default function ConfiguracoesPage() {
                         )}
 
                         <p className="mt-1 text-xs font-semibold text-primary">
-                          Recompensa:{" "}
+                          {text("Recompensa:", "Reward:")}{" "}
                           {profileForm.loyaltyRewardDescription ||
                             "Defina uma recompensa"}
                         </p>
@@ -2089,7 +2089,7 @@ export default function ConfiguracoesPage() {
               >
                 {savingProfile
                   ? "Salvando..."
-                  : "Salvar contato e fidelidade"}
+                  : text("Salvar contato e fidelidade", "Save contact and loyalty")}
               </button>
             </div>
           </div>
