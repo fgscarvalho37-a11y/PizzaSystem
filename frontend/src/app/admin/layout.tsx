@@ -25,12 +25,13 @@ type AdminLayoutProps = {
 const API_URL = "";
 
 function PizzaSystemLoader() {
+  const { text } = useLanguage();
   return (
     <div
       className="flex flex-col items-center"
       role="status"
       aria-live="polite"
-      aria-label="Verificando acesso administrativo"
+      aria-label={text("Verificando acesso administrativo", "Checking admin access")}
     >
       <div className="relative flex h-14 w-14 items-center justify-center">
 
