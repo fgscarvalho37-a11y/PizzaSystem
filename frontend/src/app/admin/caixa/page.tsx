@@ -1008,7 +1008,7 @@ export default function AdminCaixaPage() {
                   >
                     {isClosed
                       ? "Fechamento oficial registrado."
-                      : "Disponível para fechamento."}
+                      : text("Disponível para fechamento.", "Ready to close.")}
                   </p>
 
                 </div>
@@ -1544,7 +1544,7 @@ export default function AdminCaixaPage() {
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Você está prestes a registrar o fechamento oficial de{" "}
+                {text("Você está prestes a registrar o fechamento oficial de", "You are about to record the official closeout for")}{" "}
                 <strong className="text-foreground">
                   {formatDate(
                     cash.date
@@ -1575,8 +1575,8 @@ export default function AdminCaixaPage() {
               </div>
 
               <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                Depois do fechamento, esses valores ficarão registrados como
-                referência oficial para esta data.
+                {text("Depois do fechamento, esses valores ficarão registrados como", "After closing, these amounts will be saved as the")}
+                {text("referência oficial para esta data.", "official record for that day.")}
               </p>
 
               <div className="mt-5 flex justify-end gap-2">
