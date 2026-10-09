@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import MapboxLocationPicker from "@/components/MapboxLocationPicker";
 import { adminFetch } from "@/lib/adminFetch";
 
@@ -88,6 +89,7 @@ function formatCep(value: string) {
 }
 
 export default function AdminEntregasPage() {
+  const { text } = useLanguage();
   const [
     countryCode,
     setCountryCode,
@@ -1267,11 +1269,11 @@ export default function AdminEntregasPage() {
           </p>
 
           <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-            Taxas de entrega
+            {text("Taxas de entrega", "Delivery fees")}
           </h1>
 
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Escolha como a pizzaria cobra a entrega: por km, por faixas de distância ou com uma taxa fixa para cada bairro.
+            {text("Escolha como a pizzaria cobra a entrega: por km, por faixas de distância ou com uma taxa fixa para cada bairro.", "Choose how the restaurant charges for delivery: per km, distance bands, or fixed fees by neighborhood.")}
           </p>
 
         </section>
@@ -1303,7 +1305,7 @@ export default function AdminEntregasPage() {
 
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-                    Provedor de rota
+                    {text("Provedor de rota", "Routing provider")}
                   </p>
 
                   <h2 className="mt-1 text-xl font-bold text-foreground">
@@ -1311,7 +1313,7 @@ export default function AdminEntregasPage() {
                   </h2>
 
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    O Mapbox localiza a pizzaria e calcula a rota real de carro até o cliente. O ponto de saída pode ser ajustado no mapa.
+                    {text("O Mapbox localiza a pizzaria e calcula a rota real de carro até o cliente. O ponto de saída pode ser ajustado no mapa.", "Mapbox locates your restaurant and calculates the driving route to the customer. You can adjust the start point on the map.")}
                   </p>
                 </div>
 
@@ -1349,28 +1351,28 @@ export default function AdminEntregasPage() {
 
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-                  Configuração
+                  {text("Configuração", "Settings")}
                 </p>
 
                 <h2 className="mt-1 text-xl font-bold text-foreground">
-                  Regras de entrega
+                  {text("Regras de entrega", "Delivery rules")}
                 </h2>
 
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  A rota é recalculada no servidor quando o pedido é criado, então o cliente não consegue alterar a taxa manualmente.
+                  {text("A rota é recalculada no servidor quando o pedido é criado, então o cliente não consegue alterar a taxa manualmente.", "The route is recalculated on the server when an order is placed, so customers cannot change the delivery fee.")}
                 </p>
               </div>
 
-              <fieldset className="mt-6 flex flex-wrap gap-4" aria-label="Modo de cobrança da entrega">
-                <label><input type="radio" name="pricingMode" checked={pricingMode === "PER_KM"} onChange={() => setPricingMode("PER_KM")} /> Por km</label>
+              <fieldset className="mt-6 flex flex-wrap gap-4" aria-label={text("Modo de cobrança da entrega", "Delivery pricing mode")}>
+                <label><input type="radio" name="pricingMode" checked={pricingMode === "PER_KM"} onChange={() => setPricingMode("PER_KM")} /> {text("Por km", "Per km")}</label>
                 <label><input type="radio" name="pricingMode" checked={pricingMode === "DISTANCE_TIERED"} onChange={() => setPricingMode("DISTANCE_TIERED")} /> Faixas por distância</label>
-                <label><input type="radio" name="pricingMode" checked={pricingMode === "FIXED"} onChange={() => setPricingMode("FIXED")} /> Taxa fixa por bairro</label>
+                <label><input type="radio" name="pricingMode" checked={pricingMode === "FIXED"} onChange={() => setPricingMode("FIXED")} /> {text("Taxa fixa por bairro", "Fixed fee by neighborhood")}</label>
               </fieldset>
 
               {usesMapbox && <><div className="mt-6">
 
                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                  Endereço de saída da pizzaria
+                  {text("Endereço de saída da pizzaria", "Restaurant origin address")}
                 </label>
 
                 <div className="grid gap-3 md:grid-cols-[180px_140px_1fr]">
@@ -1423,7 +1425,7 @@ export default function AdminEntregasPage() {
                       setOriginLatitude(null);
                       setOriginLongitude(null);
                     }}
-                    placeholder="Número"
+                    placeholder={text("Número", "Street number")}
                     className={fieldClass}
                   />
 
@@ -1459,7 +1461,7 @@ export default function AdminEntregasPage() {
 
                   {originCepLoading && (
                     <span className="text-xs text-muted-foreground">
-                      Buscando CEP...
+                      {text("Buscando CEP...", "Looking up ZIP code...")}
                     </span>
                   )}
 
@@ -1478,7 +1480,7 @@ export default function AdminEntregasPage() {
                       rel="noreferrer"
                       className="text-xs font-bold text-primary underline underline-offset-2"
                     >
-                      Conferir endereço
+                      {text("Conferir endereço", "Check address")}
                     </a>
                   )}
 
@@ -1487,7 +1489,7 @@ export default function AdminEntregasPage() {
                 <div className="mt-4">
                   {originMapLoading && (
                     <p className="mb-2 text-xs text-muted-foreground">
-                      Localizando a pizzaria no Mapbox...
+                      {text("Localizando a pizzaria no Mapbox...", "Locating restaurant with Mapbox...")}
                     </p>
                   )}
 
@@ -1518,7 +1520,7 @@ export default function AdminEntregasPage() {
                   <div>
 
                     <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                      Valor por km
+                      {text("Valor por km", "Price per km")}
                     </label>
 
                     <div className="relative">
@@ -1559,7 +1561,7 @@ export default function AdminEntregasPage() {
                 <div>
 
                   <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                    Distância máxima
+                    {text("Distância máxima", "Maximum distance")}
                   </label>
 
                   <div className="relative">
@@ -1591,7 +1593,7 @@ export default function AdminEntregasPage() {
                   </div>
 
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                    Em branco = sem limite configurado.
+                    {text("Em branco = sem limite configurado.", "Leave blank for no distance limit.")}
                   </p>
 
                 </div>
@@ -1599,7 +1601,7 @@ export default function AdminEntregasPage() {
                 <div>
 
                   <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                    Frete grátis até
+                    {text("Frete grátis até", "Free delivery up to")}
                   </label>
 
                   <div className="relative">
@@ -1631,7 +1633,7 @@ export default function AdminEntregasPage() {
                   </div>
 
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                    Em branco = cobra normalmente desde o primeiro km.
+                    {text("Em branco = cobra normalmente desde o primeiro km.", "Leave blank to charge delivery starting from the first km.")}
                   </p>
 
                 </div>
@@ -1639,7 +1641,7 @@ export default function AdminEntregasPage() {
                 <div>
 
                   <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                    Frete grátis acima de
+                    {text("Frete grátis acima de", "Free delivery over")}
                   </label>
 
                   <div className="relative">
@@ -1671,7 +1673,7 @@ export default function AdminEntregasPage() {
                   </div>
 
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                    Em branco = sem isenção automática.
+                    {text("Em branco = sem isenção automática.", "Leave blank to disable automatic free delivery.")}
                   </p>
 
                 </div>
@@ -1681,7 +1683,7 @@ export default function AdminEntregasPage() {
               <div className="mt-6 rounded-2xl border border-border bg-background p-4">
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  Exemplo da regra
+                  {text("Exemplo da regra", "Rule example")}
                 </p>
 
                 <p className="mt-2 text-sm leading-6 text-foreground">
@@ -1741,13 +1743,13 @@ export default function AdminEntregasPage() {
               <section className="mt-6 rounded-3xl border border-border bg-card p-5 sm:p-6">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-                    Faixas de distância
+                    {text("Faixas de distância", "Distance bands")}
                   </p>
                   <h2 className="mt-1 text-xl font-bold text-foreground">
-                    Valor fixo por faixa de km
+                    {text("Valor fixo por faixa de km", "Fixed fee per distance band")}
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Exemplo: até 4 km grátis; de 4 a 5 km {formatMoney(5)}; de 5 a 7 km {formatMoney(8)}. O Mapbox calcula a distância e o sistema escolhe a faixa automaticamente.
+                    {text("Exemplo: até 4 km grátis; de 4 a 5 km {formatMoney(5)}; de 5 a 7 km {formatMoney(8)}. O Mapbox calcula a distância e o sistema escolhe a faixa automaticamente.", "For example: free up to 4 km; 4–5 km {formatMoney(5)}; 5–7 km {formatMoney(8)}. Mapbox calculates distance and selects the band automatically.")}
                   </p>
                 </div>
 
@@ -1803,7 +1805,7 @@ export default function AdminEntregasPage() {
 
                   <div>
                     <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                      Valor
+                      {text("Valor", "Amount")}
                     </label>
                     <div className="relative">
                       <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
@@ -1839,7 +1841,7 @@ export default function AdminEntregasPage() {
                 <div className="mt-5 overflow-hidden rounded-2xl border border-border">
                   {tiers.filter((tier) => tier.active).length === 0 ? (
                     <div className="p-5 text-sm text-muted-foreground">
-                      Nenhuma faixa cadastrada ainda.
+                      {text("Nenhuma faixa cadastrada ainda.", "No distance bands set up yet.")}
                     </div>
                   ) : (
                     <ul className="divide-y divide-border">
@@ -1871,7 +1873,7 @@ export default function AdminEntregasPage() {
                               }
                               className="w-fit text-sm font-bold text-primary"
                             >
-                              Desativar
+                              {text("Desativar", "Disable")}
                             </button>
                           </li>
                         ))}
@@ -1883,19 +1885,19 @@ export default function AdminEntregasPage() {
 
             {pricingMode === "FIXED" && (
               <section className="mt-6 rounded-3xl border border-border bg-card p-5 sm:p-6">
-                <h2 className="text-xl font-bold">Taxas por bairro</h2>
-                <p className="mt-2 text-sm text-muted-foreground">Cadastre cidade, bairro e valor. Salve também o modo de cobrança acima.</p>
+                <h2 className="text-xl font-bold">{text("Taxas por bairro", "Neighborhood fees")}</h2>
+                <p className="mt-2 text-sm text-muted-foreground">{text("Cadastre cidade, bairro e valor. Salve também o modo de cobrança acima.", "Add city, neighborhood and amount. Save the pricing mode above as well.")}</p>
                 <form onSubmit={saveArea} className="mt-4 grid gap-3 sm:grid-cols-4">
                   <input className={fieldClass} placeholder="Cidade" value={areaCity} onChange={e => setAreaCity(e.target.value)} required />
                   <input className={fieldClass} placeholder="Bairro" value={areaNeighborhood} onChange={e => setAreaNeighborhood(e.target.value)} required />
                   <input className={fieldClass} type="number" min="0" step="0.01" placeholder={`Taxa em ${currencySymbol}`} value={areaFee} onChange={e => setAreaFee(e.target.value)} required />
-                  <button disabled={areaSaving} className="rounded-xl bg-foreground px-4 text-sm font-bold text-background disabled:opacity-50">Adicionar taxa</button>
+                  <button disabled={areaSaving} className="rounded-xl bg-foreground px-4 text-sm font-bold text-background disabled:opacity-50">{text("Adicionar taxa", "Add fee")}</button>
                 </form>
                 <ul className="mt-5 divide-y divide-border">
                   {areas.filter(area => area.active && area.pricingMode === "FIXED").map(area => (
                     <li key={area.id} className="flex items-center justify-between gap-3 py-3 text-sm">
                       <span>{area.neighborhood}, {area.city} — {formatMoney(area.fee)}</span>
-                      <button type="button" onClick={() => void removeArea(area.id)} className="font-bold text-primary">Desativar</button>
+                      <button type="button" onClick={() => void removeArea(area.id)} className="font-bold text-primary">{text("Desativar", "Disable")}</button>
                     </li>
                   ))}
                 </ul>
