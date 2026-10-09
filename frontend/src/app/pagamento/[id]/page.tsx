@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 const API_URL = "";
 
@@ -37,9 +38,9 @@ type LocalOrder = {
   total: number;
 };
 
-function formatMoney(value: number) {
+function formatMoney(value: number, locale: string) {
   return new Intl.NumberFormat(
-    "pt-BR",
+    locale,
     {
       style: "currency",
       currency: "BRL",
@@ -99,6 +100,7 @@ function CopyIcon({
 export default function PagamentoPage() {
   const params = useParams();
   const router = useRouter();
+  const { text, locale } = useLanguage();
 
   const id = params.id as string;
 
@@ -412,7 +414,7 @@ export default function PagamentoPage() {
 
           if (!response.ok) {
             throw new Error(
-              "Não foi possível cancelar o Pix expirado."
+              text("Não foi possível cancelar o Pix expirado.", "Could not cancel the expired Pix payment.")
             );
           }
 
@@ -434,7 +436,7 @@ export default function PagamentoPage() {
           );
 
           setCancelError(
-            "O Pix expirou, mas não foi possível cancelar o pedido automaticamente."
+            text("O Pix expirou, mas não foi possível cancelar o pedido automaticamente.", "Pix expired, but we could not automatically cancel the order.")
           );
         }
       };
@@ -481,15 +483,15 @@ export default function PagamentoPage() {
       <main className="grid min-h-screen place-items-center bg-background px-5 py-10 text-foreground">
         <div className="w-full max-w-lg rounded-[28px] border border-border bg-card p-8 text-center shadow-[0_18px_60px_-30px] shadow-foreground/40">
           <p className="font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-primary">
-            Pagamento
+            {text("Pagamento", "Payment")}
           </p>
 
           <h1 className="mt-2 font-display text-4xl tracking-tight">
-            Não foi possível carregar
+            {text("Não foi possível carregar", "Unable to load")}
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Tente novamente em alguns instantes ou volte ao cardápio.
+            {text("Tente novamente em alguns instantes ou volte ao cardápio.", "Try again shortly or return to the menu.")}
           </p>
 
           <button
@@ -497,7 +499,7 @@ export default function PagamentoPage() {
             onClick={goBackToStore}
             className="brand-button mt-6 w-full rounded-2xl px-5 py-3.5"
           >
-            Voltar ao cardápio
+            {text("Voltar ao cardápio", "Back to menu")}
           </button>
         </div>
       </main>
@@ -598,7 +600,7 @@ export default function PagamentoPage() {
 
       if (!response.ok) {
         let message =
-          "Não foi possível cancelar o pedido.";
+          text("Não foi possível cancelar o pedido.", "We could not cancel the order.");
 
         try {
           const payload =
@@ -645,7 +647,7 @@ export default function PagamentoPage() {
       setCancelError(
         error instanceof Error
           ? error.message
-          : "Não foi possível cancelar o pedido."
+          : text("Não foi possível cancelar o pedido.", "We could not cancel the order.")
       );
 
       setShowCancelConfirm(false);
@@ -684,20 +686,20 @@ export default function PagamentoPage() {
             </div>
 
             <p className="mt-6 font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Pagamento confirmado
+              {text("Pagamento confirmado", "Payment confirmed")}
             </p>
 
             <h1 className="mt-2 font-display text-5xl tracking-tight">
-              Pedido recebido
+              {text("Pedido recebido", "Order received")}
             </h1>
 
             <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
-              O pagamento foi aprovado e a pizzaria já recebeu seu pedido. Você será direcionado para o acompanhamento em instantes.
+              {text("O pagamento foi aprovado e a pizzaria já recebeu seu pedido. Você será direcionado para o acompanhamento em instantes.", "Your payment was approved and the restaurant received your order. You will be redirected to tracking shortly.")}
             </p>
 
             <div className="mx-auto mt-7 max-w-md rounded-2xl bg-secondary p-5">
               <p className="font-mono-brand text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                Pedido
+                {text("Pedido", "Order")}
               </p>
 
               <p className="mt-1 font-display text-4xl tracking-tight">
@@ -710,7 +712,7 @@ export default function PagamentoPage() {
                 </span>
 
                 <span className="rounded-full bg-foreground px-3 py-1.5 text-xs font-bold text-cream">
-                  Recebido
+                  {text("Recebido", "Received")}
                 </span>
               </div>
             </div>
@@ -726,7 +728,7 @@ export default function PagamentoPage() {
               }
               className="brand-button mt-7 w-full rounded-2xl px-5 py-3.5"
             >
-              Acompanhar pedido
+              {text("Acompanhar pedido", "Track order")}
             </button>
           </div>
         </div>
@@ -769,17 +771,18 @@ export default function PagamentoPage() {
         <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="font-display text-4xl tracking-tight sm:text-5xl">
-              Pague com Pix
+              {text("Pague com Pix", "Pay with Pix")}
             </h1>
 
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Escaneie o QR Code ou copie o código abaixo. A confirmação acontece automaticamente.
+              {text("Escaneie o QR Code ou copie o código abaixo. A confirmação acontece automaticamente.", "Scan the QR code or copy the payment code below. Confirmation is automatic.")}
             </p>
           </div>
 
           <p className="font-display text-4xl tracking-tight text-primary sm:text-5xl">
             {formatMoney(
-              Number(data.total_amount)
+              Number(data.total_amount),
+              locale
             )}
           </p>
         </div>
@@ -787,7 +790,7 @@ export default function PagamentoPage() {
         <div className="mt-8 grid items-start gap-6 md:grid-cols-[340px_1fr]">
           <section className="rounded-[28px] border border-border bg-card p-5 shadow-[0_18px_60px_-30px] shadow-foreground/40">
             <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Escaneie para pagar
+              {text("Escaneie para pagar", "Scan to pay")}
             </p>
 
             <div className="mt-4 rounded-2xl bg-white p-4">
@@ -800,8 +803,8 @@ export default function PagamentoPage() {
               ) : (
                 <div className="grid aspect-square place-items-center rounded-xl bg-secondary text-center text-sm text-muted-foreground">
                   {expired
-                    ? "Pix expirado"
-                    : "QR Code indisponível"}
+                    ? text("Pix expirado", "Pix expired")
+                    : text("QR Code indisponível", "QR code unavailable")}
                 </div>
               )}
             </div>
@@ -817,8 +820,8 @@ export default function PagamentoPage() {
 
                   <h2 className="mt-1 font-display text-2xl tracking-tight">
                     {expired
-                      ? "Pix expirado"
-                      : "Aguardando pagamento"}
+                      ? text("Pix expirado", "Pix expired")
+                      : text("Aguardando pagamento", "Awaiting payment")}
                   </h2>
                 </div>
 
@@ -831,14 +834,14 @@ export default function PagamentoPage() {
                     }`}
                   />
                   {expired
-                    ? "Expirado"
-                    : "Verificando"}
+                    ? text("Expirado", "Expired")
+                    : text("Verificando", "Checking")}
                 </span>
               </div>
 
               <div className="mt-4 flex items-center justify-between rounded-2xl bg-secondary/70 px-4 py-3">
                 <span className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                  Tempo restante
+                  {text("Tempo restante", "Time remaining")}
                 </span>
 
                 <span className={`font-mono-brand text-lg font-bold ${
@@ -852,14 +855,14 @@ export default function PagamentoPage() {
 
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 {expired
-                  ? "O tempo desta cobrança terminou. Cancele o pedido ou volte ao cardápio para fazer um novo pedido."
-                  : "Pode fechar o aplicativo do banco depois de pagar. Esta página verifica o status automaticamente a cada poucos segundos."}
+                  ? text("O tempo desta cobrança terminou. Cancele o pedido ou volte ao cardápio para fazer um novo pedido.", "This payment window has ended. Cancel the order or return to the menu to place a new one.")
+                  : text("Pode fechar o aplicativo do banco depois de pagar. Esta página verifica o status automaticamente a cada poucos segundos.", "You can close your banking app after paying. This page checks the payment status automatically.")}
               </p>
             </section>
 
             <section className="rounded-[28px] border border-border bg-card p-5 shadow-[0_18px_60px_-30px] shadow-foreground/40">
               <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                Pix copia e cola
+                {text("Pix copia e cola", "Copy-and-paste Pix")}
               </p>
 
               <textarea
@@ -885,12 +888,12 @@ export default function PagamentoPage() {
                 {copied ? (
                   <>
                     <CheckIcon className="h-4 w-4" />
-                    Código copiado
+                    {text("Código copiado", "Code copied")}
                   </>
                 ) : (
                   <>
                     <CopyIcon className="h-4 w-4" />
-                    Copiar código Pix
+                    {text("Copiar código Pix", "Copy Pix code")}
                   </>
                 )}
               </button>
@@ -905,7 +908,7 @@ export default function PagamentoPage() {
                   rel="noreferrer"
                   className="mt-3 block text-center font-mono-brand text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  Abrir no Mercado Pago
+                  {text("Abrir no Mercado Pago", "Open in Mercado Pago")}
                 </a>
               )}
             </section>
@@ -915,7 +918,7 @@ export default function PagamentoPage() {
         {cancelError && (
           <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4">
             <p className="font-bold text-primary">
-              Não foi possível cancelar
+              {text("Não foi possível cancelar", "Unable to cancel")}
             </p>
 
             <p className="mt-1 text-sm text-muted-foreground">
@@ -930,7 +933,7 @@ export default function PagamentoPage() {
             onClick={goBackToStore}
             className="min-h-12 rounded-2xl border-2 border-foreground bg-transparent px-5 text-sm font-bold transition-colors hover:bg-foreground hover:text-cream"
           >
-            Voltar ao cardápio
+            {text("Voltar ao cardápio", "Back to menu")}
           </button>
 
           <button
@@ -945,14 +948,14 @@ export default function PagamentoPage() {
             className="min-h-12 rounded-2xl border border-primary/30 bg-primary/5 px-5 text-sm font-bold text-primary transition-colors hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
           >
             {canceling
-              ? "Cancelando..."
+              ? text("Cancelando...", "Canceling...")
               : "Cancelar pedido"}
           </button>
         </div>
 
         <div className="mt-6 rounded-2xl border border-border bg-secondary/55 p-4">
           <p className="text-sm font-semibold">
-            Depois do pagamento, você será direcionado para acompanhar o pedido assim que a aprovação for identificada.
+            {text("Depois do pagamento, você será direcionado para acompanhar o pedido assim que a aprovação for identificada.", "After payment, you will be redirected to your order once approval is confirmed.")}
           </p>
         </div>
       </div>
@@ -966,18 +969,18 @@ export default function PagamentoPage() {
         >
           <div className="w-full max-w-md rounded-[28px] border border-border bg-card p-6 shadow-2xl sm:p-7">
             <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              Cancelar pedido
+              {text("Cancelar pedido", "Cancel order")}
             </p>
 
             <h2
               id="cancel-order-title"
               className="mt-2 font-display text-3xl tracking-tight"
             >
-              Tem certeza?
+              {text("Tem certeza?", "Are you sure?")}
             </h2>
 
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Se você cancelar agora, este pedido será encerrado e o Pix não será mais considerado válido pelo PizzaSystem.
+              {text("Se você cancelar agora, este pedido será encerrado e o Pix não será mais considerado válido pelo PizzaSystem.", "If you cancel now, this order will be closed and the Pix payment will no longer be valid in PizzaSystem.")}
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -989,7 +992,7 @@ export default function PagamentoPage() {
                 disabled={canceling}
                 className="min-h-12 rounded-2xl border-2 border-foreground bg-transparent px-5 text-sm font-bold transition-colors hover:bg-foreground hover:text-cream disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Manter pedido
+                {text("Manter pedido", "Keep order")}
               </button>
 
               <button
@@ -1001,8 +1004,8 @@ export default function PagamentoPage() {
                 className="min-h-12 rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {canceling
-                  ? "Cancelando..."
-                  : "Sim, cancelar"}
+                  ? text("Cancelando...", "Canceling...")
+                  : text("Sim, cancelar", "Yes, cancel")}
               </button>
             </div>
           </div>

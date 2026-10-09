@@ -10,6 +10,8 @@ import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
 import { formatStoreMoney } from "@/lib/storeIntl";
+import { useLanguage } from "@/i18n/LanguageProvider";
+import { adminLabel } from "@/lib/adminTranslations";
 
 /* =========================
    TIPOS
@@ -514,6 +516,7 @@ function OrdersSkeleton() {
 ========================= */
 
 export default function AdminPedidosPage() {
+  const { isEnglish } = useLanguage();
   const [
     orders,
     setOrders,
@@ -1202,7 +1205,7 @@ export default function AdminPedidosPage() {
                         status.value
                       }
                     >
-                      {status.label}
+                      {adminLabel(status.label, isEnglish)}
                     </option>
                   )
                 )}
@@ -1254,7 +1257,7 @@ export default function AdminPedidosPage() {
                         status.value
                       }
                     >
-                      {status.label}
+                      {adminLabel(status.label, isEnglish)}
                     </option>
                   )
                 )}
@@ -1454,9 +1457,7 @@ export default function AdminPedidosPage() {
                               order.paymentStatus
                             )}`}
                           >
-                            {paymentStatusName(
-                              order.paymentStatus
-                            )}
+                            {adminLabel(paymentStatusName(order.paymentStatus), isEnglish)}
                           </span>
 
                           <span
@@ -1468,10 +1469,8 @@ export default function AdminPedidosPage() {
                               "PICKUP" &&
                             order.status ===
                               "DELIVERED"
-                              ? "Retirado"
-                              : orderStatusName(
-                                  order.status
-                                )}
+                              ? adminLabel("Retirado", isEnglish)
+                              : adminLabel(orderStatusName(order.status), isEnglish)}
                           </span>
 
                           <div className="ml-0 min-w-28 sm:ml-3 sm:text-right">
@@ -1572,9 +1571,7 @@ export default function AdminPedidosPage() {
                         )}
 
                         <span className="ml-auto text-sm font-medium text-muted-foreground">
-                          {paymentMethodName(
-                            order.paymentMethod
-                          )}
+                          {adminLabel(paymentMethodName(order.paymentMethod), isEnglish)}
                         </span>
 
                       </div>
@@ -1775,10 +1772,8 @@ export default function AdminPedidosPage() {
                               <p className="font-bold text-foreground">
                                 {order.paymentTiming ===
                                 "ON_PICKUP"
-                                  ? "Pagamento na retirada"
-                                  : paymentMethodName(
-                                      order.paymentMethod
-                                    )}
+                                  ? adminLabel("Pagamento na retirada", isEnglish)
+                                  : adminLabel(paymentMethodName(order.paymentMethod), isEnglish)}
                               </p>
 
                               <span
@@ -1786,9 +1781,7 @@ export default function AdminPedidosPage() {
                                   order.paymentStatus
                                 )}`}
                               >
-                                {paymentStatusName(
-                                  order.paymentStatus
-                                )}
+                                {adminLabel(paymentStatusName(order.paymentStatus), isEnglish)}
                               </span>
 
                               {order.fulfillmentType ===
@@ -1854,7 +1847,7 @@ export default function AdminPedidosPage() {
                                               className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground disabled:opacity-50"
                                             >
                                               {
-                                                option.label
+                                                adminLabel(option.label, isEnglish)
                                               }
                                             </button>
                                           )

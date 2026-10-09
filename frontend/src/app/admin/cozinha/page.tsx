@@ -8,6 +8,8 @@ import {
 import AdminHeader from "@/components/AdminHeader";
 import { adminFetch } from "@/lib/adminFetch";
 import { formatStoreMoney } from "@/lib/storeIntl";
+import { useLanguage } from "@/i18n/LanguageProvider";
+import { adminLabel } from "@/lib/adminTranslations";
 
 type OrderStatus =
   | "PENDING_PAYMENT"
@@ -228,6 +230,7 @@ function normalizeAddons(
 }
 
 export default function CozinhaPage() {
+  const { isEnglish } = useLanguage();
 
   const [
     orders,
@@ -725,10 +728,8 @@ export default function CozinhaPage() {
                               "PICKUP" &&
                             order.status ===
                               "DELIVERED"
-                              ? "Retirado"
-                              : statusName(
-                                  order.status
-                                )}
+                              ? adminLabel("Retirado", isEnglish)
+                              : adminLabel(statusName(order.status), isEnglish)}
                           </span>
 
                           <div className="mt-2 flex flex-col items-end gap-1">
@@ -1109,10 +1110,8 @@ export default function CozinhaPage() {
                             className="inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50"
                           >
                             {isUpdating
-                              ? "Atualizando..."
-                              : nextButtonText(
-                                  order
-                                )}
+                              ? adminLabel("Atualizando...", isEnglish)
+                              : adminLabel(nextButtonText(order), isEnglish)}
                           </button>
 
                         )}

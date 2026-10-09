@@ -1,0 +1,38 @@
+/** Shared labels for order and payment operations. Keep backend enum values unchanged. */
+const en: Record<string, string> = {
+  "Todos": "All",
+  "Aguardando pagamento": "Awaiting payment",
+  "Recebido": "Received",
+  "Preparando": "Preparing",
+  "Pronto": "Ready",
+  "Saiu para entrega": "Out for delivery",
+  "Entregue": "Delivered",
+  "Cancelado": "Canceled",
+  "Retirado": "Picked up",
+  "Pendente": "Pending",
+  "Aprovado": "Approved",
+  "Recusado": "Rejected",
+  "Estornado": "Refunded",
+  "A definir": "Not selected",
+  "Cartão de crédito": "Credit card",
+  "Cartão de débito": "Debit card",
+  "Dinheiro": "Cash",
+  "Cartão": "Card",
+  "Outro": "Other",
+  "Iniciar preparo": "Start preparing",
+  "Marcar como pronto": "Mark as ready",
+  "Marcar como retirado": "Mark as picked up",
+  "Marcar como entregue": "Mark as delivered",
+  "Avançar": "Next",
+  "Atualizando...": "Updating...",
+  "Pagamento na retirada": "Pay at pickup",
+  "Confirmando...": "Confirming...",
+  "Confirmar dinheiro recebido": "Confirm cash received",
+  "Ocultar": "Hide",
+  "Detalhes": "Details",
+  "Atualizar": "Refresh",
+  "Atualizando": "Updating",
+};
+export function adminLabel(label: string, isEnglish: boolean): string {
+  return isEnglish ? (en[label] ?? label) : label;
+}
