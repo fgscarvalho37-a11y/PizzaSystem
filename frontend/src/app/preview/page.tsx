@@ -3,12 +3,14 @@
 import {
   useState,
 } from "react";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 type PreviewMode =
   | "admin"
   | "storefront";
 
 function AdminPreview() {
+  const { text } = useLanguage();
   return (
     <div className="grid min-h-[760px] lg:grid-cols-[86px_1fr]">
       <aside className="hidden border-r border-black/10 bg-[#191816] px-3 py-5 text-white lg:block">
@@ -47,21 +49,21 @@ function AdminPreview() {
               </p>
 
               <h1 className="mt-2 text-4xl font-black uppercase tracking-[-0.04em] sm:text-5xl">
-                Painel da loja
+                {text("Painel da loja", "Store dashboard")}
               </h1>
 
               <p className="mt-3 max-w-xl text-sm leading-6 text-black/55">
-                Pedidos, cozinha, entregas, caixa e cardápio em uma única operação.
+                {text("Pedidos, cozinha, entregas, caixa e cardápio em uma única operação.", "Orders, kitchen, deliveries, cash register, and menu in one place.")}
               </p>
             </div>
 
             <div className="flex gap-2">
               <div className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-bold">
-                Loja aberta
+                {text("Loja aberta", "Store open")}
               </div>
 
               <div className="rounded-full bg-[#181817] px-4 py-2 text-xs font-bold text-white">
-                Abrir loja
+                {text("Abrir loja", "Open store")}
               </div>
             </div>
           </header>
@@ -127,16 +129,16 @@ function AdminPreview() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-black/40">
-                    Operação
+                    {text("Operação", "Operations")}
                   </p>
 
                   <h2 className="mt-1 text-xl font-black">
-                    Pedidos recentes
+                    {text("Pedidos recentes", "Recent orders")}
                   </h2>
                 </div>
 
                 <span className="text-xs font-bold text-[#f15a24]">
-                  Ver todos
+                  {text("Ver todos", "View all")}
                 </span>
               </div>
 
@@ -209,11 +211,11 @@ function AdminPreview() {
 
             <aside className="rounded-3xl border border-black/10 bg-[#181817] p-5 text-white sm:p-6">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">
-                Cozinha
+                {text("Cozinha", "Kitchen")}
               </p>
 
               <h2 className="mt-1 text-xl font-black">
-                Fila atual
+                {text("Fila atual", "Current queue")}
               </h2>
 
               <div className="mt-5 space-y-3">
@@ -274,6 +276,7 @@ function AdminPreview() {
 }
 
 function StorefrontPreview() {
+  const { text } = useLanguage();
   const products = [
     {
       name:
@@ -334,7 +337,7 @@ function StorefrontPreview() {
               </p>
 
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-600">
-                Aberto agora
+                {text("Aberto agora", "Open now")}
               </p>
             </div>
 
@@ -343,7 +346,7 @@ function StorefrontPreview() {
           <div className="flex items-center gap-2">
 
             <button className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-bold">
-              Minha conta
+              {text("Minha conta", "My account")}
             </button>
 
             <button className="rounded-full bg-[#181817] px-4 py-2 text-xs font-bold text-white">
@@ -363,19 +366,19 @@ function StorefrontPreview() {
           <div>
 
             <span className="inline-flex rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-white/60">
-              Cardápio online
+              {text("Cardápio online", "Online menu")}
             </span>
 
             <h1 className="mt-5 max-w-2xl text-5xl font-black uppercase leading-[0.92] tracking-[-0.05em] sm:text-6xl">
-              Escolha.
+              {text("Escolha.", "Choose.")}
               <span className="block text-[#f15a24]">
                 Peça.
               </span>
-              Aproveite.
+              {text("Aproveite.", "Enjoy.")}
             </h1>
 
             <p className="mt-5 max-w-xl text-sm leading-6 text-white/55">
-              Faça seu pedido online, escolha adicionais e acompanhe tudo de forma rápida.
+              {text("Faça seu pedido online, escolha adicionais e acompanhe tudo de forma rápida.", "Order online, choose extras and track your food easily.")}
             </p>
 
           </div>
@@ -395,11 +398,11 @@ function StorefrontPreview() {
 
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#f15a24]">
-              O cardápio
+              {text("O cardápio", "The menu")}
             </p>
 
             <h2 className="mt-1 text-3xl font-black">
-              Escolha o seu
+              {text("Escolha o seu", "Choose your order")}
             </h2>
           </div>
 
@@ -439,7 +442,7 @@ function StorefrontPreview() {
 
         <div className="mt-6">
           <div className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black/40">
-            Buscar no cardápio...
+            {text("Buscar no cardápio...", "Search the menu...")}
           </div>
         </div>
 
@@ -504,6 +507,7 @@ function StorefrontPreview() {
 }
 
 export default function PizzaSystemPreviewPage() {
+  const { text } = useLanguage();
   const [
     mode,
     setMode,
@@ -531,7 +535,7 @@ export default function PizzaSystemPreviewPage() {
               </p>
 
               <p className="text-[10px] text-white/40">
-                Preview demonstrativo
+                {text("Preview demonstrativo", "Demo preview")}
               </p>
             </div>
 
@@ -555,7 +559,7 @@ export default function PizzaSystemPreviewPage() {
                 " "
               )}
             >
-              Painel admin
+              {text("Painel admin", "Admin dashboard")}
             </button>
 
             <button
@@ -574,7 +578,7 @@ export default function PizzaSystemPreviewPage() {
                 " "
               )}
             >
-              Cardápio
+              {text("Cardápio", "Menu")}
             </button>
 
           </div>
