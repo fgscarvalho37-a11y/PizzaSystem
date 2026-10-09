@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 import { formatStoreMoney, getStoreCurrencySymbol } from "@/lib/storeIntl";
 
@@ -217,6 +218,19 @@ function FieldLabel({
 }
 
 export default function ConfiguracoesPage() {
+  const { text, locale } = useLanguage();
+  const localizedStatus = (value: string) => {
+    if (!locale.startsWith("en")) return value;
+    const translated: Record<string, string> = {
+      "Loja temporariamente indisponível": "Store temporarily unavailable",
+      "Pedidos fechados manualmente": "Orders manually disabled",
+      "Fora do horário de funcionamento": "Outside business hours",
+      "Limite diário de pedidos atingido": "Daily order limit reached",
+      "Recebendo pedidos": "Accepting orders",
+    };
+    return translated[value] ?? value;
+  };
+
   const [settings, setSettings] =
     useState<StoreSettings | null>(null);
 
@@ -1084,7 +1098,7 @@ export default function ConfiguracoesPage() {
         <div className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6 lg:px-8">
           <div className="rounded-[24px] border border-border bg-card p-8 text-center">
             <p className="text-sm text-muted-foreground">
-              Carregando configurações...
+              {text("Carregando configurações...", "Loading settings...")}
             </p>
           </div>
         </div>
@@ -1100,7 +1114,7 @@ export default function ConfiguracoesPage() {
         <div className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6 lg:px-8">
           <div className="rounded-[24px] border border-red-200 bg-red-50 p-6">
             <p className="font-semibold text-red-700">
-              Atenção
+              {text("Atenção", "Attention")}
             </p>
 
             <p className="mt-1 text-sm text-red-600">
@@ -1121,15 +1135,15 @@ export default function ConfiguracoesPage() {
 
         <div className="mb-6 border-b border-border pb-6">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-            Administração
+            {text("Administração", "Administration")}
           </p>
 
           <h2 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-            Configurações da pizzaria
+            {text("Configurações da pizzaria", "Pizzeria settings")}
           </h2>
 
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Controle o funcionamento, limites, informações de contato e programa de fidelidade.
+            {text("Controle o funcionamento, limites, informações de contato e programa de fidelidade.", "Manage business hours, limits, contact details, and the loyalty program.")}
           </p>
         </div>
 
@@ -1138,15 +1152,15 @@ export default function ConfiguracoesPage() {
 
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-                Entregas
+                {text("Entregas", "Delivery")}
               </p>
 
               <h2 className="mt-1 text-lg font-bold text-foreground">
-                Taxa por distância
+                {text("Taxa por distância", "Distance-based delivery fee")}
               </h2>
 
               <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Configure endereço da pizzaria, valor por km, distância máxima e frete grátis.
+                {text("Configure endereço da pizzaria, valor por km, distância máxima e frete grátis.", "Set the restaurant address, cost per km, maximum range, and free delivery.")}
               </p>
             </div>
 
@@ -1154,7 +1168,7 @@ export default function ConfiguracoesPage() {
               href="/admin/entregas"
               className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-bold text-foreground transition hover:bg-muted"
             >
-              Configurar entrega
+              {text("Configurar entrega", "Configure delivery")}
             </Link>
 
           </div>
@@ -1163,7 +1177,7 @@ export default function ConfiguracoesPage() {
         {errorMessage && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
             <p className="font-semibold text-red-700">
-              Atenção
+              {text("Atenção", "Attention")}
             </p>
 
             <p className="mt-1 text-sm text-red-600">
@@ -1175,7 +1189,7 @@ export default function ConfiguracoesPage() {
         {successMessage && (
           <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
             <p className="font-semibold text-emerald-700">
-              Tudo certo
+              {text("Tudo certo", "All set")}
             </p>
 
             <p className="mt-1 text-sm text-emerald-700">
@@ -1188,7 +1202,7 @@ export default function ConfiguracoesPage() {
 
           <section className="rounded-[22px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-              Controle manual
+              {text("Controle manual", "Manual control")}
             </p>
 
             <div className="mt-4 flex items-center gap-3">
@@ -1208,13 +1222,13 @@ export default function ConfiguracoesPage() {
                 }`}
               >
                 {settings.open
-                  ? "Aberto pelo admin"
-                  : "Fechado pelo admin"}
+                  ? text("Aberto pelo admin", "Opened by admin")
+                  : text("Fechado pelo admin", "Closed by admin")}
               </h3>
             </div>
 
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Bloqueia ou libera novos pedidos manualmente, independente do horário configurado.
+              {text("Bloqueia ou libera novos pedidos manualmente, independente do horário configurado.", "Manually enable or disable new orders, regardless of opening hours.")}
             </p>
 
             <div className="mt-6">
@@ -1224,19 +1238,19 @@ export default function ConfiguracoesPage() {
                 onChange={changeStoreStatus}
                 label={
                   changingStatus
-                    ? "Atualizando..."
+                    ? text("Atualizando...", "Updating...")
                     : settings.open
-                      ? "Recebimento liberado"
-                      : "Recebimento bloqueado"
+                      ? text("Recebimento liberado", "Order intake enabled")
+                      : text("Recebimento bloqueado", "Order intake disabled")
                 }
-                description="Controle geral de novos pedidos"
+                description={text("Controle geral de novos pedidos", "General control for new orders")}
               />
             </div>
           </section>
 
           <section className="rounded-[22px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-              Status real
+              {text("Status real", "Live status")}
             </p>
 
             <div className="mt-4 flex items-center gap-3">
@@ -1256,19 +1270,19 @@ export default function ConfiguracoesPage() {
                 }`}
               >
                 {status.open
-                  ? "Recebendo pedidos"
-                  : "Pedidos fechados"}
+                  ? text("Recebendo pedidos", "Accepting orders")
+                  : text("Pedidos fechados", "Orders closed")}
               </h3>
             </div>
 
             <p className="mt-3 min-h-12 text-sm leading-6 text-muted-foreground">
-              {status.message}
+              {localizedStatus(status.message)}
             </p>
 
             <div className="mt-5 space-y-3 rounded-xl border border-border bg-background p-4">
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-muted-foreground">
-                  Controle manual
+                  {text("Controle manual", "Manual control")}
                 </span>
 
                 <strong
@@ -1279,14 +1293,14 @@ export default function ConfiguracoesPage() {
                   }
                 >
                   {status.manualOpen
-                    ? "Aberto"
-                    : "Fechado"}
+                    ? text("Aberto", "Open")
+                    : text("Fechado", "Closed")}
                 </strong>
               </div>
 
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-muted-foreground">
-                  Novos pedidos
+                  {text("Novos pedidos", "New orders")}
                 </span>
 
                 <strong
@@ -1297,8 +1311,8 @@ export default function ConfiguracoesPage() {
                   }
                 >
                   {status.open
-                    ? "Liberados"
-                    : "Bloqueados"}
+                    ? text("Liberados", "Enabled")
+                    : text("Bloqueados", "Blocked")}
                 </strong>
               </div>
             </div>
@@ -1306,7 +1320,7 @@ export default function ConfiguracoesPage() {
 
           <section className="rounded-[22px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-              Pedidos aprovados hoje
+              {text("Pedidos aprovados hoje", "Orders approved today")}
             </p>
 
             <h3
@@ -1344,22 +1358,22 @@ export default function ConfiguracoesPage() {
 
                 <p className="mt-3 text-sm text-muted-foreground">
                   {limitReached
-                    ? "Limite diário atingido. Novos pedidos estão bloqueados."
+                    ? text("Limite diário atingido. Novos pedidos estão bloqueados.", "Daily limit reached. New orders are blocked.")
                     : `${remainingOrders} ${
                         remainingOrders === 1
-                          ? "pedido disponível"
-                          : "pedidos disponíveis"
+                          ? text("pedido disponível", "order available")
+                          : text("pedidos disponíveis", "orders available")
                       } hoje.`}
                 </p>
               </>
             ) : (
               <div className="mt-5 rounded-xl bg-emerald-50 p-4">
                 <p className="text-sm font-semibold text-emerald-700">
-                  Sem limite diário
+                  {text("Sem limite diário", "No daily limit")}
                 </p>
 
                 <p className="mt-1 text-xs text-emerald-700">
-                  A quantidade de pedidos não está limitada.
+                  {text("A quantidade de pedidos não está limitada.", "There is no daily order limit.")}
                 </p>
               </div>
             )}
@@ -1372,15 +1386,15 @@ export default function ConfiguracoesPage() {
         >
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-              Operação
+              {text("Operação", "Operations")}
             </p>
 
             <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-              Dados gerais
+              {text("Dados gerais", "General settings")}
             </h3>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Configurações usadas pela operação e controle diário.
+              {text("Configurações usadas pela operação e controle diário.", "Settings for daily restaurant operations.")}
             </p>
           </div>
 
@@ -1388,7 +1402,7 @@ export default function ConfiguracoesPage() {
 
             <div>
               <FieldLabel>
-                Nome da pizzaria
+                {text("Nome da pizzaria", "Restaurant name")}
               </FieldLabel>
 
               <input
@@ -1400,13 +1414,13 @@ export default function ConfiguracoesPage() {
                   )
                 }
                 className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
-                placeholder="Nome da pizzaria"
+                placeholder={text("Nome da pizzaria", "Restaurant name")}
               />
             </div>
 
             <div>
               <FieldLabel>
-                Limite diário de pedidos
+                {text("Limite diário de pedidos", "Daily order limit")}
               </FieldLabel>
 
               <input
@@ -1424,7 +1438,7 @@ export default function ConfiguracoesPage() {
               />
 
               <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                Somente pedidos aprovados entram na contagem. Use 0 para deixar sem limite.
+                {text("Somente pedidos aprovados entram na contagem. Use 0 para deixar sem limite.", "Only approved orders count. Enter 0 for no limit.")}
               </p>
             </div>
           </div>
@@ -1436,8 +1450,8 @@ export default function ConfiguracoesPage() {
               className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:shadow-sm disabled:pointer-events-none disabled:opacity-50"
             >
               {saving
-                ? "Salvando..."
-                : "Salvar operação"}
+                ? text("Salvando...", "Saving...")
+                : text("Salvar operação", "Save operations")}
             </button>
           </div>
         </form>
@@ -1446,30 +1460,30 @@ export default function ConfiguracoesPage() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                Pagamentos
+                {text("Pagamentos", "Payments")}
               </p>
               <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
                 Mercado Pago
               </h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Conecte a conta Mercado Pago da loja para receber os pagamentos dos clientes diretamente na conta do estabelecimento.
+                {text("Conecte a conta Mercado Pago da loja para receber os pagamentos dos clientes diretamente na conta do estabelecimento.", "Connect the restaurant's Mercado Pago account so customers pay the restaurant directly.")}
               </p>
             </div>
 
             <div className="shrink-0">
               {mercadoPagoLoading ? (
                 <span className="inline-flex h-9 items-center rounded-full border border-border bg-background px-4 text-xs font-bold text-muted-foreground">
-                  Verificando...
+                  {text("Verificando...", "Checking...")}
                 </span>
               ) : mercadoPagoStatus?.connected ? (
                 <span className="inline-flex h-9 items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-700">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Conectado
+                  {text("Conectado", "Connected")}
                 </span>
               ) : (
                 <span className="inline-flex h-9 items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-700">
                   <span className="h-2 w-2 rounded-full bg-amber-500" />
-                  Não conectado
+                  {text("Não conectado", "Not connected")}
                 </span>
               )}
             </div>
@@ -1486,7 +1500,7 @@ export default function ConfiguracoesPage() {
                     </p>
                   )}
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Os dados de acesso da conta ficam protegidos no backend e não são exibidos no painel.
+                    {text("Os dados de acesso da conta ficam protegidos no backend e não são exibidos no painel.", "Account credentials are secured in the backend and aren't displayed here.")}
                   </p>
                 </div>
 
@@ -1496,7 +1510,7 @@ export default function ConfiguracoesPage() {
                   onClick={disconnectMercadoPago}
                   className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-700 transition hover:bg-red-100 disabled:pointer-events-none disabled:opacity-50"
                 >
-                  {mercadoPagoActionLoading ? "Desconectando..." : "Desconectar"}
+                  {mercadoPagoActionLoading ? text("Desconectando...", "Disconnecting...") : text("Desconectar", "Disconnect")}
                 </button>
               </div>
             ) : (
@@ -1504,7 +1518,7 @@ export default function ConfiguracoesPage() {
                 <div>
                   <p className="text-sm font-bold text-foreground">Nenhuma conta vinculada</p>
                   <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
-                    O proprietário autoriza o PizzaSystem na própria conta Mercado Pago. Nenhuma senha ou Access Token é solicitado neste painel.
+                    {text("O proprietário autoriza o PizzaSystem na própria conta Mercado Pago. Nenhuma senha ou Access Token é solicitado neste painel.", "The owner connects their own Mercado Pago account. No password or access token is requested here.")}
                   </p>
                 </div>
 
@@ -1514,7 +1528,7 @@ export default function ConfiguracoesPage() {
                   onClick={connectMercadoPago}
                   className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:shadow-sm disabled:pointer-events-none disabled:opacity-50"
                 >
-                  {mercadoPagoActionLoading ? "Conectando..." : "Conectar Mercado Pago"}
+                  {mercadoPagoActionLoading ? text("Conectando...", "Connecting...") : text("Conectar Mercado Pago", "Connect Mercado Pago")}
                 </button>
               </div>
             )}
@@ -1522,7 +1536,7 @@ export default function ConfiguracoesPage() {
 
           {!mercadoPagoLoading && !mercadoPagoStatus?.connected && (
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              A conexão OAuth será habilitada assim que as credenciais de produção da aplicação estiverem configuradas.
+              {text("A conexão OAuth será habilitada assim que as credenciais de produção da aplicação estiverem configuradas.", "OAuth connection will be available once the production app credentials are configured.")}
             </p>
           )}
         </section>
@@ -1535,15 +1549,15 @@ export default function ConfiguracoesPage() {
 
             <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                Contato
+                {text("Contato", "Contact")}
               </p>
 
               <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                Contato da loja
+                {text("Contato da loja", "Restaurant contact")}
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Dados de contato utilizados no atendimento e nas informações públicas da loja.
+                {text("Dados de contato utilizados no atendimento e nas informações públicas da loja.", "Contact details used for customer service and public restaurant information.")}
               </p>
 
               <div className="mt-6 grid gap-5 md:grid-cols-2">
@@ -1573,7 +1587,7 @@ export default function ConfiguracoesPage() {
 
                 <div>
                   <FieldLabel>
-                    Telefone
+                    {text("Telefone", "Phone")}
                   </FieldLabel>
 
                   <input
@@ -1596,7 +1610,7 @@ export default function ConfiguracoesPage() {
 
                 <div className="md:col-span-2">
                   <FieldLabel>
-                    E-mail
+                    {text("E-mail", "Email")}
                   </FieldLabel>
 
                   <input
@@ -1622,15 +1636,15 @@ export default function ConfiguracoesPage() {
 
             <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                Fidelidade
+                {text("Fidelidade", "Loyalty")}
               </p>
 
               <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                Clube de clientes
+                {text("Clube de clientes", "Customer loyalty club")}
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                O cliente continuará podendo comprar sem cadastro. O clube é opcional para quem quiser acumular selos.
+                {text("O cliente continuará podendo comprar sem cadastro. O clube é opcional para quem quiser acumular selos.", "Customers can order without registering. Joining the stamp club is optional.")}
               </p>
 
               <div className="mt-6 space-y-5">
@@ -1650,10 +1664,10 @@ export default function ConfiguracoesPage() {
                   }
                   label={
                     profileForm.loyaltyEnabled
-                      ? "Programa ativado"
-                      : "Programa desativado"
+                      ? text("Programa ativado", "Program enabled")
+                      : text("Programa desativado", "Program disabled")
                   }
-                  description="Permitir que clientes participem do programa de fidelidade"
+                  description={text("Permitir que clientes participem do programa de fidelidade", "Let customers join the loyalty program")}
                 />
 
                 {profileForm.loyaltyEnabled && (
@@ -1662,11 +1676,11 @@ export default function ConfiguracoesPage() {
 
                       <div>
                         <p className="text-sm font-bold text-foreground">
-                          Como o cliente ganha selos?
+                          {text("Como o cliente ganha selos?", "How do customers earn stamps?")}
                         </p>
 
                         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                          Escolha a regra usada para calcular os selos de cada pedido aprovado.
+                          {text("Escolha a regra usada para calcular os selos de cada pedido aprovado.", "Choose how stamps are awarded for approved orders.")}
                         </p>
                       </div>
 
@@ -1708,11 +1722,11 @@ export default function ConfiguracoesPage() {
 
                             <div>
                               <p className="text-sm font-bold">
-                                1 selo por pedido
+                                {text("1 selo por pedido", "1 stamp per order")}
                               </p>
 
                               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                O cliente recebe uma quantidade fixa de selos em cada pedido aprovado.
+                                {text("O cliente recebe uma quantidade fixa de selos em cada pedido aprovado.", "Customers earn a fixed number of stamps for each approved order.")}
                               </p>
                             </div>
                           </div>
@@ -1754,11 +1768,11 @@ export default function ConfiguracoesPage() {
 
                             <div>
                               <p className="text-sm font-bold">
-                                Selos por valor gasto
+                                {text("Selos por valor gasto", "Stamps per amount spent")}
                               </p>
 
                               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                O cliente ganha selos conforme o valor do pedido.
+                                {text("O cliente ganha selos conforme o valor do pedido.", "Customers earn stamps based on their order total.")}
                               </p>
                             </div>
                           </div>
@@ -1769,7 +1783,7 @@ export default function ConfiguracoesPage() {
                       "PER_ORDER" ? (
                         <div className="mt-4">
                           <FieldLabel>
-                            Selos por pedido
+                            {text("Selos por pedido", "Stamps per order")}
                           </FieldLabel>
 
                           <input
@@ -1794,7 +1808,7 @@ export default function ConfiguracoesPage() {
                           />
 
                           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                            Exemplo: 1 selo por pedido aprovado.
+                            {text("Exemplo: 1 selo por pedido aprovado.", "Example: 1 stamp per approved order.")}
                           </p>
                         </div>
                       ) : (
@@ -1802,7 +1816,7 @@ export default function ConfiguracoesPage() {
 
                           <div>
                             <FieldLabel>
-                              A cada valor de
+                              {text("A cada valor de", "For every amount of")}
                             </FieldLabel>
 
                             <div className="relative">
@@ -1839,7 +1853,7 @@ export default function ConfiguracoesPage() {
 
                           <div>
                             <FieldLabel>
-                              Selos ganhos
+                              {text("Selos ganhos", "Stamps earned")}
                             </FieldLabel>
 
                             <input
@@ -1872,7 +1886,7 @@ export default function ConfiguracoesPage() {
 
                       <div className="mt-4">
                         <FieldLabel>
-                          Valor mínimo do pedido
+                          {text("Valor mínimo do pedido", "Minimum order amount")}
                         </FieldLabel>
 
                         <div className="relative">
@@ -1908,7 +1922,7 @@ export default function ConfiguracoesPage() {
                         </div>
 
                         <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                          Deixe em branco para permitir selos em qualquer valor de pedido.
+                          {text("Deixe em branco para permitir selos em qualquer valor de pedido.", "Leave blank to award stamps on orders of any value.")}
                         </p>
                       </div>
                     </div>
@@ -1917,7 +1931,7 @@ export default function ConfiguracoesPage() {
 
                       <div>
                         <FieldLabel>
-                          Meta de selos
+                          {text("Meta de selos", "Stamp goal")}
                         </FieldLabel>
 
                         <input
@@ -1942,13 +1956,13 @@ export default function ConfiguracoesPage() {
                         />
 
                         <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                          Quantos selos o cliente precisa completar para liberar a recompensa.
+                          {text("Quantos selos o cliente precisa completar para liberar a recompensa.", "The number of stamps required to unlock a reward.")}
                         </p>
                       </div>
 
                       <div>
                         <FieldLabel>
-                          Recompensa
+                          {text("Recompensa", "Reward")}
                         </FieldLabel>
 
                         <input
@@ -1966,7 +1980,7 @@ export default function ConfiguracoesPage() {
                           }
                           maxLength={180}
                           className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                          placeholder="Ganhe uma pizza grátis"
+                          placeholder={text("Ganhe uma pizza grátis", "Get a free pizza")}
                         />
                       </div>
                     </div>
@@ -1974,7 +1988,7 @@ export default function ConfiguracoesPage() {
                     <div className="rounded-2xl border border-border bg-background p-4">
 
                       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                        Prévia dos selos
+                        {text("Prévia dos selos", "Stamp preview")}
                       </p>
 
                       <div className="mt-3 flex flex-wrap gap-2">
@@ -2016,14 +2030,14 @@ export default function ConfiguracoesPage() {
                       {profileForm.loyaltyStampGoal >
                         20 && (
                         <p className="mt-2 text-xs text-muted-foreground">
-                          Prévia limitada aos primeiros 20 selos.
+                          {text("Prévia limitada aos primeiros 20 selos.", "Preview is limited to the first 20 stamps.")}
                         </p>
                       )}
 
                       <div className="mt-4 rounded-xl bg-muted/40 p-3">
 
                         <p className="text-xs font-semibold text-foreground">
-                          Regra atual
+                          {text("Regra atual", "Current rule")}
                         </p>
 
                         <p className="mt-1 text-xs leading-5 text-muted-foreground">
