@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 import { formatStoreMoney } from "@/lib/storeIntl";
 
@@ -725,6 +726,7 @@ function orderValue(
 }
 
 export default function AdminPage() {
+  const { text } = useLanguage();
 
   const [
     profile,
@@ -1012,7 +1014,7 @@ export default function AdminPage() {
             <div>
 
               <h1 className="font-display text-4xl uppercase leading-none tracking-tight text-foreground sm:text-5xl">
-                Painel administrativo
+                {text("Painel administrativo", "Admin dashboard")}
               </h1>
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
@@ -1029,7 +1031,7 @@ export default function AdminPage() {
                 href="/admin/pedidos"
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:opacity-90"
               >
-                Ver pedidos
+                {text("Ver pedidos", "View orders")}
               </Link>
 
               <Link
@@ -1040,7 +1042,7 @@ export default function AdminPage() {
                 rel="noreferrer"
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-card px-5 text-sm font-bold text-foreground transition hover:bg-muted"
               >
-                Abrir loja
+                {text("Abrir loja", "Open store")}
               </Link>
 
             </div>
@@ -1054,7 +1056,7 @@ export default function AdminPage() {
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
 
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-              Loja agora
+              {text("Loja agora", "Store now")}
             </p>
 
             <div className="mt-3 flex items-center gap-2">
@@ -1093,7 +1095,7 @@ export default function AdminPage() {
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
 
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-              Pedidos hoje
+              {text("Pedidos hoje", "Orders today")}
             </p>
 
             <p className="mt-2 text-3xl font-bold text-foreground">
@@ -1114,7 +1116,7 @@ export default function AdminPage() {
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
 
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-              Em andamento
+              {text("Em andamento", "In progress")}
             </p>
 
             <p className="mt-2 text-3xl font-bold text-foreground">
@@ -1133,7 +1135,7 @@ export default function AdminPage() {
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
 
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-              Pedidos carregados
+              {text("Pedidos carregados", "Orders loaded")}
             </p>
 
             <p className="mt-2 text-3xl font-bold text-foreground">
@@ -1143,7 +1145,7 @@ export default function AdminPage() {
             </p>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              Total disponível no painel
+              {text("Total disponível no painel", "Total available in dashboard")}
             </p>
 
           </div>
@@ -1157,7 +1159,7 @@ export default function AdminPage() {
             <div>
 
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                Resumo financeiro carregado
+                {text("Resumo financeiro carregado", "Financial summary loaded")}
               </p>
 
               <p className="mt-1 text-2xl font-bold text-foreground">
@@ -1169,7 +1171,7 @@ export default function AdminPage() {
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
-                Soma dos pedidos aprovados disponíveis nesta consulta. Para fechamento oficial, use Caixa e Relatórios.
+                {text("Soma dos pedidos aprovados disponíveis nesta consulta. Para fechamento oficial, use Caixa e Relatórios.", "Sum of approved orders shown here. For official reconciliation, use Cash Register and Reports.")}
               </p>
 
             </div>
@@ -1178,7 +1180,7 @@ export default function AdminPage() {
               href="/admin/caixa"
               className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-border px-4 text-sm font-bold text-foreground transition hover:bg-muted"
             >
-              Abrir caixa
+              {text("Abrir caixa", "Open cash register")}
             </Link>
 
           </div>
@@ -1190,11 +1192,11 @@ export default function AdminPage() {
           <div className="mb-4">
 
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Operação
+              {text("Operação", "Operations")}
             </p>
 
             <h2 className="mt-1 text-xl font-bold text-foreground">
-              Acesso rápido
+              {text("Acesso rápido", "Quick access")}
             </h2>
 
           </div>
@@ -1225,11 +1227,11 @@ export default function AdminPage() {
           <div className="mb-4">
 
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Gestão
+              {text("Gestão", "Management")}
             </p>
 
             <h2 className="mt-1 text-xl font-bold text-foreground">
-              Financeiro e acompanhamento
+              {text("Financeiro e acompanhamento", "Finance and tracking")}
             </h2>
 
           </div>
@@ -1260,11 +1262,11 @@ export default function AdminPage() {
           <div className="mb-4">
 
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Estrutura
+              {text("Estrutura", "Structure")}
             </p>
 
             <h2 className="mt-1 text-xl font-bold text-foreground">
-              Cardápio e sistema
+              {text("Cardápio e sistema", "Menu and system")}
             </h2>
 
           </div>
