@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 import { formatStoreMoney } from "@/lib/storeIntl";
 
@@ -40,6 +41,7 @@ function formatMoney(
 }
 
 export default function AdminBordasPage() {
+  const { text } = useLanguage();
   const [
     crusts,
     setCrusts,
@@ -616,15 +618,15 @@ export default function AdminBordasPage() {
         <div className="mb-6 border-b border-border pb-6">
 
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-            Cardápio
+            {text("Cardápio", "Menu")}
           </p>
 
           <h2 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-            Bordas recheadas
+            {text("Bordas recheadas", "Stuffed crusts")}
           </h2>
 
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Cadastre as opções de borda que podem ser escolhidas nas pizzas marcadas como compatíveis.
+            {text("Cadastre as opções de borda que podem ser escolhidas nas pizzas marcadas como compatíveis.", "Add stuffed crusts for pizzas that support them.")}
           </p>
 
         </div>
@@ -633,7 +635,7 @@ export default function AdminBordasPage() {
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
 
             <p className="font-semibold text-red-700">
-              Atenção
+              {text("Atenção", "Attention")}
             </p>
 
             <p className="mt-1 text-sm text-red-600">
@@ -647,7 +649,7 @@ export default function AdminBordasPage() {
           <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
 
             <p className="font-semibold text-emerald-700">
-              Tudo certo
+              {text("Tudo certo", "All set")}
             </p>
 
             <p className="mt-1 text-sm text-emerald-700">
@@ -666,7 +668,7 @@ export default function AdminBordasPage() {
           <section className="h-fit rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
 
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-              Cadastro
+              {text("Cadastro", "Registration")}
             </p>
 
             <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
@@ -710,7 +712,7 @@ export default function AdminBordasPage() {
               <div>
 
                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                  Preço adicional
+                  {text("Preço adicional", "Extra charge")}
                 </label>
 
                 <input
@@ -737,7 +739,7 @@ export default function AdminBordasPage() {
               <div>
 
                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                  Ordem de exibição
+                  {text("Ordem de exibição", "Display order")}
                 </label>
 
                 <input
@@ -758,7 +760,7 @@ export default function AdminBordasPage() {
                 />
 
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Números menores aparecem primeiro.
+                  {text("Números menores aparecem primeiro.", "Lower numbers appear first.")}
                 </p>
 
               </div>
@@ -767,7 +769,7 @@ export default function AdminBordasPage() {
                 <div>
                   <p className="text-sm font-bold text-foreground">Borda ativa</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Quando desativada, não aparece para o cliente.
+                    {text("Quando desativada, não aparece para o cliente.", "Disabled options are hidden from customers.")}
                   </p>
                 </div>
 
@@ -807,7 +809,7 @@ export default function AdminBordasPage() {
                   }
                   className="w-full rounded-xl border border-input bg-card px-5 py-3 font-semibold text-foreground transition hover:bg-background"
                 >
-                  Cancelar edição
+                  {text("Cancelar edição", "Cancel editing")}
                 </button>
               )}
 
@@ -826,11 +828,11 @@ export default function AdminBordasPage() {
               <div>
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                  Cadastradas
+                  {text("Cadastradas", "Registered")}
                 </p>
 
                 <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                  Opções disponíveis
+                  {text("Opções disponíveis", "Available options")}
                 </h3>
 
               </div>
@@ -842,7 +844,7 @@ export default function AdminBordasPage() {
                 }
                 className="rounded-xl border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-background"
               >
-                Atualizar
+                {text("Atualizar", "Refresh")}
               </button>
 
             </div>
@@ -870,13 +872,13 @@ export default function AdminBordasPage() {
 
             {loading ? (
               <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center text-sm text-muted-foreground">
-                Carregando bordas...
+                {text("Carregando bordas...", "Loading crusts...")}
               </div>
 
             ) : crusts.length ===
               0 ? (
               <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center text-sm text-muted-foreground">
-                Nenhuma borda cadastrada.
+                {text("Nenhuma borda cadastrada.", "No stuffed crusts registered.")}
               </div>
 
             ) : (
@@ -941,7 +943,7 @@ export default function AdminBordasPage() {
                             }
                             className="rounded-lg border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-background"
                           >
-                            Editar
+                            {text("Editar", "Edit")}
                           </button>
 
                           <button
@@ -995,15 +997,15 @@ export default function AdminBordasPage() {
             <div>
 
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                Aplicação
+                {text("Aplicação", "Assignment")}
               </p>
 
               <h3 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                Produtos que aceitam borda
+                {text("Produtos que aceitam borda", "Products with stuffed crust")}
               </h3>
 
               <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                Marque somente as pizzas em que o cliente pode escolher uma borda recheada. Produtos desmarcados não mostrarão essa opção no cardápio.
+                {text("Marque somente as pizzas em que o cliente pode escolher uma borda recheada. Produtos desmarcados não mostrarão essa opção no cardápio.", "Select only pizzas that can have a stuffed crust. Unselected products will not show this option.")}
               </p>
 
             </div>
@@ -1015,7 +1017,7 @@ export default function AdminBordasPage() {
               }
               className="rounded-xl border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-background"
             >
-              Atualizar produtos
+              {text("Atualizar produtos", "Refresh products")}
             </button>
 
           </div>
@@ -1033,12 +1035,12 @@ export default function AdminBordasPage() {
 
           {loadingProducts ? (
             <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center text-sm text-muted-foreground">
-              Carregando produtos...
+              {text("Carregando produtos...", "Loading products...")}
             </div>
 
           ) : products.length === 0 ? (
             <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center text-sm text-muted-foreground">
-              Nenhum produto cadastrado.
+              {text("Nenhum produto cadastrado.", "No products registered.")}
             </div>
 
           ) : (
@@ -1082,7 +1084,7 @@ export default function AdminBordasPage() {
 
                           {!product.available && (
                             <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                              Produto inativo
+                              {text("Produto inativo", "Inactive product")}
                             </span>
                           )}
 

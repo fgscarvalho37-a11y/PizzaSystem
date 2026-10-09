@@ -516,6 +516,7 @@ function OrdersSkeleton() {
 ========================= */
 
 export default function AdminPedidosPage() {
+  const { text } = useLanguage();
   const { isEnglish } = useLanguage();
   const [
     orders,
@@ -949,16 +950,16 @@ export default function AdminPedidosPage() {
 
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                Operação
+                {text("Operação", "Operations")}
               </p>
 
               <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground sm:text-5xl">
-                Pedidos
+                {text("Pedidos", "Orders")}
               </h1>
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
                 Acompanhe pedidos, pagamentos,
-                clientes e andamento da operação.
+                {text("clientes e andamento da operação.", "customers and order progress.")}
               </p>
             </div>
 
@@ -1029,7 +1030,7 @@ export default function AdminPedidosPage() {
           <div className="rounded-2xl border border-border bg-card p-5">
 
             <p className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground">
-              Em andamento
+              {text("Em andamento", "In progress")}
             </p>
 
             <div className="mt-3 flex items-end justify-between gap-4">
@@ -1063,7 +1064,7 @@ export default function AdminPedidosPage() {
           <div className="rounded-2xl border border-border bg-card p-5">
 
             <p className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground">
-              Atenção
+              {text("Atenção", "Attention")}
             </p>
 
             <div className="mt-3 flex items-end justify-between gap-4">
@@ -1094,7 +1095,7 @@ export default function AdminPedidosPage() {
             role="alert"
           >
             <p className="text-sm font-bold text-red-800">
-              Não foi possível atualizar os pedidos
+              {text("Não foi possível atualizar os pedidos", "Could not refresh orders")}
             </p>
 
             <p className="mt-1 text-sm text-red-700">
@@ -1114,7 +1115,7 @@ export default function AdminPedidosPage() {
                 htmlFor="search-order"
                 className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground"
               >
-                Buscar pedido
+                {text("Buscar pedido", "Search orders")}
               </label>
 
               <div className="relative">
@@ -1140,7 +1141,7 @@ export default function AdminPedidosPage() {
                       event.target.value
                     )
                   }
-                  placeholder="Número, cliente, telefone, bairro..."
+                  placeholder={text("Número, cliente, telefone, bairro...", "Order number, customer, phone, neighborhood...")}
                   className="
                     h-12 w-full
                     rounded-xl
@@ -1165,7 +1166,7 @@ export default function AdminPedidosPage() {
                 htmlFor="order-status"
                 className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground"
               >
-                Status
+                {text("Status", "Status")}
               </label>
 
               <select
@@ -1217,7 +1218,7 @@ export default function AdminPedidosPage() {
                 htmlFor="payment-status"
                 className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground"
               >
-                Pagamento
+                {text("Pagamento", "Payment")}
               </label>
 
               <select
@@ -1297,7 +1298,7 @@ export default function AdminPedidosPage() {
                 }}
                 className="text-sm font-bold text-primary transition hover:opacity-70"
               >
-                Limpar filtros
+                {text("Limpar filtros", "Clear filters")}
               </button>
             )}
 
@@ -1319,11 +1320,11 @@ export default function AdminPedidosPage() {
             </div>
 
             <h2 className="mt-4 text-lg font-bold text-foreground">
-              Nenhum pedido encontrado
+              {text("Nenhum pedido encontrado", "No orders found")}
             </h2>
 
             <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-              Não encontramos pedidos com os filtros selecionados.
+              {text("Não encontramos pedidos com os filtros selecionados.", "No orders matched your filters.")}
             </p>
 
           </div>
@@ -1393,7 +1394,7 @@ export default function AdminPedidosPage() {
 
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                              Pedido
+                              {text("Pedido", "Order")}
                             </p>
 
                             <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
@@ -1403,7 +1404,7 @@ export default function AdminPedidosPage() {
 
                           <div className="min-w-44">
                             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                              Cliente
+                              {text("Cliente", "Customer")}
                             </p>
 
                             <p className="mt-1 font-bold text-foreground">
@@ -1417,7 +1418,7 @@ export default function AdminPedidosPage() {
 
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                              Criado em
+                              {text("Criado em", "Created on")}
                             </p>
 
                             <p className="mt-1 font-semibold text-foreground">
@@ -1448,7 +1449,7 @@ export default function AdminPedidosPage() {
                           {order.paymentTiming ===
                             "ON_PICKUP" && (
                             <span className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-700">
-                              PAGAR NO BALCÃO
+                              {text("PAGAR NO BALCÃO", "PAY AT COUNTER")}
                             </span>
                           )}
 
@@ -1546,7 +1547,7 @@ export default function AdminPedidosPage() {
                             hover:bg-muted
                           "
                         >
-                          Imprimir
+                          {text("Imprimir", "Print")}
                         </Link>
 
                         {active && (
@@ -1566,7 +1567,7 @@ export default function AdminPedidosPage() {
                           >
                             <KitchenIcon />
 
-                            Abrir cozinha
+                            {text("Abrir cozinha", "Open kitchen")}
                           </Link>
                         )}
 
@@ -1590,7 +1591,7 @@ export default function AdminPedidosPage() {
                           <section className="lg:col-span-2">
 
                             <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                              Itens do pedido
+                              {text("Itens do pedido", "Order items")}
                             </p>
 
                             <div className="mt-3 space-y-2">
@@ -1598,7 +1599,7 @@ export default function AdminPedidosPage() {
                               {order.items.length ===
                               0 ? (
                                 <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-                                  Nenhum item foi carregado para este pedido.
+                                  {text("Nenhum item foi carregado para este pedido.", "No items were loaded for this order.")}
                                 </div>
 
                               ) : (
@@ -1647,7 +1648,7 @@ export default function AdminPedidosPage() {
 
                                           <div>
                                             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
-                                              Borda recheada
+                                              {text("Borda recheada", "Stuffed crust")}
                                             </p>
 
                                             <p className="mt-1 text-sm font-bold text-amber-900">
@@ -1672,7 +1673,7 @@ export default function AdminPedidosPage() {
                                         <div className="mt-3 rounded-lg border border-primary/15 bg-primary/5 p-3">
 
                                           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-                                            Observação
+                                            {text("Observação", "Notes")}
                                           </p>
 
                                           <p className="mt-1 text-sm leading-6 text-foreground">
@@ -1695,7 +1696,7 @@ export default function AdminPedidosPage() {
                           <aside>
 
                             <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                              Entrega
+                              {text("Entrega", "Delivery")}
                             </p>
 
                             <div className="mt-3 rounded-xl border border-border bg-card p-4">
@@ -1721,7 +1722,7 @@ export default function AdminPedidosPage() {
                               <div className="mt-4 border-t border-border pt-4">
 
                                 <p className="text-xs text-muted-foreground">
-                                  Taxa de entrega
+                                  {text("Taxa de entrega", "Delivery fee")}
                                 </p>
 
                                 <p className="mt-1 font-bold text-foreground">
@@ -1755,7 +1756,7 @@ export default function AdminPedidosPage() {
                                     rel="noreferrer"
                                     className="mt-3 inline-flex text-xs font-bold text-primary underline underline-offset-2"
                                   >
-                                    Abrir rota no Google Maps
+                                    {text("Abrir rota no Google Maps", "Open route in Google Maps")}
                                   </a>
                                 )}
 
@@ -1764,7 +1765,7 @@ export default function AdminPedidosPage() {
                             </div>
 
                             <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                              Pagamento
+                              {text("Pagamento", "Payment")}
                             </p>
 
                             <div className="mt-3 rounded-xl border border-border bg-card p-4">
@@ -1792,7 +1793,7 @@ export default function AdminPedidosPage() {
                                   "PENDING" && (
                                   <div className="mt-3">
                                     <p className="mb-2 text-xs font-semibold text-muted-foreground">
-                                      Marcar como pago
+                                      {text("Marcar como pago", "Mark as paid")}
                                     </p>
 
                                     <div className="flex flex-wrap gap-2">
@@ -1886,7 +1887,7 @@ export default function AdminPedidosPage() {
                                 <div className="mt-4 border-t border-border pt-4">
 
                                   <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                                    Referência
+                                    {text("Referência", "Reference")}
                                   </p>
 
                                   <p className="mt-1 break-all font-mono text-xs text-muted-foreground">

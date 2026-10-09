@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 import { formatStoreMoney } from "@/lib/storeIntl";
 
@@ -201,6 +202,7 @@ function ReportSkeleton() {
 }
 
 export default function AdminRelatoriosPage() {
+  const { text } = useLanguage();
   const today =
     new Date()
       .toISOString()
@@ -462,15 +464,15 @@ export default function AdminRelatoriosPage() {
         <section className="border-b border-border pb-6">
 
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-            Gestão
+            {text("Gestão", "Management")}
           </p>
 
           <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-            Relatórios
+            {text("Relatórios", "Reports")}
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Acompanhe faturamento, ticket médio, pagamentos e andamento dos pedidos.
+            {text("Acompanhe faturamento, ticket médio, pagamentos e andamento dos pedidos.", "Track revenue, average order value, payments and order status.")}
           </p>
 
         </section>
@@ -490,7 +492,7 @@ export default function AdminRelatoriosPage() {
                 htmlFor="report-start"
                 className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
               >
-                Data inicial
+                {text("Data inicial", "Start date")}
               </label>
 
               <input
@@ -529,7 +531,7 @@ export default function AdminRelatoriosPage() {
                 htmlFor="report-end"
                 className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
               >
-                Data final
+                {text("Data final", "End date")}
               </label>
 
               <input
@@ -567,7 +569,7 @@ export default function AdminRelatoriosPage() {
                 htmlFor="report-fulfillment"
                 className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
               >
-                Modalidade
+                {text("Modalidade", "Fulfillment")}
               </label>
 
               <select
@@ -592,10 +594,10 @@ export default function AdminRelatoriosPage() {
                   Todos
                 </option>
                 <option value="DELIVERY">
-                  Entrega
+                  {text("Entrega", "Delivery")}
                 </option>
                 <option value="PICKUP">
-                  Retirada
+                  {text("Retirada", "Pickup")}
                 </option>
               </select>
             </div>
@@ -695,7 +697,7 @@ export default function AdminRelatoriosPage() {
 
             <div>
               <p className="text-sm font-bold text-red-800">
-                Não foi possível gerar o relatório
+                {text("Não foi possível gerar o relatório", "Could not generate the report")}
               </p>
 
               <p className="mt-1 text-sm text-red-700">
@@ -714,7 +716,7 @@ export default function AdminRelatoriosPage() {
 
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                Período analisado
+                {text("Período analisado", "Date range")}
               </p>
 
               <p className="mt-0.5 text-sm font-bold text-foreground">
@@ -741,7 +743,7 @@ export default function AdminRelatoriosPage() {
               <div className="rounded-2xl border border-border bg-primary p-5 text-primary-foreground">
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary-foreground/70">
-                  Faturamento
+                  {text("Faturamento", "Revenue")}
                 </p>
 
                 <p className="mt-2 text-3xl font-bold tracking-tight">
@@ -751,7 +753,7 @@ export default function AdminRelatoriosPage() {
                 </p>
 
                 <p className="mt-2 text-xs leading-5 text-primary-foreground/70">
-                  Pagamentos aprovados no período.
+                  {text("Pagamentos aprovados no período.", "Payments approved during the period.")}
                 </p>
 
               </div>
@@ -759,7 +761,7 @@ export default function AdminRelatoriosPage() {
               <div className="rounded-2xl border border-border bg-card p-5">
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                  Pedidos pagos
+                  {text("Pedidos pagos", "Paid orders")}
                 </p>
 
                 <p className="mt-2 text-3xl font-bold tracking-tight text-foreground">
@@ -768,7 +770,7 @@ export default function AdminRelatoriosPage() {
                 </p>
 
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  Pedidos aprovados no período.
+                  {text("Pedidos aprovados no período.", "Approved orders during the period.")}
                 </p>
 
               </div>
@@ -776,7 +778,7 @@ export default function AdminRelatoriosPage() {
               <div className="rounded-2xl border border-border bg-card p-5">
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                  Ticket médio
+                  {text("Ticket médio", "Average order value")}
                 </p>
 
                 <p className="mt-2 text-3xl font-bold tracking-tight text-foreground">
@@ -786,7 +788,7 @@ export default function AdminRelatoriosPage() {
                 </p>
 
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  Valor médio por pedido aprovado.
+                  {text("Valor médio por pedido aprovado.", "Average amount per approved order.")}
                 </p>
 
               </div>
@@ -794,7 +796,7 @@ export default function AdminRelatoriosPage() {
               <div className="rounded-2xl border border-border bg-card p-5">
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                  Entregues
+                  {text("Entregues", "Delivered")}
                 </p>
 
                 <div className="mt-2 flex items-end justify-between">
@@ -808,7 +810,7 @@ export default function AdminRelatoriosPage() {
                 </div>
 
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  Pedidos concluídos no período.
+                  {text("Pedidos concluídos no período.", "Completed orders during the period.")}
                 </p>
 
               </div>
@@ -818,18 +820,18 @@ export default function AdminRelatoriosPage() {
             <section className="mt-6 rounded-2xl border border-border bg-card p-5">
 
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                Modalidades
+                {text("Modalidades", "Fulfillment methods")}
               </p>
 
               <h2 className="mt-1 text-xl font-bold text-foreground">
-                Entrega, retirada e momento do pagamento
+                {text("Entrega, retirada e momento do pagamento", "Delivery, pickup and payment timing")}
               </h2>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
                 <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
-                    Entrega
+                    {text("Entrega", "Delivery")}
                   </p>
                   <p className="mt-2 text-2xl font-bold text-blue-800">
                     {deliveryCount}
@@ -838,7 +840,7 @@ export default function AdminRelatoriosPage() {
 
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
-                    Retirada
+                    {text("Retirada", "Pickup")}
                   </p>
                   <p className="mt-2 text-2xl font-bold text-amber-800">
                     {pickupCount}
@@ -847,7 +849,7 @@ export default function AdminRelatoriosPage() {
 
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
-                    Pagamento online
+                    {text("Pagamento online", "Online payment")}
                   </p>
                   <p className="mt-2 text-2xl font-bold text-emerald-800">
                     {onlineCount}
@@ -856,7 +858,7 @@ export default function AdminRelatoriosPage() {
 
                 <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-orange-700">
-                    Pago na retirada
+                    {text("Pago na retirada", "Paid at pickup")}
                   </p>
                   <p className="mt-2 text-2xl font-bold text-orange-800">
                     {payAtPickupCount}
@@ -872,15 +874,15 @@ export default function AdminRelatoriosPage() {
               <div>
 
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                  Pagamentos
+                  {text("Pagamentos", "Payments")}
                 </p>
 
                 <h2 className="mt-1 text-xl font-bold text-foreground">
-                  Formas de pagamento
+                  {text("Formas de pagamento", "Payment methods")}
                 </h2>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Quantidade de pedidos e faturamento por meio de pagamento.
+                  {text("Quantidade de pedidos e faturamento por meio de pagamento.", "Order count and revenue by payment method.")}
                 </p>
 
               </div>
@@ -917,7 +919,7 @@ export default function AdminRelatoriosPage() {
                   <div className="flex items-center justify-between gap-3">
 
                     <p className="font-bold text-foreground">
-                      Cartão de crédito
+                      {text("Cartão de crédito", "Credit card")}
                     </p>
 
                     <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
@@ -942,7 +944,7 @@ export default function AdminRelatoriosPage() {
                   <div className="flex items-center justify-between gap-3">
 
                     <p className="font-bold text-foreground">
-                      Cartão de débito
+                      {text("Cartão de débito", "Debit card")}
                     </p>
 
                     <span className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">
@@ -961,7 +963,7 @@ export default function AdminRelatoriosPage() {
                   </p>
 
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Temporariamente indisponível no checkout.
+                    {text("Temporariamente indisponível no checkout.", "Temporarily unavailable at checkout.")}
                   </p>
 
                 </div>
@@ -973,11 +975,11 @@ export default function AdminRelatoriosPage() {
             <section className="mt-6 rounded-2xl border border-border bg-card p-5">
 
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                Operação
+                {text("Operação", "Operations")}
               </p>
 
               <h2 className="mt-1 text-xl font-bold text-foreground">
-                Status dos pedidos pagos
+                {text("Status dos pedidos pagos", "Paid order status")}
               </h2>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -985,7 +987,7 @@ export default function AdminRelatoriosPage() {
                 <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
 
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
-                    Recebidos
+                    {text("Recebidos", "Received")}
                   </p>
 
                   <p className="mt-2 text-2xl font-bold text-blue-800">
@@ -997,7 +999,7 @@ export default function AdminRelatoriosPage() {
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
 
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
-                    Preparando
+                    {text("Preparando", "Preparing")}
                   </p>
 
                   <p className="mt-2 text-2xl font-bold text-amber-800">
@@ -1009,7 +1011,7 @@ export default function AdminRelatoriosPage() {
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
 
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
-                    Prontos
+                    {text("Prontos", "Ready")}
                   </p>
 
                   <p className="mt-2 text-2xl font-bold text-emerald-800">
@@ -1021,7 +1023,7 @@ export default function AdminRelatoriosPage() {
                 <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
 
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-violet-700">
-                    Em entrega
+                    {text("Em entrega", "Out for delivery")}
                   </p>
 
                   <p className="mt-2 text-2xl font-bold text-violet-800">
@@ -1033,7 +1035,7 @@ export default function AdminRelatoriosPage() {
                 <div className="rounded-xl border border-green-200 bg-green-50 p-4">
 
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-green-700">
-                    Entregues
+                    {text("Entregues", "Delivered")}
                   </p>
 
                   <p className="mt-2 text-2xl font-bold text-green-800">
@@ -1045,7 +1047,7 @@ export default function AdminRelatoriosPage() {
                 <div className="rounded-xl border border-red-200 bg-red-50 p-4">
 
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-red-700">
-                    Cancelados
+                    {text("Cancelados", "Canceled")}
                   </p>
 
                   <p className="mt-2 text-2xl font-bold text-red-800">

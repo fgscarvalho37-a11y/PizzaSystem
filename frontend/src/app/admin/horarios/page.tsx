@@ -6,6 +6,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 
 type BusinessHours = {
@@ -26,36 +27,50 @@ const days = [
   {
     value: "MONDAY",
     label: "Segunda-feira",
+    labelEn: "Monday",
+    shortEn: "MON",
     short: "SEG",
   },
   {
     value: "TUESDAY",
     label: "Terça-feira",
+    labelEn: "Tuesday",
+    shortEn: "TUE",
     short: "TER",
   },
   {
     value: "WEDNESDAY",
     label: "Quarta-feira",
+    labelEn: "Wednesday",
+    shortEn: "WED",
     short: "QUA",
   },
   {
     value: "THURSDAY",
     label: "Quinta-feira",
+    labelEn: "Thursday",
+    shortEn: "THU",
     short: "QUI",
   },
   {
     value: "FRIDAY",
     label: "Sexta-feira",
+    labelEn: "Friday",
+    shortEn: "FRI",
     short: "SEX",
   },
   {
     value: "SATURDAY",
     label: "Sábado",
+    labelEn: "Saturday",
+    shortEn: "SAT",
     short: "SÁB",
   },
   {
     value: "SUNDAY",
     label: "Domingo",
+    labelEn: "Sunday",
+    shortEn: "SUN",
     short: "DOM",
   },
 ];
@@ -153,11 +168,12 @@ function Spinner() {
 }
 
 function HoursSkeleton() {
+  const { text } = useLanguage();
   return (
     <div
       className="space-y-3"
       role="status"
-      aria-label="Carregando horários"
+      aria-label={text("Carregando horários", "Loading hours")}
     >
       {[1, 2, 3, 4, 5, 6, 7].map(
         (item) => (
@@ -187,6 +203,7 @@ function HoursSkeleton() {
 }
 
 export default function AdminHorariosPage() {
+  const { text, locale } = useLanguage();
   const [
     hours,
     setHours,
@@ -238,7 +255,7 @@ export default function AdminHorariosPage() {
 
       if (!response.ok) {
         throw new Error(
-          "Erro ao carregar horários"
+          text("Erro ao carregar horários", "Could not load hours")
         );
       }
 
@@ -282,7 +299,7 @@ export default function AdminHorariosPage() {
 
     } catch {
       setErrorMessage(
-        "Não foi possível carregar os horários de funcionamento."
+        text("Não foi possível carregar os horários de funcionamento.", "Could not load opening hours.")
       );
 
     } finally {
@@ -336,7 +353,7 @@ export default function AdminHorariosPage() {
       )
     ) {
       setErrorMessage(
-        "Informe os horários de abertura e fechamento."
+        text("Informe os horários de abertura e fechamento.", "Enter opening and closing times.")
       );
 
       return;
@@ -372,7 +389,7 @@ export default function AdminHorariosPage() {
 
       if (!response.ok) {
         throw new Error(
-          "Erro ao salvar horário"
+          text("Erro ao salvar horário", "Unable to save hours")
         );
       }
 
@@ -390,7 +407,7 @@ export default function AdminHorariosPage() {
 
     } catch {
       setErrorMessage(
-        "Não foi possível salvar o horário."
+        text("Não foi possível salvar o horário.", "Could not save opening hours.")
       );
 
     } finally {
@@ -420,15 +437,15 @@ export default function AdminHorariosPage() {
         <section className="border-b border-border pb-6">
 
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-            Funcionamento
+            {text("Funcionamento", "Business hours")}
           </p>
 
           <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-            Horários
+            {text("Horários", "Opening hours")}
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Defina quando a pizzaria pode receber novos pedidos pelo cardápio.
+            {text("Defina quando a pizzaria pode receber novos pedidos pelo cardápio.", "Choose when the restaurant accepts orders through its online menu.")}
           </p>
 
         </section>
@@ -438,7 +455,7 @@ export default function AdminHorariosPage() {
 
             <div className="rounded-2xl border border-border bg-card p-4">
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                Dias ativos
+                {text("Dias ativos", "Active days")}
               </p>
 
               <div className="mt-2 flex items-end justify-between">
@@ -452,7 +469,7 @@ export default function AdminHorariosPage() {
 
             <div className="rounded-2xl border border-border bg-card p-4">
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                Fechados
+                {text("Fechados", "Closed")}
               </p>
 
               <p className="mt-2 text-2xl font-bold text-foreground">
@@ -462,7 +479,7 @@ export default function AdminHorariosPage() {
 
             <div className="rounded-2xl border border-border bg-card p-4">
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                Semana
+                {text("Semana", "Week")}
               </p>
 
               <p className="mt-2 text-2xl font-bold text-foreground">
@@ -482,7 +499,7 @@ export default function AdminHorariosPage() {
 
             <div>
               <p className="text-sm font-bold text-red-800">
-                Não foi possível concluir
+                {text("Não foi possível concluir", "Unable to complete")}
               </p>
 
               <p className="mt-1 text-sm text-red-700">
@@ -501,7 +518,7 @@ export default function AdminHorariosPage() {
 
             <div>
               <p className="text-sm font-bold text-emerald-800">
-                Alteração salva
+                {text("Alteração salva", "Changes saved")}
               </p>
 
               <p className="mt-1 text-sm text-emerald-700">
@@ -556,7 +573,7 @@ export default function AdminHorariosPage() {
                               " "
                             )}
                           >
-                            {day.short}
+                            {locale.startsWith('en') ? day.shortEn : day.short}
                           </div>
 
                           <div className="min-w-0">
@@ -564,7 +581,7 @@ export default function AdminHorariosPage() {
                             <div className="flex flex-wrap items-center gap-2">
 
                               <h2 className="font-bold text-foreground">
-                                {day.label}
+                                {locale.startsWith('en') ? day.labelEn : day.label}
                               </h2>
 
                               <span
@@ -596,8 +613,8 @@ export default function AdminHorariosPage() {
                                       0,
                                       5
                                     )}`
-                                  : "Defina o horário"
-                                : "Não recebe pedidos"}
+                                  : text("Defina o horário", "Set hours")
+                                : text("Não recebe pedidos", "Not accepting orders")}
 
                             </p>
 
@@ -611,7 +628,7 @@ export default function AdminHorariosPage() {
                             htmlFor={`open-${day.value}`}
                             className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground"
                           >
-                            Abertura
+                            {text("Abertura", "Opens")}
                           </label>
 
                           <input
@@ -669,7 +686,7 @@ export default function AdminHorariosPage() {
                             htmlFor={`close-${day.value}`}
                             className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground"
                           >
-                            Fechamento
+                            {text("Fechamento", "Closes")}
                           </label>
 
                           <input
@@ -729,7 +746,7 @@ export default function AdminHorariosPage() {
                             aria-checked={
                               data.enabled
                             }
-                            aria-label={`${data.enabled ? "Desativar" : "Ativar"} ${day.label}`}
+                            aria-label={`${data.enabled ? text("Desativar", "Disable") : text("Ativar", "Enable")} ${locale.startsWith('en') ? day.labelEn : day.label}`}
                             onClick={() =>
                               updateField(
                                 day.value,
@@ -796,7 +813,7 @@ export default function AdminHorariosPage() {
 
                           {saving
                             ? "Salvando"
-                            : "Salvar"}
+                            : text("Salvar", "Save")}
 
                         </button>
 
@@ -821,12 +838,12 @@ export default function AdminHorariosPage() {
           <div>
 
             <p className="text-sm font-bold text-foreground">
-              Funcionamento após meia-noite
+              {text("Funcionamento após meia-noite", "Open past midnight")}
             </p>
 
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              Você pode configurar, por exemplo, sexta-feira das 18:00 às 02:00.
-              O sistema interpreta o fechamento como madrugada do dia seguinte.
+              {text("Você pode configurar, por exemplo, sexta-feira das 18:00 às 02:00.", "For example, you can set Friday from 6:00 PM to 2:00 AM.")}
+              {text("O sistema interpreta o fechamento como madrugada do dia seguinte.", "The system treats closing as occurring early the next day.")}
             </p>
 
           </div>

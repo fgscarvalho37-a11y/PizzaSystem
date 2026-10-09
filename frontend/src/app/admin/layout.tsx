@@ -13,6 +13,7 @@ import {
 } from "next/navigation";
 
 import AdminOnboarding from "@/components/AdminOnboarding";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import OrbittaRenewalNotice from "@/components/OrbittaRenewalNotice";
 import { adminFetch } from "@/lib/adminFetch";
 import { saveStoreIntlSnapshot } from "@/lib/storeIntl";
@@ -24,12 +25,13 @@ type AdminLayoutProps = {
 const API_URL = "";
 
 function PizzaSystemLoader() {
+  const { text } = useLanguage();
   return (
     <div
       className="flex flex-col items-center"
       role="status"
       aria-live="polite"
-      aria-label="Verificando acesso administrativo"
+      aria-label={text("Verificando acesso administrativo", "Checking admin access")}
     >
       <div className="relative flex h-14 w-14 items-center justify-center">
 
@@ -111,7 +113,7 @@ function PizzaSystemLoader() {
         </p>
 
         <p className="mt-1.5 text-sm font-medium text-muted-foreground">
-          Verificando acesso
+          {text("Verificando acesso", "Checking access")}
         </p>
 
       </div>
@@ -122,6 +124,7 @@ function PizzaSystemLoader() {
 export default function AdminLayout({
   children,
 }: AdminLayoutProps) {
+  const { text } = useLanguage();
   const router =
     useRouter();
 

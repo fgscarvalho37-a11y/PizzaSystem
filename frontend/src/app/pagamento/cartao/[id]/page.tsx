@@ -907,15 +907,15 @@ export default function CardPaymentPage() {
         <div className="w-full max-w-lg rounded-[28px] border border-border bg-card p-8 text-center shadow-[0_18px_60px_-30px] shadow-foreground/40">
 
           <p className="font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-primary">
-            Pagamento
+            {text("Pagamento", "Payment")}
           </p>
 
           <h1 className="mt-2 font-display text-4xl tracking-tight">
-            Pedido não encontrado
+            {text("Pedido não encontrado", "Order not found")}
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Não conseguimos localizar os dados deste pedido.
+            {text("Não conseguimos localizar os dados deste pedido.", "We couldn't find this order's payment details.")}
           </p>
 
           <button
@@ -927,7 +927,7 @@ export default function CardPaymentPage() {
             }
             className="brand-button mt-6 w-full rounded-2xl px-5 py-3.5"
           >
-            Voltar ao cardápio
+            {text("Voltar ao cardápio", "Back to menu")}
           </button>
 
         </div>
@@ -950,11 +950,11 @@ export default function CardPaymentPage() {
         <div className="w-full max-w-lg rounded-[28px] border border-primary/20 bg-card p-8">
 
           <p className="font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-primary">
-            Pagamento
+            {text("Pagamento", "Payment")}
           </p>
 
           <h1 className="mt-2 font-display text-4xl tracking-tight">
-            Pagamento indisponível
+            {text("Pagamento indisponível", "Payment unavailable")}
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
@@ -971,7 +971,7 @@ export default function CardPaymentPage() {
             }
             className="mt-6 w-full rounded-2xl border border-border bg-background px-5 py-3 text-sm font-bold transition-colors hover:bg-secondary"
           >
-            Voltar ao cardápio
+            {text("Voltar ao cardápio", "Back to menu")}
           </button>
 
         </div>
@@ -1451,7 +1451,7 @@ export default function CardPaymentPage() {
               </div>
 
               <p className="mt-5 text-xs leading-5 text-cream/50">
-                Os dados do cartão são processados diretamente pelo Mercado Pago. O PizzaSystem não armazena o número do seu cartão.
+                {text("Os dados do cartão são processados diretamente pelo Mercado Pago. O PizzaSystem não armazena o número do seu cartão.", "Your card details are processed securely by Mercado Pago. PizzaSystem does not store your card number.")}
               </p>
 
             </div>

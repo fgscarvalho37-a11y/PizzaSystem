@@ -230,6 +230,7 @@ function normalizeAddons(
 }
 
 export default function CozinhaPage() {
+  const { text } = useLanguage();
   const { isEnglish } = useLanguage();
 
   const [
@@ -571,15 +572,15 @@ export default function CozinhaPage() {
             <div>
 
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                Operação
+                {text("Operação", "Operations")}
               </p>
 
               <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-                Cozinha
+                {text("Cozinha", "Kitchen")}
               </h1>
 
               <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-                Pedidos pagos e retiradas com pagamento no balcão aparecem automaticamente aqui.
+                {text("Pedidos pagos e retiradas com pagamento no balcão aparecem automaticamente aqui.", "Paid orders and pickup orders payable at the counter appear here automatically.")}
               </p>
 
             </div>
@@ -587,7 +588,7 @@ export default function CozinhaPage() {
             <div className="rounded-xl border border-border bg-card px-4 py-3">
 
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                Ativos
+                {text("Ativos", "Active")}
               </p>
 
               <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
@@ -605,7 +606,7 @@ export default function CozinhaPage() {
           <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4">
 
             <p className="text-sm font-bold text-red-800">
-              Problema ao atualizar a cozinha
+              {text("Problema ao atualizar a cozinha", "Could not refresh the kitchen")}
             </p>
 
             <p className="mt-1 text-sm text-red-700">
@@ -619,7 +620,7 @@ export default function CozinhaPage() {
               }
               className="mt-3 rounded-lg bg-red-700 px-4 py-2 text-sm font-bold text-white"
             >
-              Tentar novamente
+              {text("Tentar novamente", "Try again")}
             </button>
 
           </div>
@@ -652,11 +653,11 @@ export default function CozinhaPage() {
           <div className="mt-6 rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
 
             <h2 className="text-lg font-bold text-foreground">
-              Cozinha em dia
+              {text("Cozinha em dia", "All caught up")}
             </h2>
 
             <p className="mt-2 text-sm text-muted-foreground">
-              Nenhum pedido está aguardando preparo no momento.
+              {text("Nenhum pedido está aguardando preparo no momento.", "No orders are waiting to be prepared.")}
             </p>
 
           </div>
@@ -704,7 +705,7 @@ export default function CozinhaPage() {
                         <div>
 
                           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                            Pedido
+                            {text("Pedido", "Order")}
                           </p>
 
                           <h2 className="mt-1 text-2xl font-bold tracking-tight text-foreground">
@@ -771,7 +772,7 @@ export default function CozinhaPage() {
                         <div className="rounded-xl border border-border bg-background p-3">
 
                           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                            Cliente
+                            {text("Cliente", "Customer")}
                           </p>
 
                           <p className="mt-2 text-sm font-bold text-foreground">
@@ -806,7 +807,7 @@ export default function CozinhaPage() {
                           0 ? (
 
                             <div className="rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-                              Nenhum item carregado.
+                              {text("Nenhum item carregado.", "No items loaded.")}
                             </div>
 
                           ) : (
@@ -848,7 +849,7 @@ export default function CozinhaPage() {
                                           <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
 
                                             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">
-                                              Adicionais
+                                              {text("Adicionais", "Extras")}
                                             </p>
 
                                             <div className="mt-2 space-y-1.5">
@@ -933,7 +934,7 @@ export default function CozinhaPage() {
                                           <div className="mt-2 rounded-lg border border-primary/15 bg-primary/5 px-3 py-2">
 
                                             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-                                              Atenção
+                                              {text("Atenção", "Attention")}
                                             </p>
 
                                             <p className="mt-1 text-sm font-semibold leading-5 text-foreground">
@@ -972,7 +973,7 @@ export default function CozinhaPage() {
                         "PICKUP" ? (
                           <>
                             <p className="mt-2 text-sm font-bold text-foreground">
-                              Retirada no estabelecimento
+                              {text("Retirada no estabelecimento", "In-store pickup")}
                             </p>
 
                             {order.pickupEstimatedMinutes !=
@@ -992,7 +993,7 @@ export default function CozinhaPage() {
                               "PENDING" && (
                               <div className="mt-3">
                                 <p className="text-xs font-bold text-orange-700">
-                                  PAGAMENTO PENDENTE / PAGAR NO BALCÃO
+                                  {text("PAGAMENTO PENDENTE / PAGAR NO BALCÃO", "PAYMENT PENDING / PAY AT COUNTER")}
                                 </p>
 
                                 <div className="mt-2 flex flex-wrap gap-2">

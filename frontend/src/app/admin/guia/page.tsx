@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import Link from "next/link";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 import GuideFeatureIcon from "@/components/GuideFeatureIcon";
 
@@ -92,6 +93,7 @@ const areas = [
 ];
 
 export default function GuiaPage() {
+  const { text } = useLanguage();
   const [
     tourOpen,
     setTourOpen,
@@ -118,7 +120,7 @@ export default function GuiaPage() {
               </div>
 
               <h1 className="mt-3 font-display text-4xl uppercase leading-none tracking-tight text-foreground sm:text-5xl">
-                Como usar o PizzaSystem
+                {text("Como usar o PizzaSystem", "How to use PizzaSystem")}
               </h1>
 
               <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
@@ -136,7 +138,7 @@ export default function GuiaPage() {
               className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:opacity-90"
             >
               <span aria-hidden="true">▶</span>
-              Rever apresentação
+              {text("Rever apresentação", "Replay tour")}
             </button>
 
           </div>
@@ -221,7 +223,7 @@ export default function GuiaPage() {
         <section className="mt-7 rounded-3xl border border-border bg-card p-6 sm:p-8">
 
           <h2 className="font-display text-3xl uppercase tracking-tight text-foreground">
-            Fluxo recomendado para uma loja nova
+            {text("Fluxo recomendado para uma loja nova", "Recommended setup for a new restaurant")}
           </h2>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 
 const API_URL = "";
@@ -17,6 +18,7 @@ type Category = {
 };
 
 export default function AdminCategoriasPage() {
+  const { text } = useLanguage();
   const [
     categories,
     setCategories,
@@ -223,15 +225,15 @@ export default function AdminCategoriasPage() {
         <div className="mb-6 border-b border-border pb-6">
 
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-            Cardápio
+            {text("Cardápio", "Menu")}
           </p>
 
           <h2 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-            Categorias
+            {text("Categorias", "Categories")}
           </h2>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Organize os produtos do cardápio em grupos como pizzas, esfihas, bebidas e outros itens.
+            {text("Organize os produtos do cardápio em grupos como pizzas, esfihas, bebidas e outros itens.", "Organize menu items into groups such as pizzas, drinks, and other products.")}
           </p>
 
         </div>
@@ -244,7 +246,7 @@ export default function AdminCategoriasPage() {
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
 
             <p className="font-semibold text-red-700">
-              Atenção
+              {text("Atenção", "Attention")}
             </p>
 
             <p className="mt-1 text-sm text-red-600">
@@ -258,7 +260,7 @@ export default function AdminCategoriasPage() {
           <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
 
             <p className="font-semibold text-emerald-700">
-              Tudo certo
+              {text("Tudo certo", "All set")}
             </p>
 
             <p className="mt-1 text-sm text-emerald-700">
@@ -303,7 +305,7 @@ export default function AdminCategoriasPage() {
                 }
                 className="h-9 rounded-lg border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 transition hover:bg-red-100"
               >
-                Cancelar edição
+                {text("Cancelar edição", "Cancel editing")}
               </button>
             )}
 
@@ -356,7 +358,7 @@ export default function AdminCategoriasPage() {
             <div>
 
               <h3 className="font-display text-2xl uppercase tracking-tight text-foreground">
-                Categorias cadastradas
+                {text("Categorias cadastradas", "Registered categories")}
               </h3>
 
               <p className="mt-1 text-sm text-muted-foreground">
@@ -375,7 +377,7 @@ export default function AdminCategoriasPage() {
               }
               className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-background"
             >
-              Atualizar
+              {text("Atualizar", "Refresh")}
             </button>
 
           </div>
@@ -384,7 +386,7 @@ export default function AdminCategoriasPage() {
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-border bg-background p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  Total de categorias
+                  {text("Total de categorias", "Total categories")}
                 </p>
 
                 <p className="mt-1 text-2xl font-bold text-foreground">
@@ -394,15 +396,15 @@ export default function AdminCategoriasPage() {
 
               <div className="rounded-xl border border-border bg-background p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  Organização
+                  {text("Organização", "Organization")}
                 </p>
 
                 <p className="mt-1 text-sm font-bold text-foreground">
-                  Estrutura do cardápio
+                  {text("Estrutura do cardápio", "Menu structure")}
                 </p>
 
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Use nomes curtos e fáceis de identificar.
+                  {text("Use nomes curtos e fáceis de identificar.", "Use short, recognizable names.")}
                 </p>
               </div>
             </div>
@@ -413,7 +415,7 @@ export default function AdminCategoriasPage() {
             <div className="mt-6 rounded-2xl border border-dashed border-border bg-background p-10 text-center">
 
               <p className="text-muted-foreground">
-                Carregando categorias...
+                {text("Carregando categorias...", "Loading categories...")}
               </p>
 
             </div>
@@ -439,11 +441,11 @@ export default function AdminCategoriasPage() {
 </div>
 
               <h4 className="mt-3 font-bold text-foreground">
-                Nenhuma categoria cadastrada
+                {text("Nenhuma categoria cadastrada", "No categories registered")}
               </h4>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Cadastre a primeira categoria para organizar os produtos.
+                {text("Cadastre a primeira categoria para organizar os produtos.", "Add your first category to organize products.")}
               </p>
 
             </div>
@@ -481,7 +483,7 @@ export default function AdminCategoriasPage() {
                       }
                       className="rounded-lg border border-border px-4 py-2 text-sm font-semibold transition hover:bg-background"
                     >
-                      Editar
+                      {text("Editar", "Edit")}
                     </button>
 
                   </div>

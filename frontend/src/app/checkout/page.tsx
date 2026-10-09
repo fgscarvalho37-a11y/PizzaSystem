@@ -2012,11 +2012,11 @@ export default function CheckoutPage() {
         <div className="mx-auto max-w-xl rounded-2xl bg-card p-8 text-center ring-1 ring-black/5">
 
           <h1 className="font-display text-3xl tracking-tight">
-            Loja não informada
+            {text("Loja não informada", "Store not selected")}
           </h1>
 
           <p className="mt-2 text-sm text-muted-foreground">
-            Abra o checkout a partir do cardápio da loja.
+            {text("Abra o checkout a partir do cardápio da loja.", "Open checkout from the restaurant's menu.")}
           </p>
 
         </div>

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 import { formatStoreMoney, getStoreCurrencySymbol } from "@/lib/storeIntl";
 
@@ -101,6 +102,7 @@ function toInputDateTime(
 }
 
 export default function CouponsAdminPage() {
+  const { text } = useLanguage();
   const [coupons, setCoupons] =
     useState<Coupon[]>([]);
 
@@ -494,7 +496,7 @@ export default function CouponsAdminPage() {
           <section className="h-fit rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                Promoções
+                {text("Promoções", "Promotions")}
               </p>
 
               <h2 className="mt-1 font-display text-3xl uppercase tracking-tight text-foreground">
@@ -532,7 +534,7 @@ export default function CouponsAdminPage() {
             >
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                  Código
+                  {text("Código", "Code")}
                 </label>
 
                 <input
@@ -561,7 +563,7 @@ export default function CouponsAdminPage() {
 
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                  Tipo de desconto
+                  {text("Tipo de desconto", "Discount type")}
                 </label>
 
                 <select
@@ -642,7 +644,7 @@ export default function CouponsAdminPage() {
 
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                  Valor mínimo do pedido
+                  {text("Valor mínimo do pedido", "Minimum order total")}
                 </label>
 
                 <input
@@ -679,7 +681,7 @@ export default function CouponsAdminPage() {
                 "PERCENTAGE" && (
                 <div>
                   <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                    Desconto máximo
+                    {text("Desconto máximo", "Maximum discount")}
                   </label>
 
                   <input
@@ -717,7 +719,7 @@ export default function CouponsAdminPage() {
 
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                  Limite de usos
+                  {text("Limite de usos", "Usage limit")}
                 </label>
 
                 <input
@@ -754,7 +756,7 @@ export default function CouponsAdminPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                    Início da validade
+                    {text("Início da validade", "Start date")}
                   </label>
 
                   <input
@@ -782,7 +784,7 @@ export default function CouponsAdminPage() {
 
                 <div>
                   <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
-                    Fim da validade
+                    {text("Fim da validade", "End date")}
                   </label>
 
                   <input
@@ -812,11 +814,11 @@ export default function CouponsAdminPage() {
               <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-border bg-background p-4">
                 <div>
                   <p className="text-sm font-bold text-foreground">
-                    Cupom ativo
+                    {text("Cupom ativo", "Active coupon")}
                   </p>
 
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Quando desativado, não poderá ser aplicado no checkout.
+                    {text("Quando desativado, não poderá ser aplicado no checkout.", "When disabled, the coupon cannot be used at checkout.")}
                   </p>
                 </div>
 
@@ -863,7 +865,7 @@ export default function CouponsAdminPage() {
                   }
                   className="w-full rounded-xl border border-input bg-card px-5 py-3 font-semibold text-foreground transition hover:bg-muted/40"
                 >
-                  Cancelar edição
+                  {text("Cancelar edição", "Cancel editing")}
                 </button>
               )}
             </form>
@@ -877,11 +879,11 @@ export default function CouponsAdminPage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                  Cupons cadastrados
+                  {text("Cupons cadastrados", "Registered coupons")}
                 </p>
 
                 <h2 className="mt-1 font-display text-3xl uppercase tracking-tight text-foreground">
-                  Promoções
+                  {text("Promoções", "Promotions")}
                 </h2>
 
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -898,13 +900,13 @@ export default function CouponsAdminPage() {
                 }
                 className="rounded-xl border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted/40"
               >
-                Atualizar
+                {text("Atualizar", "Refresh")}
               </button>
             </div>
 
             {loading ? (
               <div className="mt-6 rounded-2xl border border-dashed border-border bg-background px-6 py-12 text-center text-sm text-muted-foreground">
-                Carregando cupons...
+                {text("Carregando cupons...", "Loading coupons...")}
               </div>
             ) : coupons.length ===
               0 ? (
@@ -975,7 +977,7 @@ export default function CouponsAdminPage() {
                               }
                               className="rounded-lg border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted/40"
                             >
-                              Editar
+                              {text("Editar", "Edit")}
                             </button>
 
                             <button
@@ -1001,7 +1003,7 @@ export default function CouponsAdminPage() {
                         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                           <div className="rounded-xl border border-border bg-card p-4">
                             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                              Utilizações
+                              {text("Utilizações", "Redemptions")}
                             </p>
 
                             <p className="mt-1 font-semibold text-foreground">
@@ -1013,7 +1015,7 @@ export default function CouponsAdminPage() {
 
                           <div className="rounded-xl border border-border bg-card p-4">
                             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                              Pedido mínimo
+                              {text("Pedido mínimo", "Minimum order")}
                             </p>
 
                             <p className="mt-1 font-semibold text-foreground">
@@ -1028,7 +1030,7 @@ export default function CouponsAdminPage() {
 
                           <div className="rounded-xl border border-border bg-card p-4">
                             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                              Desconto máximo
+                              {text("Desconto máximo", "Maximum discount")}
                             </p>
 
                             <p className="mt-1 font-semibold text-foreground">
@@ -1043,7 +1045,7 @@ export default function CouponsAdminPage() {
 
                           <div className="rounded-xl border border-border bg-card p-4">
                             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                              Válido a partir
+                              {text("Válido a partir", "Valid from")}
                             </p>
 
                             <p className="mt-1 text-sm font-semibold text-foreground">
@@ -1055,7 +1057,7 @@ export default function CouponsAdminPage() {
 
                           <div className="rounded-xl border border-border bg-card p-4">
                             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                              Válido até
+                              {text("Válido até", "Valid until")}
                             </p>
 
                             <p className="mt-1 text-sm font-semibold text-foreground">
@@ -1067,7 +1069,7 @@ export default function CouponsAdminPage() {
 
                           <div className="rounded-xl border border-border bg-card p-4">
                             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                              Criado em
+                              {text("Criado em", "Created on")}
                             </p>
 
                             <p className="mt-1 text-sm font-semibold text-foreground">

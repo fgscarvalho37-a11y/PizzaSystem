@@ -413,15 +413,15 @@ export default function PedidoPage() {
       <main className="grid min-h-screen place-items-center bg-background px-5 py-10 text-foreground">
         <div className="w-full max-w-lg rounded-[28px] border border-border bg-card p-8 text-center shadow-[0_18px_60px_-30px] shadow-foreground/40">
           <p className="font-mono-brand text-xs font-bold uppercase tracking-[0.18em] text-primary">
-            Acompanhamento
+            {text("Acompanhamento", "Order tracking")}
           </p>
 
           <h1 className="mt-2 font-display text-4xl tracking-tight">
-            Pedido não encontrado
+            {text("Pedido não encontrado", "Order not found")}
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Não conseguimos localizar esse pedido.
+            {text("Não conseguimos localizar esse pedido.", "We couldn't find that order.")}
           </p>
 
           <button
@@ -433,7 +433,7 @@ export default function PedidoPage() {
             }
             className="brand-button mt-6 w-full rounded-2xl px-5 py-3.5"
           >
-            Voltar ao cardápio
+            {text("Voltar ao cardápio", "Back to menu")}
           </button>
         </div>
       </main>
@@ -578,7 +578,7 @@ export default function PedidoPage() {
             </h1>
 
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Acompanhe o andamento do seu pedido em tempo real.
+              {text("Acompanhe o andamento do seu pedido em tempo real.", "Track your order in real time.")}
             </p>
           </div>
 
@@ -634,7 +634,7 @@ export default function PedidoPage() {
               <div className="min-w-0 flex-1">
 
                 <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  Status atual
+                  {text("Status atual", "Current status")}
                 </p>
 
                 <h2 className="mt-1 font-display text-3xl tracking-tight">
@@ -759,11 +759,11 @@ export default function PedidoPage() {
               <div className="mt-7 rounded-2xl border border-butter/50 bg-butter/20 p-4">
 
                 <p className="font-bold">
-                  Pagamento ainda não confirmado
+                  {text("Pagamento ainda não confirmado", "Payment not yet confirmed")}
                 </p>
 
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Assim que o pagamento for aprovado, o pedido entra automaticamente na cozinha.
+                  {text("Assim que o pagamento for aprovado, o pedido entra automaticamente na cozinha.", "Once payment is approved, your order will automatically go to the kitchen.")}
                 </p>
 
                 <button
@@ -777,7 +777,7 @@ export default function PedidoPage() {
                   }
                   className="mt-4 rounded-xl bg-foreground px-5 py-3 text-sm font-bold text-cream transition-transform active:scale-95"
                 >
-                  Voltar ao pagamento
+                  {text("Voltar ao pagamento", "Back to payment")}
                 </button>
 
               </div>
@@ -894,7 +894,7 @@ export default function PedidoPage() {
           <section className="rounded-[28px] border-2 border-foreground bg-foreground p-5 text-cream shadow-[0_6px_0_0] shadow-primary/40">
 
             <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.18em] text-cream/55">
-              Valores
+              {text("Valores", "Amounts")}
             </p>
 
             <div className="mt-5 space-y-3">
@@ -960,7 +960,7 @@ export default function PedidoPage() {
         <div className="mt-6 rounded-2xl border border-border bg-secondary/55 p-4 text-center">
 
           <p className="text-sm font-semibold">
-            O status é atualizado automaticamente a cada poucos segundos.
+            {text("O status é atualizado automaticamente a cada poucos segundos.", "Status updates automatically every few seconds.")}
           </p>
 
         </div>
@@ -974,7 +974,7 @@ export default function PedidoPage() {
           }
           className="mt-6 w-full rounded-2xl border-2 border-foreground px-5 py-3.5 text-sm font-bold transition-colors hover:bg-foreground hover:text-cream"
         >
-          Voltar ao cardápio
+          {text("Voltar ao cardápio", "Back to menu")}
         </button>
 
       </div>

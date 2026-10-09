@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 import { formatStoreMoney } from "@/lib/storeIntl";
 
@@ -304,6 +305,7 @@ function Spinner() {
 }
 
 export default function AdminHistoricoPage() {
+  const { text } = useLanguage();
   const [
     orders,
     setOrders,
@@ -625,15 +627,15 @@ export default function AdminHistoricoPage() {
 
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                Operação
+                {text("Operação", "Operations")}
               </p>
 
               <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-                Histórico
+                {text("Histórico", "History")}
               </h1>
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Consulte pedidos entregues, cancelados e pagamentos recusados.
+                {text("Consulte pedidos entregues, cancelados e pagamentos recusados.", "Review delivered and canceled orders, and rejected payments.")}
               </p>
             </div>
 
@@ -663,7 +665,7 @@ export default function AdminHistoricoPage() {
 
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-              Entregues
+              {text("Entregues", "Delivered")}
             </p>
             <p className="mt-2 text-2xl font-bold text-emerald-700">
               {deliveredCount}
@@ -672,7 +674,7 @@ export default function AdminHistoricoPage() {
 
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-              Cancelados
+              {text("Cancelados", "Canceled")}
             </p>
             <p className="mt-2 text-2xl font-bold text-red-700">
               {cancelledCount}
@@ -681,7 +683,7 @@ export default function AdminHistoricoPage() {
 
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-              Recusados
+              {text("Recusados", "Rejected")}
             </p>
             <p className="mt-2 text-2xl font-bold text-foreground">
               {rejectedCount}
@@ -690,7 +692,7 @@ export default function AdminHistoricoPage() {
 
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-              Valor entregue
+              {text("Valor entregue", "Delivered total")}
             </p>
             <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">
               {currency(
@@ -707,7 +709,7 @@ export default function AdminHistoricoPage() {
             role="alert"
           >
             <p className="text-sm font-bold text-red-800">
-              Não foi possível carregar
+              {text("Não foi possível carregar", "Could not load")}
             </p>
             <p className="mt-1 text-sm text-red-700">
               {errorMessage}
@@ -724,7 +726,7 @@ export default function AdminHistoricoPage() {
                 htmlFor="history-search"
                 className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
               >
-                Buscar
+                {text("Buscar", "Search")}
               </label>
 
               <div className="relative">
@@ -779,13 +781,13 @@ export default function AdminHistoricoPage() {
                   Todos
                 </option>
                 <option value="DELIVERED">
-                  Entregues
+                  {text("Entregues", "Delivered")}
                 </option>
                 <option value="CANCELLED">
-                  Cancelados
+                  {text("Cancelados", "Canceled")}
                 </option>
                 <option value="REJECTED">
-                  Pagamento recusado
+                  {text("Pagamento recusado", "Payment rejected")}
                 </option>
               </select>
             </div>
@@ -795,7 +797,7 @@ export default function AdminHistoricoPage() {
                 htmlFor="fulfillment-filter"
                 className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
               >
-                Modalidade
+                {text("Modalidade", "Fulfillment")}
               </label>
 
               <select
@@ -820,10 +822,10 @@ export default function AdminHistoricoPage() {
                   Todos
                 </option>
                 <option value="DELIVERY">
-                  Entrega
+                  {text("Entrega", "Delivery")}
                 </option>
                 <option value="PICKUP">
-                  Retirada
+                  {text("Retirada", "Pickup")}
                 </option>
               </select>
             </div>
@@ -859,7 +861,7 @@ export default function AdminHistoricoPage() {
                 }}
                 className="text-sm font-bold text-primary transition hover:opacity-70"
               >
-                Limpar filtros
+                {text("Limpar filtros", "Clear filters")}
               </button>
             )}
           </div>
@@ -885,11 +887,11 @@ export default function AdminHistoricoPage() {
 
           <div className="mt-6 rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
             <h2 className="text-lg font-bold text-foreground">
-              Nenhum registro encontrado
+              {text("Nenhum registro encontrado", "No records found")}
             </h2>
 
             <p className="mt-2 text-sm text-muted-foreground">
-              Pedidos entregues, cancelados ou recusados aparecerão aqui.
+              {text("Pedidos entregues, cancelados ou recusados aparecerão aqui.", "Delivered, canceled and rejected orders will appear here.")}
             </p>
           </div>
 
@@ -940,7 +942,7 @@ export default function AdminHistoricoPage() {
 
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                              Pedido
+                              {text("Pedido", "Order")}
                             </p>
                             <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
                               #{order.id}
@@ -949,7 +951,7 @@ export default function AdminHistoricoPage() {
 
                           <div className="min-w-40">
                             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                              Cliente
+                              {text("Cliente", "Customer")}
                             </p>
                             <p className="mt-1 font-bold text-foreground">
                               {order.customerName}
@@ -1071,7 +1073,7 @@ export default function AdminHistoricoPage() {
 
                           <section>
                             <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                              Itens do pedido
+                              {text("Itens do pedido", "Order items")}
                             </p>
 
                             <div className="mt-3 space-y-2">
@@ -1079,7 +1081,7 @@ export default function AdminHistoricoPage() {
                               {order.items.length ===
                               0 ? (
                                 <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-                                  Nenhum item encontrado.
+                                  {text("Nenhum item encontrado.", "No items found.")}
                                 </div>
 
                               ) : (
@@ -1131,7 +1133,7 @@ export default function AdminHistoricoPage() {
                                           <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
 
                                             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">
-                                              Adicionais
+                                              {text("Adicionais", "Extras")}
                                             </p>
 
                                             <div className="mt-2 space-y-1.5">
@@ -1182,7 +1184,7 @@ export default function AdminHistoricoPage() {
 
                                               <div>
                                                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
-                                                  Borda recheada
+                                                  {text("Borda recheada", "Stuffed crust")}
                                                 </p>
 
                                                 <p className="mt-1 text-sm font-bold text-amber-900">
@@ -1209,7 +1211,7 @@ export default function AdminHistoricoPage() {
                                           <div className="mt-3 rounded-lg border border-primary/15 bg-primary/5 p-3">
 
                                             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-                                              Observação
+                                              {text("Observação", "Notes")}
                                             </p>
 
                                             <p className="mt-1 text-sm leading-6 text-foreground">
@@ -1230,7 +1232,7 @@ export default function AdminHistoricoPage() {
 
                           <section>
                             <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                              Entrega
+                              {text("Entrega", "Delivery")}
                             </p>
 
                             <div className="mt-3 rounded-xl border border-border bg-card p-4">
@@ -1252,7 +1254,7 @@ export default function AdminHistoricoPage() {
 
                               <div className="mt-4 border-t border-border pt-4">
                                 <p className="text-xs text-muted-foreground">
-                                  Taxa de entrega
+                                  {text("Taxa de entrega", "Delivery fee")}
                                 </p>
 
                                 <p className="mt-1 font-bold text-foreground">
