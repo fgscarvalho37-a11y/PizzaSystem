@@ -168,6 +168,7 @@ function Spinner() {
 }
 
 function HoursSkeleton() {
+  const { text } = useLanguage();
   return (
     <div
       className="space-y-3"
