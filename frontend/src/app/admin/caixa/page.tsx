@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 import { formatStoreMoney } from "@/lib/storeIntl";
 import { downloadSimplePdf } from "@/lib/simplePdf";
@@ -350,6 +351,7 @@ function CashSkeleton() {
 ========================= */
 
 export default function AdminCaixaPage() {
+  const { text } = useLanguage();
   const today =
     getToday();
 
@@ -783,7 +785,7 @@ export default function AdminCaixaPage() {
         <section className="border-b border-border pb-6">
 
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-            Financeiro
+            {text("Financeiro", "Finance")}
           </p>
 
           <h1 className="mt-2 font-display text-4xl uppercase leading-none tracking-tight text-foreground">
@@ -791,7 +793,7 @@ export default function AdminCaixaPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Consulte o movimento financeiro e registre o fechamento oficial de cada dia.
+            {text("Consulte o movimento financeiro e registre o fechamento oficial de cada dia.", "Review cash flow and record the official close of each day.")}
           </p>
 
         </section>
@@ -811,7 +813,7 @@ export default function AdminCaixaPage() {
                 htmlFor="cash-date"
                 className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
               >
-                Data do caixa
+                {text("Data do caixa", "Register date")}
               </label>
 
               <input
@@ -909,7 +911,7 @@ export default function AdminCaixaPage() {
 
             <div>
               <p className="text-sm font-bold text-red-800">
-                Não foi possível concluir
+                {text("Não foi possível concluir", "Could not complete")}
               </p>
 
               <p className="mt-1 text-sm text-red-700">
@@ -929,7 +931,7 @@ export default function AdminCaixaPage() {
             <div>
 
               <p className="text-sm font-bold text-emerald-800">
-                Caixa fechado
+                {text("Caixa fechado", "Register closed")}
               </p>
 
               <p className="mt-1 text-sm text-emerald-700">
@@ -1038,7 +1040,7 @@ export default function AdminCaixaPage() {
                 }
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-card px-4 text-sm font-bold text-foreground transition hover:bg-muted"
               >
-                Baixar PDF do caixa
+                {text("Baixar PDF do caixa", "Download cash register PDF")}
               </button>
             </div>
 
@@ -1047,7 +1049,7 @@ export default function AdminCaixaPage() {
               <div className="rounded-2xl border border-primary/20 bg-primary p-5 text-primary-foreground">
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary-foreground/70">
-                  Faturamento
+                  {text("Faturamento", "Revenue")}
                 </p>
 
                 <p className="mt-2 text-3xl font-bold tracking-tight">
@@ -1057,7 +1059,7 @@ export default function AdminCaixaPage() {
                 </p>
 
                 <p className="mt-2 text-xs text-primary-foreground/70">
-                  Pedidos aprovados
+                  {text("Pedidos aprovados", "Approved orders")}
                 </p>
 
               </div>
@@ -1065,7 +1067,7 @@ export default function AdminCaixaPage() {
               <div className="rounded-2xl border border-border bg-card p-5">
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                  Pedidos pagos
+                  {text("Pedidos pagos", "Paid orders")}
                 </p>
 
                 <p className="mt-2 text-3xl font-bold tracking-tight text-foreground">
@@ -1073,7 +1075,7 @@ export default function AdminCaixaPage() {
                 </p>
 
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Pedidos aprovados
+                  {text("Pedidos aprovados", "Approved orders")}
                 </p>
 
               </div>
@@ -1081,7 +1083,7 @@ export default function AdminCaixaPage() {
               <div className="rounded-2xl border border-border bg-card p-5">
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                  Ticket médio
+                  {text("Ticket médio", "Average order value")}
                 </p>
 
                 <p className="mt-2 text-3xl font-bold tracking-tight text-foreground">
@@ -1091,7 +1093,7 @@ export default function AdminCaixaPage() {
                 </p>
 
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Média por pedido
+                  {text("Média por pedido", "Average per order")}
                 </p>
 
               </div>
@@ -1099,7 +1101,7 @@ export default function AdminCaixaPage() {
               <div className="rounded-2xl border border-border bg-card p-5">
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                  Taxas de entrega
+                  {text("Taxas de entrega", "Delivery fees")}
                 </p>
 
                 <p className="mt-2 text-3xl font-bold tracking-tight text-foreground">
@@ -1109,7 +1111,7 @@ export default function AdminCaixaPage() {
                 </p>
 
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Total em entregas
+                  {text("Total em entregas", "Total delivery revenue")}
                 </p>
 
               </div>
@@ -1119,18 +1121,18 @@ export default function AdminCaixaPage() {
             <section className="mt-6 rounded-2xl border border-border bg-card p-5">
 
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                Composição
+                {text("Composição", "Breakdown")}
               </p>
 
               <h2 className="mt-1 text-xl font-bold text-foreground">
-                Origem do faturamento
+                {text("Origem do faturamento", "Revenue sources")}
               </h2>
 
               <div className="mt-5 grid gap-3 md:grid-cols-3">
 
                 <div className="rounded-xl border border-border bg-background p-4">
                   <p className="text-sm text-muted-foreground">
-                    Produtos
+                    {text("Produtos", "Products")}
                   </p>
 
                   <p className="mt-2 text-2xl font-bold text-foreground">
@@ -1142,7 +1144,7 @@ export default function AdminCaixaPage() {
 
                 <div className="rounded-xl border border-border bg-background p-4">
                   <p className="text-sm text-muted-foreground">
-                    Entregas
+                    {text("Entregas", "Deliveries")}
                   </p>
 
                   <p className="mt-2 text-2xl font-bold text-foreground">
@@ -1171,18 +1173,18 @@ export default function AdminCaixaPage() {
             <section className="mt-6 rounded-2xl border border-border bg-card p-5">
 
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                Modalidades
+                {text("Modalidades", "Fulfillment methods")}
               </p>
 
               <h2 className="mt-1 text-xl font-bold text-foreground">
-                Entrega e retirada
+                {text("Entrega e retirada", "Delivery and pickup")}
               </h2>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
                 <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
-                    Entrega
+                    {text("Entrega", "Delivery")}
                   </p>
                   <p className="mt-2 text-2xl font-bold text-blue-800">
                     {deliveryCount}
@@ -1191,7 +1193,7 @@ export default function AdminCaixaPage() {
 
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
-                    Retirada
+                    {text("Retirada", "Pickup")}
                   </p>
                   <p className="mt-2 text-2xl font-bold text-amber-800">
                     {pickupCount}
@@ -1200,7 +1202,7 @@ export default function AdminCaixaPage() {
 
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
-                    Online
+                    {text("Online", "Online")}
                   </p>
                   <p className="mt-2 text-2xl font-bold text-emerald-800">
                     {onlineCount}
@@ -1209,7 +1211,7 @@ export default function AdminCaixaPage() {
 
                 <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-orange-700">
-                    Na retirada
+                    {text("Na retirada", "At pickup")}
                   </p>
                   <p className="mt-2 text-2xl font-bold text-orange-800">
                     {payAtPickupCount}
@@ -1223,11 +1225,11 @@ export default function AdminCaixaPage() {
             <section className="mt-6 rounded-2xl border border-border bg-card p-5">
 
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                Recebimentos
+                {text("Recebimentos", "Payments received")}
               </p>
 
               <h2 className="mt-1 text-xl font-bold text-foreground">
-                Formas de pagamento
+                {text("Formas de pagamento", "Payment methods")}
               </h2>
 
               <div className="mt-5 grid gap-3 md:grid-cols-3">
@@ -1259,7 +1261,7 @@ export default function AdminCaixaPage() {
                   <div className="flex items-center justify-between">
 
                     <p className="font-bold text-foreground">
-                      Cartão de crédito
+                      {text("Cartão de crédito", "Credit card")}
                     </p>
 
                     <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
@@ -1281,7 +1283,7 @@ export default function AdminCaixaPage() {
                   <div className="flex items-center justify-between">
 
                     <p className="font-bold text-foreground">
-                      Cartão de débito
+                      {text("Cartão de débito", "Debit card")}
                     </p>
 
                     <span className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">
@@ -1297,7 +1299,7 @@ export default function AdminCaixaPage() {
                   </p>
 
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Indisponível no checkout.
+                    {text("Indisponível no checkout.", "Unavailable at checkout.")}
                   </p>
 
                 </div>
@@ -1309,18 +1311,18 @@ export default function AdminCaixaPage() {
             <section className="mt-6 rounded-2xl border border-border bg-card p-5">
 
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                Operação
+                {text("Operação", "Operations")}
               </p>
 
               <h2 className="mt-1 text-xl font-bold text-foreground">
-                Situação dos pedidos
+                {text("Situação dos pedidos", "Order statuses")}
               </h2>
 
               <div className="mt-5 grid gap-3 md:grid-cols-3">
 
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
-                    Entregues
+                    {text("Entregues", "Delivered")}
                   </p>
 
                   <p className="mt-2 text-2xl font-bold text-emerald-800">
@@ -1330,7 +1332,7 @@ export default function AdminCaixaPage() {
 
                 <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
-                    Em andamento
+                    {text("Em andamento", "In progress")}
                   </p>
 
                   <p className="mt-2 text-2xl font-bold text-blue-800">
@@ -1340,7 +1342,7 @@ export default function AdminCaixaPage() {
 
                 <div className="rounded-xl border border-red-200 bg-red-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-red-700">
-                    Cancelados
+                    {text("Cancelados", "Canceled")}
                   </p>
 
                   <p className="mt-2 text-2xl font-bold text-red-800">
@@ -1355,11 +1357,11 @@ export default function AdminCaixaPage() {
             <section className="mt-6 rounded-2xl border border-border bg-card p-5">
 
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                Fechamento
+                {text("Fechamento", "Closeout")}
               </p>
 
               <h2 className="mt-1 text-xl font-bold text-foreground">
-                Fechamento de caixa
+                {text("Fechamento de caixa", "Cash register closeout")}
               </h2>
 
               {isClosed &&
@@ -1378,7 +1380,7 @@ export default function AdminCaixaPage() {
                       <div>
 
                         <p className="font-bold text-emerald-800">
-                          Caixa fechado
+                          {text("Caixa fechado", "Register closed")}
                         </p>
 
                         <p className="mt-0.5 text-sm text-emerald-700">
@@ -1413,7 +1415,7 @@ export default function AdminCaixaPage() {
 
                     <div className="rounded-xl border border-border bg-background p-4">
                       <p className="text-xs text-muted-foreground">
-                        Produtos
+                        {text("Produtos", "Products")}
                       </p>
 
                       <p className="mt-1 text-lg font-bold text-foreground">
@@ -1425,7 +1427,7 @@ export default function AdminCaixaPage() {
 
                     <div className="rounded-xl border border-border bg-background p-4">
                       <p className="text-xs text-muted-foreground">
-                        Entregas
+                        {text("Entregas", "Deliveries")}
                       </p>
 
                       <p className="mt-1 text-lg font-bold text-foreground">
@@ -1437,7 +1439,7 @@ export default function AdminCaixaPage() {
 
                     <div className="rounded-xl border border-border bg-background p-4">
                       <p className="text-xs text-muted-foreground">
-                        Pedidos
+                        {text("Pedidos", "Orders")}
                       </p>
 
                       <p className="mt-1 text-lg font-bold text-foreground">
@@ -1448,7 +1450,7 @@ export default function AdminCaixaPage() {
                   </div>
 
                   <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                    Os valores acima são o registro oficial salvo no momento do fechamento.
+                    {text("Os valores acima são o registro oficial salvo no momento do fechamento.", "The values above are the official record saved at closeout.")}
                   </p>
 
                 </div>
@@ -1489,7 +1491,7 @@ export default function AdminCaixaPage() {
                   >
                     <LockIcon className="h-4 w-4" />
 
-                    Fechar caixa
+                    {text("Fechar caixa", "Close register")}
                   </button>
 
                 </div>
@@ -1538,7 +1540,7 @@ export default function AdminCaixaPage() {
                 id="close-cash-title"
                 className="mt-4 text-xl font-bold text-foreground"
               >
-                Fechar caixa?
+                {text("Fechar caixa?", "Close the cash register?")}
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -1553,7 +1555,7 @@ export default function AdminCaixaPage() {
               <div className="mt-4 rounded-xl border border-border bg-card p-4">
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  Total do caixa
+                  {text("Total do caixa", "Register total")}
                 </p>
 
                 <p className="mt-1 text-2xl font-bold text-foreground">
@@ -1602,7 +1604,7 @@ export default function AdminCaixaPage() {
                     disabled:opacity-50
                   "
                 >
-                  Cancelar
+                  {text("Cancelar", "Cancel")}
                 </button>
 
                 <button
