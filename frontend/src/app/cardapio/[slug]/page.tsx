@@ -2100,7 +2100,7 @@ export default function CardapioPage() {
                         <PlusIcon className="h-4 w-4" />
 
                         {storeStatus?.open
-                          ? "Ver opções"
+                          ? text("Ver opções", "View options")
                           : text("Indisponível agora", "Unavailable right now")}
                       </button>
 
@@ -2234,7 +2234,7 @@ export default function CardapioPage() {
 
                 <button
                   type="button"
-                  aria-label="Fechar"
+                  aria-label={text("Fechar", "Close")}
                   onClick={
                     closeProduct
                   }
@@ -2257,7 +2257,7 @@ export default function CardapioPage() {
 
                 <button
                   type="button"
-                  aria-label="Fechar"
+                  aria-label={text("Fechar", "Close")}
                   onClick={
                     closeProduct
                   }
@@ -2538,7 +2538,7 @@ export default function CardapioPage() {
                       event.target.value
                     )
                   }
-                  placeholder="Ex: sem cebola, bem passado..."
+                  placeholder={text("Ex: sem cebola, bem passado...", "Example: no onions, well done...")}
                   rows={3}
                   maxLength={250}
                   className="w-full resize-none rounded-2xl border border-border bg-card p-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
@@ -2622,7 +2622,7 @@ export default function CardapioPage() {
 
               <button
                 type="button"
-                aria-label="Fechar"
+                aria-label={text("Fechar", "Close")}
                 onClick={() =>
                   setCartOpen(
                     false
@@ -2852,7 +2852,7 @@ export default function CardapioPage() {
                                   event.target.value
                                 )
                               }
-                              placeholder="Ex: sem cebola"
+                              placeholder={text("Ex: sem cebola", "Example: no onions")}
                               rows={2}
                               className="w-full resize-none rounded-xl border border-border bg-background p-3 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
                             />
@@ -2976,7 +2976,7 @@ export default function CardapioPage() {
 
             <button
               type="button"
-              aria-label="Fechar mensagem"
+              aria-label={text("Fechar mensagem", "Close message")}
               onClick={() =>
                 setToast(
                   null
