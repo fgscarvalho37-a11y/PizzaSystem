@@ -13,6 +13,7 @@ import {
 } from "next/navigation";
 
 import AdminOnboarding from "@/components/AdminOnboarding";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import OrbittaRenewalNotice from "@/components/OrbittaRenewalNotice";
 import { adminFetch } from "@/lib/adminFetch";
 import { saveStoreIntlSnapshot } from "@/lib/storeIntl";
@@ -111,7 +112,7 @@ function PizzaSystemLoader() {
         </p>
 
         <p className="mt-1.5 text-sm font-medium text-muted-foreground">
-          Verificando acesso
+          {text("Verificando acesso", "Checking access")}
         </p>
 
       </div>
@@ -122,6 +123,7 @@ function PizzaSystemLoader() {
 export default function AdminLayout({
   children,
 }: AdminLayoutProps) {
+  const { text } = useLanguage();
   const router =
     useRouter();
 
