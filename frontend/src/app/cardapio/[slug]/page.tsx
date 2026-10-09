@@ -97,6 +97,22 @@ type StoreStatus = {
   message: string;
 };
 
+// Standard backend status messages arrive in Portuguese.
+// Translate system messages, but leave restaurant-authored copy untouched.
+const STORE_STATUS_EN: Record<string, string> = {
+  "Loja temporariamente indisponível": "The restaurant is temporarily unavailable.",
+  "Pedidos fechados manualmente": "Orders temporarily disabled by the restaurant.",
+  "Limite diário de pedidos atingido": "The restaurant has reached its daily order limit.",
+  "Fora do horário de funcionamento": "The restaurant is currently outside its opening hours.",
+  "Recebendo pedidos": "Accepting orders",
+};
+
+function localizedStoreStatus(message: string | null | undefined, locale: string) {
+  const original = message?.trim();
+  if (!locale.startsWith("en")) return original ?? "";
+  return original ? (STORE_STATUS_EN[original] ?? "Ordering is currently unavailable.") : "";
+}
+
 type ToastState = {
   type: "success" | "warning" | "error";
   title: string;
@@ -1782,11 +1798,11 @@ export default function CardapioPage() {
               <div className="mt-5 max-w-xl rounded-2xl border border-primary/20 bg-primary/5 p-4">
 
                 <p className="font-bold text-primary">
-                  A loja não está recebendo novos pedidos agora.
+                  {text("A loja não está recebendo novos pedidos agora.", "We're not accepting new orders right now.")}
                 </p>
 
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  {storeStatus?.message ||
+                  {localizedStoreStatus(storeStatus?.message, locale) ||
                     text("Você pode consultar o cardápio e voltar quando os pedidos forem liberados.", "You can browse the menu and come back when ordering is available.")}
                 </p>
 
@@ -1800,7 +1816,7 @@ export default function CardapioPage() {
                 className="brand-button min-h-10 rounded-full px-5 text-sm sm:min-h-12 sm:px-7"
               >
                 {storeProfile?.heroPrimaryButtonText ||
-                  "Ver cardápio"}
+                  text("Ver cardápio", "See menu")}
 
                 <ArrowRightIcon className="h-4 w-4" />
               </a>
@@ -1816,7 +1832,7 @@ export default function CardapioPage() {
                   className="min-h-10 rounded-full border-2 border-foreground bg-transparent px-5 text-sm font-bold transition-colors hover:bg-foreground hover:text-cream sm:min-h-12 sm:px-6"
                 >
                   {storeProfile?.heroSecondaryButtonText ||
-                    "Ver meu pedido"}
+                    text("Ver meu pedido", "View my order")}
                 </button>
               )}
 
@@ -1840,15 +1856,15 @@ export default function CardapioPage() {
 
             <div className="animate-floaty absolute -left-2 top-5 rounded-full bg-butter px-4 py-2 font-mono-brand text-xs font-bold shadow-[0_3px_0_0] shadow-foreground/15 sm:-left-4">
               {storeProfile?.heroBadgeText ||
-                "CARDÁPIO ONLINE"}
+                text("CARDÁPIO ONLINE", "ONLINE MENU")}
             </div>
 
             <div className="absolute -bottom-3 right-4 rounded-full bg-foreground px-5 py-2.5 font-display text-lg tracking-wide text-cream shadow-[0_4px_0_0] shadow-primary/50">
               {storeStatus?.open
                 ? storeProfile?.heroOpenStatusText ||
-                  "ABERTO"
+                  text("ABERTO", "OPEN")
                 : storeProfile?.heroClosedStatusText ||
-                  "FECHADO"}
+                  text("FECHADO", "CLOSED")}
             </div>
 
           </div>
@@ -1870,12 +1886,12 @@ export default function CardapioPage() {
 
               <p className="font-mono-brand text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
                 {storeProfile?.menuTitle ||
-                  "O cardápio"}
+                  text("O cardápio", "The menu")}
               </p>
 
               <h2 className="mt-1 font-display text-3xl tracking-tight sm:text-5xl">
                 {storeProfile?.menuSubtitle ||
-                  "Escolha o seu"}
+                  text("Escolha o seu", "Choose your order")}
               </h2>
 
             </div>
@@ -2081,7 +2097,7 @@ export default function CardapioPage() {
                           )
                       ) && (
                         <p className="mt-3 text-xs font-bold text-primary">
-                          Personalizável
+                          {text("Personalizável", "Customizable")}
                         </p>
                       )}
 
@@ -2145,7 +2161,7 @@ export default function CardapioPage() {
             href="#menu"
             className="font-mono-brand text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground transition-colors hover:text-foreground"
           >
-            Voltar ao cardápio
+            {text("Voltar ao cardápio", "Back to menu")}
           </a>
 
         </div>
@@ -2330,11 +2346,11 @@ export default function CardapioPage() {
                     <div>
 
                       <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                        Borda recheada
+                        {text("Borda recheada", "Stuffed crust")}
                       </p>
 
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Escolha uma opção para sua pizza.
+                        {text("Escolha uma opção para sua pizza.", "Choose a crust for your pizza.")}
                       </p>
 
                     </div>
@@ -2349,7 +2365,7 @@ export default function CardapioPage() {
                         }
                         className="text-xs font-bold text-primary"
                       >
-                        Remover
+                        {text("Remover", "Remove")}
                       </button>
                     )}
 
@@ -2373,7 +2389,7 @@ export default function CardapioPage() {
                     >
 
                       <span className="font-bold">
-                        Sem borda
+                        {text("Sem borda", "No stuffed crust")}
                       </span>
 
                       {selectedCrust ===
@@ -2445,7 +2461,7 @@ export default function CardapioPage() {
                   {crusts.length ===
                     0 && (
                     <p className="mt-3 rounded-xl bg-secondary p-3 text-sm text-muted-foreground">
-                      Nenhuma borda está disponível no momento.
+                      {text("Nenhuma borda está disponível no momento.", "No stuffed crust options are available right now.")}
                     </p>
                   )}
 
@@ -2459,11 +2475,11 @@ export default function CardapioPage() {
                   <div>
 
                     <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                      Quantidade
+                      {text("Quantidade", "Quantity")}
                     </p>
 
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Quantos você quer?
+                      {text("Quantos você quer?", "How many would you like?")}
                     </p>
 
                   </div>
@@ -2523,7 +2539,7 @@ export default function CardapioPage() {
                   htmlFor="selected-product-observation"
                   className="mb-2 block font-mono-brand text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground"
                 >
-                  Alguma observação?
+                  {text("Alguma observação?", "Any special instructions?")}
                 </label>
 
                 <textarea
@@ -2651,7 +2667,7 @@ export default function CardapioPage() {
                     </p>
 
                     <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-muted-foreground">
-                      Adicione itens do cardápio para começar.
+                      {text("Adicione itens do cardápio para começar.", "Add items from the menu to get started.")}
                     </p>
 
                   </div>
@@ -2836,7 +2852,7 @@ export default function CardapioPage() {
                               htmlFor={`observation-${itemIndex}`}
                               className="mb-2 block font-mono-brand text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground"
                             >
-                              Observação
+                              {text("Observação", "Special instructions")}
                             </label>
 
                             <textarea
@@ -2876,7 +2892,7 @@ export default function CardapioPage() {
                 <div>
 
                   <p className="font-mono-brand text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                    Subtotal
+                    {text("Subtotal", "Subtotal")}
                   </p>
 
                   <p className="mt-1 font-display text-3xl text-primary">
@@ -2888,7 +2904,7 @@ export default function CardapioPage() {
                 </div>
 
                 <p className="max-w-36 text-right text-xs leading-5 text-muted-foreground">
-                  A entrega será calculada no checkout.
+                  {text("A entrega será calculada no checkout.", "Delivery will be calculated at checkout.")}
                 </p>
 
               </div>
