@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 
 const API_URL = "";
@@ -183,6 +184,7 @@ function Toggle({
 }
 
 export default function PersonalizacaoPage() {
+  const { text } = useLanguage();
   const [profile, setProfile] =
     useState<StoreProfile | null>(null);
 
@@ -944,7 +946,7 @@ export default function PersonalizacaoPage() {
         <div className="mx-auto max-w-[1380px] px-4 py-10 sm:px-6 lg:px-8">
           <div className="rounded-[24px] border border-border bg-card p-8 text-center">
             <p className="text-sm text-muted-foreground">
-              Carregando personalização...
+              {text("Carregando personalização...", "Loading customization...")}
             </p>
           </div>
         </div>
@@ -960,7 +962,7 @@ export default function PersonalizacaoPage() {
         <div className="mx-auto max-w-[1380px] px-4 py-10 sm:px-6 lg:px-8">
           <div className="rounded-[24px] border border-red-200 bg-red-50 p-6">
             <p className="font-semibold text-red-700">
-              Não foi possível carregar a loja
+              {text("Não foi possível carregar a loja", "Could not load the store")}
             </p>
 
             <p className="mt-1 text-sm text-red-600">
@@ -985,11 +987,11 @@ export default function PersonalizacaoPage() {
           <div className="mt-2 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
             <div>
               <h1 className="font-display text-4xl uppercase leading-none tracking-tight text-foreground">
-                Personalização
+                {text("Personalização", "Customization")}
               </h1>
 
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-                Controle a identidade visual e os textos do cardápio público.
+                {text("Controle a identidade visual e os textos do cardápio público.", "Manage the look and text of your public menu.")}
               </p>
             </div>
 
@@ -999,7 +1001,7 @@ export default function PersonalizacaoPage() {
                 onClick={resetColorsToDefault}
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-card px-5 text-sm font-bold text-foreground transition hover:bg-muted"
               >
-                Restaurar cores
+                {text("Restaurar cores", "Reset colors")}
               </button>
 
               <a
@@ -1010,7 +1012,7 @@ export default function PersonalizacaoPage() {
                 rel="noreferrer"
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-card px-5 text-sm font-bold text-foreground transition hover:bg-muted"
               >
-                Abrir cardápio
+                {text("Abrir cardápio", "Open menu")}
               </a>
             </div>
           </div>
@@ -1019,7 +1021,7 @@ export default function PersonalizacaoPage() {
         {errorMessage && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
             <p className="font-semibold text-red-700">
-              Atenção
+              {text("Atenção", "Attention")}
             </p>
 
             <p className="mt-1 text-sm text-red-600">
@@ -1031,7 +1033,7 @@ export default function PersonalizacaoPage() {
         {successMessage && (
           <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
             <p className="font-semibold text-emerald-700">
-              Tudo certo
+              {text("Tudo certo", "All set")}
             </p>
 
             <p className="mt-1 text-sm text-emerald-700">
@@ -1096,12 +1098,12 @@ export default function PersonalizacaoPage() {
               </p>
 
               <h2 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                Identidade visual
+                {text("Identidade visual", "Brand identity")}
               </h2>
 
               <div className="mt-6">
                 <FieldLabel>
-                  Nome exibido no cardápio
+                  {text("Nome exibido no cardápio", "Name shown on menu")}
                 </FieldLabel>
 
                 <input
@@ -1176,7 +1178,7 @@ export default function PersonalizacaoPage() {
                         }
                         className="h-10 rounded-xl border border-red-200 px-4 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                       >
-                        Remover
+                        {text("Remover", "Remove")}
                       </button>
                     )}
                   </div>
@@ -1188,7 +1190,7 @@ export default function PersonalizacaoPage() {
 
                 <div className="rounded-2xl border border-border bg-background p-4">
                   <FieldLabel>
-                    Imagem de capa
+                    {text("Imagem de capa", "Cover image")}
                   </FieldLabel>
 
                   <div className="mt-2 flex h-44 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-border bg-muted/30">
@@ -1207,7 +1209,7 @@ export default function PersonalizacaoPage() {
                           background: `linear-gradient(135deg, ${previewPrimary}22, ${previewSecondary}55)`,
                         }}
                       >
-                        Nenhuma capa enviada
+                        {text("Nenhuma capa enviada", "No cover image uploaded")}
                       </div>
                     )}
                   </div>
@@ -1245,13 +1247,13 @@ export default function PersonalizacaoPage() {
                         }
                         className="h-10 rounded-xl border border-red-200 px-4 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                       >
-                        Remover
+                        {text("Remover", "Remove")}
                       </button>
                     )}
                   </div>
 
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                    Prefira uma imagem horizontal.
+                    {text("Prefira uma imagem horizontal.", "Use a landscape image for best results.")}
                   </p>
                 </div>
               </div>
@@ -1259,7 +1261,7 @@ export default function PersonalizacaoPage() {
               <div className="mt-5 grid gap-5 md:grid-cols-2">
                 <div>
                   <FieldLabel>
-                    Cor principal
+                    {text("Cor principal", "Primary color")}
                   </FieldLabel>
 
                   <div className="flex gap-2">
@@ -1293,7 +1295,7 @@ export default function PersonalizacaoPage() {
 
                 <div>
                   <FieldLabel>
-                    Cor secundária
+                    {text("Cor secundária", "Secondary color")}
                   </FieldLabel>
 
                   <div className="flex gap-2">
@@ -1331,7 +1333,7 @@ export default function PersonalizacaoPage() {
 
             <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                Destaque
+                {text("Destaque", "Highlight")}
               </p>
 
               <h2 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
@@ -1395,7 +1397,7 @@ export default function PersonalizacaoPage() {
 
                 <div className="md:col-span-3">
                   <FieldLabel>
-                    Descrição
+                    {text("Descrição", "Description")}
                   </FieldLabel>
                   <textarea
                     value={form.heroDescription}
@@ -1429,7 +1431,7 @@ export default function PersonalizacaoPage() {
 
                 <div>
                   <FieldLabel>
-                    Texto quando aberto
+                    {text("Texto quando aberto", "Text when open")}
                   </FieldLabel>
                   <input
                     value={
@@ -1449,7 +1451,7 @@ export default function PersonalizacaoPage() {
 
                 <div>
                   <FieldLabel>
-                    Texto quando fechado
+                    {text("Texto quando fechado", "Text when closed")}
                   </FieldLabel>
                   <input
                     value={
@@ -1469,7 +1471,7 @@ export default function PersonalizacaoPage() {
 
                 <div>
                   <FieldLabel>
-                    Botão principal
+                    {text("Botão principal", "Primary button")}
                   </FieldLabel>
                   <input
                     value={
@@ -1489,7 +1491,7 @@ export default function PersonalizacaoPage() {
 
                 <div>
                   <FieldLabel>
-                    Botão secundário
+                    {text("Botão secundário", "Secondary button")}
                   </FieldLabel>
                   <input
                     value={
@@ -1509,7 +1511,7 @@ export default function PersonalizacaoPage() {
 
                 <div className="md:col-span-3">
                   <FieldLabel>
-                    Frase complementar
+                    {text("Frase complementar", "Tagline")}
                   </FieldLabel>
                   <input
                     value={form.headline}
@@ -1534,13 +1536,13 @@ export default function PersonalizacaoPage() {
               </p>
 
               <h2 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                Textos do cardápio
+                {text("Textos do cardápio", "Menu text")}
               </h2>
 
               <div className="mt-6 grid gap-5 md:grid-cols-2">
                 <div>
                   <FieldLabel>
-                    Título
+                    {text("Título", "Title")}
                   </FieldLabel>
                   <input
                     value={form.menuTitle}
@@ -1558,7 +1560,7 @@ export default function PersonalizacaoPage() {
 
                 <div>
                   <FieldLabel>
-                    Subtítulo
+                    {text("Subtítulo", "Subtitle")}
                   </FieldLabel>
                   <input
                     value={form.menuSubtitle}
@@ -1576,7 +1578,7 @@ export default function PersonalizacaoPage() {
 
                 <div className="md:col-span-2">
                   <FieldLabel>
-                    Texto da busca
+                    {text("Texto da busca", "Search placeholder")}
                   </FieldLabel>
                   <input
                     value={
@@ -1638,11 +1640,11 @@ export default function PersonalizacaoPage() {
 
             <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                Comunicação
+                {text("Comunicação", "Communication")}
               </p>
 
               <h2 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                Faixa promocional
+                {text("Faixa promocional", "Promo banner")}
               </h2>
 
               <div className="mt-6 space-y-5">
@@ -1667,7 +1669,7 @@ export default function PersonalizacaoPage() {
 
                 <div>
                   <FieldLabel>
-                    Mensagem
+                    {text("Mensagem", "Message")}
                   </FieldLabel>
 
                   <input
@@ -1694,16 +1696,16 @@ export default function PersonalizacaoPage() {
 
             <section className="rounded-[24px] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                Rodapé
+                {text("Rodapé", "Footer")}
               </p>
 
               <h2 className="mt-1 font-display text-2xl uppercase tracking-tight text-foreground">
-                Texto final
+                {text("Texto final", "Closing text")}
               </h2>
 
               <div className="mt-6">
                 <FieldLabel>
-                  Frase do rodapé
+                  {text("Frase do rodapé", "Footer tagline")}
                 </FieldLabel>
 
                 <input
@@ -1742,10 +1744,10 @@ export default function PersonalizacaoPage() {
             <div className="overflow-hidden rounded-[26px] border border-border bg-background shadow-[0_18px_50px_rgba(0,0,0,0.08)]">
               <div className="border-b border-border bg-card px-5 py-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                  Prévia fiel
+                  {text("Prévia fiel", "Live preview")}
                 </p>
                 <p className="mt-1 text-sm font-bold text-foreground">
-                  Mesmo visual do cardápio público
+                  {text("Mesmo visual do cardápio público", "Same look as public menu")}
                 </p>
               </div>
 
@@ -1797,10 +1799,10 @@ export default function PersonalizacaoPage() {
                       Todos
                     </span>
                     <span className="rounded-full border border-border px-3 py-1.5 text-[9px] font-semibold">
-                      Pizzas
+                      {text("Pizzas", "Pizzas")}
                     </span>
                     <span className="rounded-full border border-border px-3 py-1.5 text-[9px] font-semibold">
-                      Bebidas
+                      {text("Bebidas", "Drinks")}
                     </span>
                   </div>
                 </div>
@@ -1927,10 +1929,10 @@ export default function PersonalizacaoPage() {
                             </p>
                           </div>
                           <p className="mt-1 text-[7px] leading-3 text-muted-foreground">
-                            Descrição do produto no cardápio.
+                            {text("Descrição do produto no cardápio.", "Product description on the menu.")}
                           </p>
                           <div className="mt-2 rounded-full bg-foreground py-1.5 text-center text-[7px] font-bold text-background">
-                            Ver opções
+                            {text("Ver opções", "View options")}
                           </div>
                         </div>
                       </div>
