@@ -613,7 +613,7 @@ export default function AdminHorariosPage() {
                                       0,
                                       5
                                     )}`
-                                  : "Defina o horário"
+                                  : text("Defina o horário", "Set hours")
                                 : text("Não recebe pedidos", "Not accepting orders")}
 
                             </p>
@@ -813,7 +813,7 @@ export default function AdminHorariosPage() {
 
                           {saving
                             ? "Salvando"
-                            : "Salvar"}
+                            : text("Salvar", "Save")}
 
                         </button>
 
