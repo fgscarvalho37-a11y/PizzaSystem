@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 
 import AdminHeader from "@/components/AdminHeader";
+import { useLanguage } from "@/i18n/LanguageProvider";
 import { adminFetch } from "@/lib/adminFetch";
 
 type Storefront = {
@@ -19,6 +20,7 @@ type Storefront = {
 };
 
 export default function LojaOnlinePage() {
+  const { text } = useLanguage();
   const [
     storefront,
     setStorefront,
@@ -67,7 +69,7 @@ export default function LojaOnlinePage() {
 
       if (!response.ok) {
         throw new Error(
-          "Não foi possível carregar o endereço da loja."
+          text("Não foi possível carregar o endereço da loja.", "Could not load the store address.")
         );
       }
 
@@ -159,7 +161,7 @@ export default function LojaOnlinePage() {
 
         throw new Error(
           message ||
-            `Não foi possível salvar o endereço. Código ${response.status}.`
+            text(`Não foi possível salvar o endereço. Código ${response.status}.`, `Could not save address. Code ${response.status}.`)
         );
       }
 
@@ -168,7 +170,7 @@ export default function LojaOnlinePage() {
         !("slug" in data)
       ) {
         throw new Error(
-          "O servidor não retornou o endereço salvo."
+          text("O servidor não retornou o endereço salvo.", "The server did not return a saved address.")
         );
       }
 
@@ -181,14 +183,14 @@ export default function LojaOnlinePage() {
       );
 
       setMessage(
-        "Endereço da loja salvo."
+        text("Endereço da loja salvo.", "Store address saved.")
       );
 
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Não foi possível salvar."
+          : text("Não foi possível salvar.", "Could not save.")
       );
 
     } finally {
@@ -212,7 +214,7 @@ export default function LojaOnlinePage() {
 
     } catch {
       setError(
-        "Não foi possível copiar o link."
+        text("Não foi possível copiar o link.", "Could not copy the link.")
       );
     }
   }
@@ -230,11 +232,11 @@ export default function LojaOnlinePage() {
           </p>
 
           <h1 className="font-display text-4xl uppercase leading-none tracking-tight text-foreground sm:text-5xl">
-            Endereço do cardápio
+            {text("Endereço do cardápio", "Menu address")}
           </h1>
 
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-            Escolha um endereço simples para compartilhar com seus clientes. O cardápio continua hospedado pelo PizzaSystem.
+            {text("Escolha um endereço simples para compartilhar com seus clientes. O cardápio continua hospedado pelo PizzaSystem.", "Choose a simple web address to share with customers. Your menu stays hosted by PizzaSystem.")}
           </p>
 
         </div>
@@ -255,11 +257,11 @@ export default function LojaOnlinePage() {
                     htmlFor="store-slug"
                     className="text-xs font-bold text-foreground"
                   >
-                    Endereço da loja
+                    {text("Endereço da loja", "Store address")}
                   </label>
 
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Use o nome da pizzaria sem espaços. Exemplo: pizzaria-do-joao.
+                    {text("Use o nome da pizzaria sem espaços. Exemplo: pizzaria-do-joao.", "Use your restaurant name without spaces. Example: my-pizza-place.")}
                   </p>
 
                   <div className="mt-3 flex flex-col gap-3 sm:flex-row">
@@ -300,7 +302,7 @@ export default function LojaOnlinePage() {
                 <div className="mt-6 rounded-2xl border border-border bg-background p-5">
 
                   <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                    Link público
+                    {text("Link público", "Public link")}
                   </p>
 
                   <p className="mt-2 break-all text-sm font-semibold text-foreground">
@@ -345,7 +347,7 @@ export default function LojaOnlinePage() {
               <div className="mt-5 rounded-2xl border border-border bg-muted/35 p-5">
 
                 <p className="text-sm font-bold text-foreground">
-                  Endereço hospedado
+                  {text("Endereço hospedado", "Hosted address")}
                 </p>
 
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
